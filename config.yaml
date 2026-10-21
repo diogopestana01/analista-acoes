@@ -25,7 +25,7 @@ precos:
   lote: 200             # tickers por pedido ao Yahoo Finance
 
 sinais:
-  setups: [rompimento, pullback, rompimento_baixa]   # rompimento_baixa = venda a descoberto (CFD)
+  setups: [rompimento, pullback]   # rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
   mult_objetivo: 2.0     # objetivo = entrada ± 2 x ATR
   mult_stop: 1.0         # stop = entrada ∓ 1 x ATR
   max_dias: 5            # horizonte máximo (dias úteis)
