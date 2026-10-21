@@ -72,14 +72,23 @@ def estatisticas_setup(d: pd.DataFrame, flags: pd.Series, direcao: str, cfg: dic
     idx = np.flatnonzero(flags.to_numpy()[:-1])  # exclui hoje
     res = [resultado_trade(d, i, direcao, cfg["mult_objetivo"], cfg["mult_stop"], cfg["max_dias"])
            for i in idx]
-    res = [r for r in res if r[0] != "aberto"]
-    if not res:
-        return {"n_historico": 0, "taxa_acerto": np.nan, "dias_mediana": np.nan}
-    ganhos = [dias for r, dias in res if r == "objetivo"]
+    pares = [(i, r) for i, r in zip(idx, res) if r[0] != "aberto"]
+    if not pares:
+        return {"n_historico": 0, "taxa_acerto": np.nan, "dias_mediana": np.nan, "retorno_medio_hist": np.nan}
+    sinal = 1 if direcao == "compra" else -1
+    retornos = []
+    for i, (r, dias) in pares:
+        entrada, a = d["close"].iat[i], d["atr14"].iat[i]
+        saida = {"objetivo": entrada + sinal * cfg["mult_objetivo"] * a,
+                 "stop": entrada - sinal * cfg["mult_stop"] * a,
+                 "expirou": d["close"].iat[i + dias]}[r]
+        retornos.append(sinal * (saida / entrada - 1))
+    ganhos = [dias for _, (r, dias) in pares if r == "objetivo"]
     return {
-        "n_historico": len(res),
-        "taxa_acerto": len(ganhos) / len(res),
+        "n_historico": len(pares),
+        "taxa_acerto": len(ganhos) / len(pares),
         "dias_mediana": float(np.median(ganhos)) if ganhos else np.nan,
+        "retorno_medio_hist": float(np.mean(retornos)),
     }
 
 
@@ -87,6 +96,7 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
     """Percorre todas as ações e devolve os sinais do último dia disponível."""
     setups_ativos = setups_ativos or list(SETUPS)
     linhas = []
+    acima = {"eua": [], "europa": []}
     for ticker, df in precos.sort_values("data").groupby("ticker"):
         df = df.reset_index(drop=True)
         if len(df) < 210:
@@ -94,6 +104,8 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
         d = indicadores.calcular(df)
         flags = detetar(d)
         hoje = d.iloc[-1]
+        if pd.notna(hoje["sma50"]):
+            acima[regiao(ticker)].append(hoje["close"] > hoje["sma50"])
         for nome in setups_ativos:
             if not flags[nome].iat[-1]:
                 continue
@@ -112,9 +124,30 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
                 "rsi14": hoje["rsi14"],
                 "vol_ratio": hoje["vol_ratio"],
                 "ret20": hoje["ret20"],
+                "dist_sma50": hoje["close"] / hoje["sma50"] - 1,
+                "regiao": regiao(ticker),
                 **est,
             })
-    return pd.DataFrame(linhas)
+    out = pd.DataFrame(linhas)
+    if not out.empty:
+        amp = {r: (float(np.mean(v)) if v else np.nan) for r, v in acima.items()}
+        out["amplitude_mercado"] = out["regiao"].map(amp)
+    return out
+
+
+def regiao(ticker: str) -> str:
+    return "europa" if "." in ticker else "eua"
+
+
+def passa_filtros(s: pd.Series, filtros: dict) -> bool:
+    """filtros: {caracteristica: [min, max]} (None = sem limite)."""
+    for c, (mn, mx) in (filtros or {}).items():
+        v = s.get(c)
+        if v is None or pd.isna(v):
+            return False
+        if (mn is not None and v < mn) or (mx is not None and v > mx):
+            return False
+    return True
 
 
 def pontuar(sinais: pd.DataFrame, cfg: dict) -> pd.DataFrame:
@@ -134,4 +167,18 @@ def pontuar(sinais: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     ).round(1)
     # Prazo estimado: mediana histórica, ou 5 dias se não houver histórico.
     s["dias_estimados"] = s["dias_mediana"].fillna(cfg["max_dias"]).clip(1, cfg["max_dias"])
-    return s.sort_values("pont_tecnica", ascending=False).reset_index(drop=True)
+
+    # Retorno esperado: média histórica desta ação neste setup, puxada para a média
+    # do setup em todo o mercado (backtest) quando há poucos casos; menos custos XTB.
+    qualidade = cfg.get("qualidade", {})
+    base = s["setup"].map(lambda x: qualidade.get(x, {}).get("retorno_base_pct", 0.0) / 100)
+    k = cfg.get("peso_base_casos", 10)
+    hist = s.get("retorno_medio_hist", pd.Series(np.nan, index=s.index)).fillna(0.0)
+    s["retorno_esperado"] = (hist * n + base * k) / (n + k)
+    custo = cfg.get("custo_cambio_pct_por_lado", 0.5) / 100 * 2
+    s["custo"] = np.where(s.get("regiao", pd.Series("eua", index=s.index)) == "eua", custo, 0.0)
+    s["retorno_esperado_liquido"] = s["retorno_esperado"] - s["custo"]
+    s["passa_filtros"] = [passa_filtros(r, qualidade.get(r["setup"], {}).get("filtros"))
+                          for _, r in s.iterrows()]
+    return s.sort_values(["passa_filtros", "retorno_esperado_liquido", "pont_tecnica"],
+                         ascending=False).reset_index(drop=True)

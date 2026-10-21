@@ -75,7 +75,17 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python passo1_universo.py && python passo3_backtest.py
+      - name: Recuperar preços guardados
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/precos.parquet
+            data/universo.csv
+            data/universo_filtrado.csv
+          key: dados-${{ github.run_id }}
+          restore-keys: dados-
+      - run: test -f data/precos.parquet || python passo1_universo.py
+      - run: python passo3_backtest.py
       - uses: actions/upload-artifact@v4
         with:
           name: backtest

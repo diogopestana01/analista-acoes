@@ -26,8 +26,9 @@ def combinar(tecnico: pd.DataFrame, avaliacoes: dict, cfg: dict) -> pd.DataFrame
     direcao = s["direcao"].map({"compra": 1, "venda": -1})
     s["pontuacao"] = (s["pont_tecnica"] + cfg["peso_noticias"] * s["sentimento"] * direcao).round(1)
     s.loc[s["risco_evento"], "pontuacao"] -= 10
-    s = s[s["impacto_noticias"] != "contraria"]
-    return s.sort_values("pontuacao", ascending=False).reset_index(drop=True)
+    s = s[s["impacto_noticias"] != "contraria"]  # notícias contra o sinal eliminam-no
+    s["noticia_forte"] = (s["impacto_noticias"] == "apoia") & (s["sentimento"] * direcao >= 0.5)
+    return s.sort_values(["noticia_forte", "retorno_esperado_liquido"], ascending=False).reset_index(drop=True)
 
 
 def main() -> Path:
@@ -47,8 +48,15 @@ def main() -> Path:
         logging.info("Sem sinais técnicos hoje")
         pd.DataFrame().to_csv(saida, index=False)
         return saida
-    tecnico = tecnico[(tecnico["pont_tecnica"] >= cfg["pontuacao_minima"])]
-    logging.info("Sinais técnicos: %d", len(tecnico))
+    logging.info("Setups detetados: %d", len(tecnico))
+    # Só seguem os sinais fortes: passam os filtros do setup e têm retorno esperado
+    # (após custos) acima da fasquia. Não há número fixo de sinais por dia.
+    tecnico = tecnico[tecnico["passa_filtros"]
+                      & (tecnico["retorno_esperado_liquido"] * 100 >= cfg["retorno_minimo_pct"])]
+    logging.info("Sinais fortes (antes das notícias): %d", len(tecnico))
+    if tecnico.empty:
+        pd.DataFrame().to_csv(saida, index=False)
+        return saida
 
     candidatos = tecnico.head(cfg["max_candidatos_noticias"])
     # Cada ação só é analisada uma vez por dia e setup, para não repetir custos de hora a hora.
@@ -58,7 +66,7 @@ def main() -> Path:
         cache = {k: v for k, v in json.loads(cache_path.read_text()).items() if k.endswith(dia)}
     except (FileNotFoundError, ValueError):
         cache = {}
-    chave = lambda s: f"{s['ticker']}|{s['setup']}|{dia}"
+    chave = lambda s: f"v2|{s['ticker']}|{s['setup']}|{dia}"
     falta = [s for s in candidatos.to_dict("records") if chave(s) not in cache]
     nomes = filtrado.set_index("ticker")["nome"].fillna("").to_dict()
     news = noticias.recolher({s["ticker"]: nomes.get(s["ticker"], "") for s in falta}) if falta else None

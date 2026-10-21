@@ -63,7 +63,7 @@ def backtest(precos: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     t = t.merge(amp.reset_index(), on=["data", "regiao"], how="left")
     custo = cfg.get("custo_cambio_pct_por_lado", 0.5) / 100 * 2
     t["retorno_liquido"] = t["retorno"] - np.where(t["regiao"] == "eua", custo, 0.0)
-    return t
+    return t.replace([np.inf, -np.inf], np.nan)
 
 
 def resumir(trades: pd.DataFrame) -> pd.DataFrame:
@@ -99,6 +99,41 @@ def por_caracteristica(trades: pd.DataFrame) -> str:
     return "\n".join(linhas)
 
 
+def melhores_subconjuntos(trades: pd.DataFrame, n_min: int = 150, top: int = 12) -> str:
+    """Procura combinações de 2 condições (quintis) com o melhor retorno líquido."""
+    linhas = []
+    for setup, t in trades.groupby("setup"):
+        t = t.copy()
+        conds = {}
+        for c in CARACTERISTICAS:
+            x = t[c]
+            if x.nunique() < 5:
+                continue
+            q = pd.qcut(x, 5, labels=False, duplicates="drop")
+            for k in sorted(q.dropna().unique()):
+                lo, hi = x[q == k].min(), x[q == k].max()
+                conds[f"{c} {lo:.3g}..{hi:.3g}"] = q == k
+        conds.update({f"regiao {r}": t["regiao"] == r for r in t["regiao"].unique()})
+        nomes = list(conds)
+        corte = t["data"].sort_values().iloc[len(t) // 2]  # 1.ª metade escolhe, 2.ª metade confirma
+        treino = t["data"] < corte
+        res = []
+        for a in range(len(nomes)):
+            for b in range(a, len(nomes)):
+                m = conds[nomes[a]] & conds[nomes[b]]
+                if (m & treino).sum() >= n_min and (m & ~treino).sum() >= n_min // 2:
+                    tr, te = t[m & treino], t[m & ~treino]
+                    res.append((tr["retorno_liquido"].mean(), te["retorno_liquido"].mean(), len(tr), len(te),
+                                (te["resultado"] == "objetivo").mean(),
+                                nomes[a] if a == b else f"{nomes[a]} & {nomes[b]}"))
+        res.sort(reverse=True)
+        linhas.append(f"\n### {setup}: melhores combinações no 1.º ano e como se portaram no 2.º "
+                      "(líquido treino | líquido teste | n treino | n teste | objetivo teste)")
+        linhas += [f"{a*100:+.2f}% | {b*100:+.2f}% | {n1} | {n2} | {obj*100:.0f}% | {nome}"
+                   for a, b, n1, n2, obj, nome in res[:top]]
+    return "\n".join(linhas)
+
+
 def main() -> None:
     cfg = yaml.safe_load((RAIZ / "config.yaml").read_text())["sinais"]
     cfg = {**cfg, "setups": list(sinais.SETUPS)}  # testa todos, mesmo os desligados
@@ -110,6 +145,7 @@ def main() -> None:
     resumo.to_csv(DADOS / "backtest_resumo.csv")
     print(resumo.to_string())
     print(por_caracteristica(trades))
+    print(melhores_subconjuntos(trades))
 
 
 if __name__ == "__main__":

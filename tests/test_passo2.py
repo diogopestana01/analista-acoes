@@ -46,13 +46,22 @@ def test_resultado_trade_objetivo_e_stop():
     assert sinais.resultado_trade(d2, 29, "compra", 2, 1, 5) == ("stop", 1)
 
 
-def test_pontuar_ordena_e_estima_dias():
-    s = pd.DataFrame({"ticker": ["A", "B"], "direcao": ["compra", "compra"], "n_historico": [20, 0],
-                      "taxa_acerto": [0.7, np.nan], "dias_mediana": [3.0, np.nan],
-                      "vol_ratio": [2.0, 2.0], "ret20": [0.1, 0.1]})
-    out = sinais.pontuar(s, CFG)
-    assert out["ticker"].tolist() == ["A", "B"]
-    assert out["dias_estimados"].tolist() == [3.0, CFG["max_dias"]]
+def test_pontuar_retorno_esperado_custos_e_filtros():
+    cfg = {**CFG, "custo_cambio_pct_por_lado": 0.5, "peso_base_casos": 10,
+           "qualidade": {"pullback": {"retorno_base_pct": 0.5, "filtros": {"vol_ratio": [1.0, None]}}}}
+    s = pd.DataFrame({"ticker": ["A.DE", "B", "C"], "setup": "pullback", "direcao": "compra",
+                      "regiao": ["europa", "eua", "eua"], "n_historico": [10, 0, 10],
+                      "taxa_acerto": [0.7, np.nan, 0.5], "dias_mediana": [3.0, np.nan, 2.0],
+                      "retorno_medio_hist": [0.03, np.nan, 0.03],
+                      "vol_ratio": [2.0, 2.0, 0.5], "ret20": [0.1, 0.1, 0.1]})
+    out = sinais.pontuar(s, cfg).set_index("ticker")
+    # A: (3% x 10 + 0,5% x 10) / 20 = 1,75%, sem custo cambial (euro)
+    assert np.isclose(out.loc["A.DE", "retorno_esperado_liquido"], 0.0175)
+    # B: sem histórico -> base 0,5% menos 1% de câmbio
+    assert np.isclose(out.loc["B", "retorno_esperado_liquido"], -0.005)
+    assert out.loc["B", "dias_estimados"] == CFG["max_dias"]
+    # C: volume abaixo do filtro
+    assert not out.loc["C", "passa_filtros"] and out.loc["A.DE", "passa_filtros"]
 
 
 def test_sentimento_sem_chave_usa_palavras(monkeypatch):
