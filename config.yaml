@@ -1,0 +1,38 @@
+# Configuração do universo de ações e dos filtros de liquidez.
+universo:
+  eua: true            # todas as ações listadas na NASDAQ, NYSE e NYSE American
+  europa:              # índices europeus usados como aproximação da oferta da XTB
+    - DAX
+    - MDAX
+    - CAC40
+    - FTSE100
+    - FTSE250
+    - AEX
+    - IBEX35
+    - FTSEMIB
+    - SMI
+    - PSI
+    - BEL20
+    - OMXS30
+
+filtro_liquidez:
+  preco_minimo: 5.0              # na moeda local
+  volume_medio_minimo_eur: 2000000  # valor médio negociado por dia (20 dias)
+  dias_historico_minimo: 120
+
+precos:
+  periodo: "2y"         # histórico descarregado na primeira vez
+  lote: 200             # tickers por pedido ao Yahoo Finance
+
+sinais:
+  setups: [rompimento, pullback, rompimento_baixa]   # rompimento_baixa = venda a descoberto (CFD)
+  mult_objetivo: 2.0     # objetivo = entrada ± 2 x ATR
+  mult_stop: 1.0         # stop = entrada ∓ 1 x ATR
+  max_dias: 5            # horizonte máximo (dias úteis)
+  pontuacao_minima: 50
+  max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
+  peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias
+  max_alertas: 10               # máximo de alertas por dia
+
+execucao:
+  hora_resumo_utc: 20   # a partir desta hora envia o resumo diário mesmo sem sinais novos

@@ -1,0 +1,8 @@
+__pycache__/
+.pytest_cache/
+data/*.parquet
+data/universo*.csv
+data/backtest_*.csv
+!data/universo_extra.csv
+data/avaliacoes_cache.json
+data/universo_atualizado_em.txt
