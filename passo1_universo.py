@@ -35,7 +35,7 @@ def universo_recente(horas: float = 20) -> bool:
 def atualizar_rapido(config: dict) -> None:
     """Execução de hora a hora: só descarrega os últimos dias das ações já filtradas."""
     filtrado = pd.read_csv(DADOS / "universo_filtrado.csv")
-    novos = precos.descarregar(filtrado["ticker"].tolist(), "5d", config["precos"]["lote"])
+    novos = precos.descarregar(filtrado["ticker"].tolist(), "5d", config["precos"]["lote_rapido"])
     hist = precos.juntar(pd.read_parquet(DADOS / "precos.parquet"), novos)
     precos.guardar(hist, DADOS / "precos.parquet")
     logging.info("Atualização rápida: %d ações, último dia %s", novos["ticker"].nunique(), hist["data"].max())

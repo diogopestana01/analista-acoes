@@ -45,7 +45,6 @@ def descarregar(tickers: list[str], periodo: str = "2y", lote: int = 200) -> pd.
             except Exception as e:
                 log.warning("Lote %d falhou (%s), tentativa %d", i, e, tentativa + 1)
                 time.sleep(10 * (tentativa + 1))
-        time.sleep(1)
     if not partes:
         return pd.DataFrame(columns=COLUNAS)
     return pd.concat(partes, ignore_index=True)

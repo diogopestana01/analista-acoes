@@ -22,7 +22,8 @@ filtro_liquidez:
 
 precos:
   periodo: "2y"         # histórico descarregado na primeira vez
-  lote: 200             # tickers por pedido ao Yahoo Finance
+  lote: 200             # tickers por pedido ao Yahoo Finance (histórico completo)
+  lote_rapido: 1000     # tickers por pedido nas atualizações de hora a hora
 
 sinais:
   setups: [rompimento, pullback]   # rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
