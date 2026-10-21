@@ -26,6 +26,8 @@ SETUPS = {
                         "Fecho acima do máximo de 20 dias com volume forte, em tendência de subida"),
     "pullback": Setup("pullback", "compra",
                       "Queda curta (RSI2 baixo) dentro de uma tendência de subida"),
+    "gap_volume": Setup("gap_volume", "compra",
+                        "Abertura com salto forte e volume muito acima do normal (ex. resultados), a fechar em alta"),
     "rompimento_baixa": Setup("rompimento_baixa", "venda",
                               "Fecho abaixo do mínimo de 20 dias com volume forte, em tendência de descida"),
 }
@@ -38,6 +40,8 @@ def detetar(d: pd.DataFrame) -> pd.DataFrame:
         & (d["sma50"] > d["sma200"])
     s["pullback"] = (d["close"] > d["sma200"]) & (d["sma50"] > d["sma200"]) & (d["rsi2"] < 10) \
         & (d["close"] > d["sma50"] * 0.97)
+    s["gap_volume"] = (d["gap"] >= 0.03) & (d["vol_ratio"] >= 2.5) & (d["close"] > d["open"]) \
+        & (d["close"] > d["sma200"])
     s["rompimento_baixa"] = (d["close"] < d["min20"]) & (d["vol_ratio"] >= 1.5) \
         & (d["close"] < d["sma50"]) & (d["sma50"] < d["sma200"])
     return s.fillna(False)

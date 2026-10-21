@@ -1,9 +1,11 @@
 """Passo 3: testa os setups nos últimos 2 anos de todo o universo filtrado.
 
 Uso:  python passo3_backtest.py   (depois de passo1_universo.py)
-Gera data/backtest_trades.csv e data/backtest_resumo.csv.
+Gera data/backtest_trades.csv, data/backtest_resumo.csv e imprime a análise
+por característica (volume, RSI, força, volatilidade, mercado) para perceber
+que condições dão sinais fortes.
 Só a parte técnica é testada; as notícias antigas não estão disponíveis de graça.
-Não inclui comissões nem spread da XTB, por isso os resultados reais serão piores.
+Os retornos "liquidos" descontam o custo cambial da XTB nas ações fora do euro.
 """
 import logging
 from pathlib import Path
@@ -18,14 +20,22 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 RAIZ = Path(__file__).parent
 DADOS = RAIZ / "data"
 
+CARACTERISTICAS = ["vol_ratio", "rsi14", "ret20", "atr_pct", "dist_sma50", "amplitude_mercado"]
+
+
+def regiao(ticker: str) -> str:
+    return "europa" if "." in ticker else "eua"
+
 
 def backtest(precos: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    trades = []
+    trades, acima = [], []
     for ticker, df in precos.sort_values("data").groupby("ticker"):
         df = df.reset_index(drop=True)
         if len(df) < 210:
             continue
         d = indicadores.calcular(df)
+        acima.append(pd.DataFrame({"data": d["data"], "regiao": regiao(ticker),
+                                   "acima": (d["close"] > d["sma50"]).where(d["sma50"].notna())}))
         flags = sinais.detetar(d)
         for nome in cfg["setups"]:
             direcao = sinais.SETUPS[nome].direcao
@@ -40,8 +50,20 @@ def backtest(precos: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                          "stop": entrada - sinal * cfg["mult_stop"] * a,
                          "expirou": d["close"].iat[i + dias]}[res]
                 trades.append({"ticker": ticker, "data": d["data"].iat[i], "setup": nome, "resultado": res,
-                               "dias": dias, "retorno": sinal * (saida / entrada - 1)})
-    return pd.DataFrame(trades)
+                               "dias": dias, "retorno": sinal * (saida / entrada - 1),
+                               "regiao": regiao(ticker),
+                               "vol_ratio": d["vol_ratio"].iat[i], "rsi14": d["rsi14"].iat[i],
+                               "ret20": d["ret20"].iat[i], "atr_pct": d["atr_pct"].iat[i],
+                               "dist_sma50": d["close"].iat[i] / d["sma50"].iat[i] - 1})
+    t = pd.DataFrame(trades)
+    if t.empty:
+        return t
+    # Amplitude do mercado: % de ações da mesma região acima da média de 50 dias nesse dia.
+    amp = pd.concat(acima).dropna().groupby(["data", "regiao"])["acima"].mean().rename("amplitude_mercado")
+    t = t.merge(amp.reset_index(), on=["data", "regiao"], how="left")
+    custo = cfg.get("custo_cambio_pct_por_lado", 0.5) / 100 * 2
+    t["retorno_liquido"] = t["retorno"] - np.where(t["regiao"] == "eua", custo, 0.0)
+    return t
 
 
 def resumir(trades: pd.DataFrame) -> pd.DataFrame:
@@ -51,13 +73,35 @@ def resumir(trades: pd.DataFrame) -> pd.DataFrame:
         "taxa_objetivo": g["resultado"].apply(lambda r: (r == "objetivo").mean()),
         "taxa_stop": g["resultado"].apply(lambda r: (r == "stop").mean()),
         "retorno_medio_pct": g["retorno"].mean() * 100,
+        "retorno_liquido_pct": g["retorno_liquido"].mean() * 100,
         "dias_medios": g["dias"].mean(),
         "pior_trade_pct": g["retorno"].min() * 100,
     }).round(3)
 
 
+def por_caracteristica(trades: pd.DataFrame) -> str:
+    """Retorno médio (bruto, %) por quintil de cada característica, por setup."""
+    linhas = []
+    for setup, t in trades.groupby("setup"):
+        linhas.append(f"\n=== {setup} ({len(t)} trades) | por região: "
+                      + ", ".join(f"{r} {g['retorno'].mean()*100:+.2f}% (n={len(g)})"
+                                  for r, g in t.groupby("regiao")))
+        for c in CARACTERISTICAS:
+            x = t[[c, "retorno", "resultado"]].dropna()
+            if x[c].nunique() < 5:
+                continue
+            x["q"] = pd.qcut(x[c], 5, duplicates="drop")
+            r = x.groupby("q", observed=True).agg(n=("retorno", "size"), ret=("retorno", "mean"),
+                                                  obj=("resultado", lambda s: (s == "objetivo").mean()))
+            linhas.append(f"{c}: " + " | ".join(
+                f"{iv.left:.3g}..{iv.right:.3g}: {row.ret*100:+.2f}% obj {row.obj*100:.0f}%"
+                for iv, row in r.iterrows()))
+    return "\n".join(linhas)
+
+
 def main() -> None:
     cfg = yaml.safe_load((RAIZ / "config.yaml").read_text())["sinais"]
+    cfg = {**cfg, "setups": list(sinais.SETUPS)}  # testa todos, mesmo os desligados
     precos = pd.read_parquet(DADOS / "precos.parquet")
     filtrado = pd.read_csv(DADOS / "universo_filtrado.csv")
     trades = backtest(precos[precos["ticker"].isin(filtrado["ticker"])], cfg)
@@ -65,6 +109,7 @@ def main() -> None:
     resumo = resumir(trades)
     resumo.to_csv(DADOS / "backtest_resumo.csv")
     print(resumo.to_string())
+    print(por_caracteristica(trades))
 
 
 if __name__ == "__main__":
