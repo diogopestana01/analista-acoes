@@ -1,0 +1,23 @@
+name: Teste do Telegram
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enviar mensagem de teste
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          test -n "$TELEGRAM_TOKEN" || { echo "Falta o segredo TELEGRAM_TOKEN"; exit 1; }
+          test -n "$TELEGRAM_CHAT_ID" || { echo "Falta o segredo TELEGRAM_CHAT_ID"; exit 1; }
+          if [ -n "$ANTHROPIC_API_KEY" ]; then CLAUDE="chave Anthropic encontrada"; else CLAUDE="sem chave Anthropic"; fi
+          resposta=$(curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=✅ Analista de ações ligado. Vais receber aqui os sinais de hora a hora (${CLAUDE}).")
+          echo "$resposta" | grep -q '"ok":true' || { echo "Telegram recusou: $(echo "$resposta" | sed 's/"chat":{[^}]*}//')"; exit 1; }
+          echo "Mensagem enviada"
