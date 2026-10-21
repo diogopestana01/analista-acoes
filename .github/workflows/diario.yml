@@ -1,8 +1,8 @@
-name: Alertas de hora a hora
+name: Alertas do analista
 
 on:
   schedule:
-    - cron: "5 7-20 * * 1-5"   # de hora a hora, 07:05 a 20:05 UTC, dias úteis (abertura da Europa ao fecho dos EUA)
+    - cron: "5,35 7-20 * * 1-5"   # de 30 em 30 min, 07:05 a 20:35 UTC, dias úteis (abertura da Europa ao fecho dos EUA)
   workflow_dispatch:           # permite correr à mão no separador Actions
     inputs:
       backtest:

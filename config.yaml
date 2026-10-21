@@ -43,3 +43,4 @@ sinais:
 
 execucao:
   hora_resumo_utc: 20   # a partir desta hora envia o resumo diário mesmo sem sinais novos
+  minuto_resumo_utc: 30 # (às 20:35 UTC, a última execução do dia)

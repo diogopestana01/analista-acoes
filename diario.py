@@ -1,6 +1,6 @@
 """Execução completa: dados -> sinais -> acompanhamento -> Telegram.
 
-O GitHub Actions corre isto de hora a hora nos dias úteis. A primeira execução
+O GitHub Actions corre isto de 30 em 30 minutos nos dias úteis. A primeira execução
 de cada dia reconstrói o universo; as restantes só atualizam os últimos preços.
 """
 import logging
@@ -38,7 +38,9 @@ def main() -> None:
     abertos = set(hist.loc[hist["estado"] == "aberto", "ticker"])
     novos = sinais[~sinais["ticker"].isin(abertos)] if not sinais.empty else sinais
 
-    ultima_hora = pd.Timestamp.now(tz="UTC").hour >= config["execucao"]["hora_resumo_utc"]
+    agora = pd.Timestamp.now(tz="UTC")
+    ex = config["execucao"]
+    ultima_hora = (agora.hour, agora.minute) >= (ex["hora_resumo_utc"], ex.get("minuto_resumo_utc", 0))
     if novos.empty:
         if ultima_hora:  # de hora a hora só se fala quando há novidades; resumo no fim do dia
             telegram.enviar(f"📊 {data}: sem novos sinais.\n{acompanhamento.resumo(hist)}")
