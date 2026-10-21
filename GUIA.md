@@ -24,9 +24,8 @@ Sem esta chave, o modelo usa uma análise simples por palavras-chave.
 2. Em **Billing**, adiciona crédito (ex. 10 €).
 3. Em **API keys**, cria uma chave e copia-a.
 
-Custo estimado: com o modelo por defeito (Claude Opus 5.5), cerca de 0,5 a 1 € por dia útil. Para gastar
-quase nada (cêntimos por mês), cria também o segredo `MODELO_CLAUDE` com o valor `claude-haiku-5-5`
-(o workflow já o lê automaticamente).
+O modelo por defeito é o Claude Haiku 5.5 (custo de cêntimos por mês). Para usar um modelo mais forte,
+cria o segredo `MODELO_CLAUDE` com o valor, por exemplo, `claude-opus-5-5` (cerca de 0,5 a 1 € por dia útil).
 
 ## 4. Guardar os segredos no GitHub
 1. No repositório, vai a **Settings > Secrets and variables > Actions**.

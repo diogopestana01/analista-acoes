@@ -14,7 +14,9 @@ from pydantic import BaseModel, Field
 
 log = logging.getLogger(__name__)
 
-MODELO = os.environ.get("MODELO_CLAUDE", "claude-opus-5-5")
+MODELO = os.environ.get("MODELO_CLAUDE") or "claude-haiku-5-5"
+# Só alguns modelos aceitam o "fallback" automático do servidor quando recusam um pedido.
+_COM_FALLBACK = ("claude-opus-5-5", "claude-opus-5", "claude-fable-5-1", "claude-sonnet-5-5")
 
 INSTRUCOES = """És um analista de ações focado em operações de 1 dia a 1 semana.
 Recebes um sinal técnico e as notícias recentes de uma ação. Avalia se as notícias
@@ -65,6 +67,8 @@ def avaliar(sinal: dict, noticias: pd.DataFrame, cliente=None) -> Avaliacao:
               f"entrada {sinal['entrada']:.2f}, objetivo {sinal['objetivo']:.2f}, stop {sinal['stop']:.2f}\n\n"
               f"Notícias:\n{linhas}")
     try:
+        extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} \
+            if MODELO in _COM_FALLBACK else {}
         resp = cliente.beta.messages.parse(
             model=MODELO,
             max_tokens=2000,
@@ -72,8 +76,7 @@ def avaliar(sinal: dict, noticias: pd.DataFrame, cliente=None) -> Avaliacao:
             messages=[{"role": "user", "content": pedido}],
             output_config={"effort": "low"},
             output_format=Avaliacao,
-            betas=["server-side-fallback-2026-07-01"],
-            fallbacks="default",
+            **extra,
         )
         if resp.stop_reason == "refusal" or resp.parsed_output is None:
             raise RuntimeError(f"sem resposta utilizável ({resp.stop_reason})")

@@ -39,7 +39,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE || 'claude-opus-5-5' }}
+          MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}   # vazio = claude-haiku-5-5
         run: python diario.py
       - name: Guardar histórico de sinais
         run: |
