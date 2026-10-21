@@ -30,10 +30,15 @@ sinais:
   mult_objetivo: 2.0     # objetivo = entrada ± 2 x ATR
   mult_stop: 1.0         # stop = entrada ∓ 1 x ATR
   max_dias: 5            # horizonte máximo (dias úteis)
-  pontuacao_minima: 50
+  retorno_minimo_pct: 1.0       # fasquia: retorno médio esperado após custos (%) para um sinal ser enviado
+  peso_base_casos: 10           # quantos casos "vale" a média do setup face ao histórico da própria ação
+  qualidade:                    # média do backtest por setup (bruta, %) e filtros [mín, máx]
+    pullback: {retorno_base_pct: 0.36, filtros: {}}
+    rompimento: {retorno_base_pct: 0.22, filtros: {}}
+    gap_volume: {retorno_base_pct: 0.19, filtros: {}}
   max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
   peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias
-  max_alertas: 10               # máximo de alertas por dia
+  max_alertas: 15               # limite de segurança contra excesso de mensagens
   custo_cambio_pct_por_lado: 0.5   # XTB cobra ~0,5% de conversão cambial em ações fora do euro (compra e venda)
 
 execucao:
