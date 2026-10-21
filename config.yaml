@@ -39,7 +39,7 @@ sinais:
   max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
   peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias
   max_alertas: 15               # limite de segurança contra excesso de mensagens
-  custo_cambio_pct_por_lado: 0.5   # XTB cobra ~0,5% de conversão cambial em ações fora do euro (compra e venda)
+  custo_cambio_pct_por_lado: 0.0   # 0: ações dos EUA negociadas na subconta USD da XTB (sem câmbio por trade). Sem subconta: 0.5
 
 execucao:
   hora_resumo_utc: 20   # a partir desta hora envia o resumo diário mesmo sem sinais novos
