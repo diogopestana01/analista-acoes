@@ -27,14 +27,14 @@ precos:
 
 sinais:
   setups: [rompimento, pullback]   # rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
-  mult_objetivo: 2.0     # objetivo = entrada ± 2 x ATR
-  mult_stop: 1.0         # stop = entrada ∓ 1 x ATR
+  mult_objetivo: 2.0     # só para setups de venda; as compras usam a regra de saída do setup (qualidade.*.saida)
+  mult_stop: 1.0
   max_dias: 5            # horizonte máximo (dias úteis)
   retorno_minimo_pct: 1.0       # fasquia: retorno médio esperado após custos (%) para um sinal ser enviado
   peso_base_casos: 10           # quantos casos "vale" a média do setup face ao histórico da própria ação
-  qualidade:                    # média do backtest por setup (bruta, %) e filtros [mín, máx]
-    pullback: {retorno_base_pct: 0.36, filtros: {}}
-    rompimento: {retorno_base_pct: 0.22, filtros: {}}
+  qualidade:                    # média do backtest por setup (bruta, %), regra de saída (src/saidas.py) e filtros [mín, máx]
+    pullback: {retorno_base_pct: 0.42, saida: sma5, filtros: {}}          # backtest 22/10: sma5 +0,42% vs atual +0,37%, ganha 64%
+    rompimento: {retorno_base_pct: 0.38, saida: atr_3_15, filtros: {}}    # atr_3_15 +0,38% vs atual +0,20%
     gap_volume: {retorno_base_pct: 0.19, filtros: {}}
     gap_continuacao: {retorno_base_pct: 0.04, filtros: {}}   # backtest 2024-26: +0,04% (738 trades), desligado
   filtro_queda_com_noticia: false   # true = retira pullbacks cuja queda tem notícia concreta (fica registado no CSV)

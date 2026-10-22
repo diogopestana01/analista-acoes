@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from . import indicadores
+from . import indicadores, saidas
 
 
 @dataclass(frozen=True)
@@ -97,6 +97,21 @@ def estatisticas_setup(d: pd.DataFrame, flags: pd.Series, direcao: str, cfg: dic
     }
 
 
+def estatisticas_saida(d: pd.DataFrame, flags: pd.Series, regra: saidas.Regra) -> dict:
+    """Histórico desta ação neste setup com a regra de saída do setup (compras)."""
+    idx = np.flatnonzero(flags.to_numpy()[:-1])  # exclui hoje
+    res = [r for r in (saidas.simular(d, i, regra) for i in idx) if r is not None]
+    if not res:
+        return {"n_historico": 0, "taxa_acerto": np.nan, "dias_mediana": np.nan, "retorno_medio_hist": np.nan}
+    ganhos = [dias for ret, dias, _ in res if ret > 0]
+    return {
+        "n_historico": len(res),
+        "taxa_acerto": len(ganhos) / len(res),           # % de trades que acabaram a ganhar
+        "dias_mediana": float(np.median(ganhos)) if ganhos else np.nan,
+        "retorno_medio_hist": float(np.mean([ret for ret, _, _ in res])),
+    }
+
+
 def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None = None) -> pd.DataFrame:
     """Percorre todas as ações e devolve os sinais do último dia disponível."""
     setups_ativos = setups_ativos or list(SETUPS)
@@ -116,15 +131,28 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
                 continue
             st = SETUPS[nome]
             sinal = 1 if st.direcao == "compra" else -1
-            est = estatisticas_setup(d, flags[nome], st.direcao, cfg)
+            if st.direcao == "compra":
+                regra = saidas.regra_do_setup(nome, cfg)
+                est = estatisticas_saida(d, flags[nome], regra)
+                objetivo = hoje["close"] + regra.mult_objetivo * hoje["atr14"] if regra.mult_objetivo else np.nan
+                stop = hoje["close"] - regra.mult_stop * hoje["atr14"] if regra.mult_stop else np.nan
+                nome_saida, max_dias = regra.nome, regra.max_dias
+            else:  # vendas (desligadas) mantêm a saída antiga
+                est = estatisticas_setup(d, flags[nome], st.direcao, cfg)
+                objetivo = hoje["close"] + sinal * cfg["mult_objetivo"] * hoje["atr14"]
+                stop = hoje["close"] - sinal * cfg["mult_stop"] * hoje["atr14"]
+                nome_saida, max_dias = "atr_2_1", cfg["max_dias"]
             linhas.append({
                 "ticker": ticker,
                 "data": hoje["data"],
                 "setup": nome,
                 "direcao": st.direcao,
                 "entrada": hoje["close"],
-                "objetivo": hoje["close"] + sinal * cfg["mult_objetivo"] * hoje["atr14"],
-                "stop": hoje["close"] - sinal * cfg["mult_stop"] * hoje["atr14"],
+                "objetivo": objetivo,
+                "stop": stop,
+                "saida": nome_saida,
+                "max_dias": max_dias,
+                "sma5": hoje["sma5"],
                 "atr_pct": hoje["atr_pct"],
                 "rsi14": hoje["rsi14"],
                 "vol_ratio": hoje["vol_ratio"],

@@ -70,7 +70,7 @@ def avaliar(sinal: dict, noticias: pd.DataFrame, cliente=None) -> Avaliacao:
         for r in noticias.head(20).itertuples()
     )
     pedido = (f"Ação: {sinal['ticker']}\nSinal técnico: {sinal['direcao']} ({sinal['setup']}), "
-              f"entrada {sinal['entrada']:.2f}, objetivo {sinal['objetivo']:.2f}, stop {sinal['stop']:.2f}\n\n"
+              f"entrada {sinal['entrada']:.2f}, horizonte até {sinal.get('max_dias', 5)} dias úteis\n\n"
               f"Notícias:\n{linhas}")
     try:
         extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} \

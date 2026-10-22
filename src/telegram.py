@@ -12,6 +12,8 @@ import os
 import pandas as pd
 import requests
 
+from . import saidas
+
 log = logging.getLogger(__name__)
 
 API = "https://api.telegram.org/bot{token}/sendMessage"
@@ -26,16 +28,22 @@ def _num(x: float) -> str:
 
 def formatar_sinal(s: dict) -> str:
     seta = "🟢 COMPRA" if s["direcao"] == "compra" else "🔴 VENDA (CFD)"
-    ganho = abs(s["objetivo"] / s["entrada"] - 1) * 100
-    perda = abs(s["stop"] / s["entrada"] - 1) * 100
+    tem_obj, tem_stop = pd.notna(s.get("objetivo")), pd.notna(s.get("stop"))
+    regra = saidas.REGRAS.get(s.get("saida") or "", None)
     dias = int(round(s["dias_estimados"]))
-    acerto = (f"{s['taxa_acerto'] * 100:.0f}% em {int(s['n_historico'])} casos"
+    acerto = (f"{s['taxa_acerto'] * 100:.0f}% a ganhar em {int(s['n_historico'])} casos"
               if s.get("n_historico", 0) and pd.notna(s.get("taxa_acerto")) else "sem histórico suficiente")
     linhas = [
         f"<b>{seta} {html.escape(s['ticker'])}</b>" + ("  📰 notícia forte" if s.get("noticia_forte") else ""),
         f"Entrada: <b>{_num(s['entrada'])}</b>",
-        f"Objetivo: <b>{_num(s['objetivo'])}</b> (+{ganho:.1f}%)",
-        f"Stop-loss: {_num(s['stop'])} (−{perda:.1f}%)",
+    ]
+    if tem_obj:
+        linhas.append(f"Objetivo: <b>{_num(s['objetivo'])}</b> (+{abs(s['objetivo'] / s['entrada'] - 1) * 100:.1f}%)")
+    if regra and regra.sair_se:
+        linhas.append(f"Saída: <b>{regra.texto_alerta()}</b> (aviso-te quando for)")
+    if tem_stop:
+        linhas.append(f"Stop-loss: {_num(s['stop'])} (−{abs(s['stop'] / s['entrada'] - 1) * 100:.1f}%)")
+    linhas += [
         f"Prazo estimado: <b>{dias} dia{'s' if dias != 1 else ''} úte{'is' if dias != 1 else 'l'}</b>",
         f"Setup: {SETUPS_PT.get(s['setup'], s['setup'])}",
     ]
@@ -43,7 +51,7 @@ def formatar_sinal(s: dict) -> str:
         custo = " (já desconta o câmbio da XTB)" if s.get("custo", 0) > 0 else ""
         linhas.append(f"Retorno médio esperado: <b>{s['retorno_esperado_liquido'] * 100:+.1f}%</b>{custo}")
     linhas += [
-        f"Histórico deste setup: {acerto}",
+        f"Histórico nesta ação: {acerto}",
     ]
     if s.get("resumo_noticias"):
         linhas.append(f"Notícias: {html.escape(str(s['resumo_noticias']))}")
@@ -53,10 +61,11 @@ def formatar_sinal(s: dict) -> str:
 
 
 def formatar_fecho(f: dict) -> str:
-    icone = {"objetivo": "✅", "stop": "🛑", "expirou": "⏱️"}[f["resultado"]]
+    icone = {"objetivo": "✅", "stop": "🛑", "expirou": "⏱️", "regra": "🔔"}[f["resultado"]]
     texto = {"objetivo": "Objetivo atingido: vende/fecha a posição",
              "stop": "Stop-loss atingido: fecha a posição",
-             "expirou": "Prazo terminou sem objetivo: considera fechar"}[f["resultado"]]
+             "expirou": "Prazo terminou: fecha a posição",
+             "regra": "Sinal de saída ao fecho: vende/fecha a posição"}[f["resultado"]]
     return (f"{icone} <b>{html.escape(f['ticker'])}</b> ({f['direcao']} de {f['data_sinal']})\n"
             f"{texto}. Entrada {_num(f['entrada'])}, último preço {_num(f['preco_atual'])} "
             f"({f['variacao_pct']:+.1f}%).")

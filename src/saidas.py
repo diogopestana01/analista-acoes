@@ -20,6 +20,17 @@ class Regra:
     max_dias: int
     sair_se: str | None = None    # condição ao fecho: "acima_sma5" | "rsi2_70" | None
 
+    def texto_alerta(self) -> str:
+        """Como sair, em linguagem simples, para a mensagem do Telegram."""
+        regra = {"acima_sma5": "vende quando fechar acima da média de 5 dias",
+                 "rsi2_70": "vende quando o RSI de 2 dias passar 70"}.get(self.sair_se)
+        partes = [regra] if regra else []
+        if not self.mult_objetivo and not regra:
+            partes.append(f"vende ao fim de {self.max_dias} dias")
+        else:
+            partes.append(f"no máximo {self.max_dias} dias")
+        return "; ".join(partes)
+
 
 REGRAS = {
     "atr_2_1": Regra("atr_2_1", "Objetivo 2xATR, stop 1xATR, 5 dias (a atual)", 2.0, 1.0, 5),
@@ -45,8 +56,20 @@ def simular(d: pd.DataFrame, i: int, r: Regra) -> tuple[float, int, str] | None:
             return min(stop, d["open"].iat[j]) / entrada - 1, j - i, "stop"   # abre abaixo = sai na abertura
         if obj is not None and d["high"].iat[j] >= obj:
             return max(obj, d["open"].iat[j]) / entrada - 1, j - i, "objetivo"
-        c = d["close"].iat[j]
-        if (r.sair_se == "acima_sma5" and c > d["sma5"].iat[j]) or \
-                (r.sair_se == "rsi2_70" and d["rsi2"].iat[j] > 70):
-            return c / entrada - 1, j - i, "regra"
+        if condicao_saida(r, d.iloc[j]):
+            return d["close"].iat[j] / entrada - 1, j - i, "regra"
     return d["close"].iat[i + r.max_dias] / entrada - 1, r.max_dias, "prazo"
+
+
+def condicao_saida(r: Regra, linha: pd.Series) -> bool:
+    """A regra de saída ao fecho dispara nesta linha de indicadores?"""
+    if r.sair_se == "acima_sma5":
+        return bool(linha["close"] > linha["sma5"])
+    if r.sair_se == "rsi2_70":
+        return bool(linha["rsi2"] > 70)
+    return False
+
+
+def regra_do_setup(setup: str, cfg: dict) -> Regra:
+    nome = cfg.get("qualidade", {}).get(setup, {}).get("saida", "atr_2_1")
+    return REGRAS[nome]

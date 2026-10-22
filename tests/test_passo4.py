@@ -17,7 +17,7 @@ def _precos(lows, highs, closes):
 def test_mensagem_tem_entrada_objetivo_e_prazo():
     m = telegram.formatar_sinal(SINAL)
     assert "COMPRA AAPL" in m and "100.00" in m and "104.00" in m and "3 dias úteis" in m
-    assert "58% em 12 casos" in m
+    assert "58% a ganhar em 12 casos" in m
 
 
 def test_acompanhamento_fecha_no_objetivo_e_nao_duplica():
@@ -29,7 +29,7 @@ def test_acompanhamento_fecha_no_objetivo_e_nao_duplica():
     assert hist.loc[0, "estado"] == "objetivo" and hist.loc[0, "dias"] == 2
     assert fechos[0]["resultado"] == "objetivo"
     assert "Objetivo atingido" in telegram.formatar_fecho(fechos[0])
-    assert "100% no objetivo" in acompanhamento.resumo(hist)
+    assert "100% a ganhar" in acompanhamento.resumo(hist)
 
 
 def test_acompanhamento_stop_e_expira():
@@ -48,3 +48,18 @@ def test_acompanhamento_fecha_depois_de_ler_csv(tmp_path):
                             "2026-10-01", 5).to_csv(caminho, index=False)
     h, f = acompanhamento.atualizar(acompanhamento.carregar(caminho), _precos([97], [101], [97.5]))
     assert h.loc[0, "estado"] == "stop" and h.loc[0, "data_fecho"] == "2026-10-02"
+
+
+def test_acompanhamento_sai_pela_media_de_5_dias():
+    sinal = {**SINAL, "objetivo": float("nan"), "stop": 90.0, "saida": "sma5", "max_dias": 5}
+    hist = acompanhamento.registar(acompanhamento.carregar(__import__("pathlib").Path("/x")),
+                                   pd.DataFrame([sinal]), "2026-10-07", 5)
+    datas = pd.bdate_range("2026-10-01", periods=8)
+    closes = [100, 100, 100, 100, 100, 95, 94, 101]   # entra a 05/10 (95)... sai a 12/10 acima da média
+    precos = pd.DataFrame({"data": datas, "ticker": "AAPL", "low": [c - 1 for c in closes],
+                           "high": [c + 1 for c in closes], "close": closes})
+    h, f = acompanhamento.atualizar(hist, precos)
+    assert h.loc[0, "estado"] == "regra" and f[0]["preco_atual"] == 101
+    assert "Sinal de saída" in telegram.formatar_fecho(f[0])
+    m = telegram.formatar_sinal({**sinal, "entrada": 100.0})
+    assert "média de 5 dias" in m and "Objetivo" not in m and "Stop-loss" in m
