@@ -36,7 +36,8 @@ sinais:
     pullback: {retorno_base_pct: 0.36, filtros: {}}
     rompimento: {retorno_base_pct: 0.22, filtros: {}}
     gap_volume: {retorno_base_pct: 0.19, filtros: {}}
-    gap_continuacao: {retorno_base_pct: 0.0, filtros: {}}   # novo; valor a definir pelo backtest
+    gap_continuacao: {retorno_base_pct: 0.04, filtros: {}}   # backtest 2024-26: +0,04% (738 trades), desligado
+  filtro_queda_com_noticia: false   # true = retira pullbacks cuja queda tem notícia concreta (fica registado no CSV)
   evitar_resultados_dias: 2     # não envia sinais (EUA) de empresas com resultados até 2 dias úteis à frente
   max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
   peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias

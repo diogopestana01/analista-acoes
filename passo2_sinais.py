@@ -28,8 +28,10 @@ def combinar(tecnico: pd.DataFrame, avaliacoes: dict, cfg: dict) -> pd.DataFrame
     s["pontuacao"] = (s["pont_tecnica"] + cfg["peso_noticias"] * s["sentimento"] * direcao).round(1)
     s.loc[s["risco_evento"], "pontuacao"] -= 10
     s = s[s["impacto_noticias"] != "contraria"]  # notícias contra o sinal eliminam-no
-    # Pullback só vale para quedas sem notícia: uma queda com causa concreta tende a continuar.
-    s = s[~((s["setup"] == "pullback") & s["causa_fundamental"])]
+    # Opcional: pullback só para quedas sem notícia. Desligado por defeito porque no backtest
+    # (2024-26) os pullbacks depois de um choque de baixa com volume renderam mais, não menos.
+    if cfg.get("filtro_queda_com_noticia"):
+        s = s[~((s["setup"] == "pullback") & s["causa_fundamental"])]
     s["noticia_forte"] = (s["impacto_noticias"] == "apoia") & (s["sentimento"] * direcao >= 0.5)
     return s.sort_values(["noticia_forte", "retorno_esperado_liquido"], ascending=False).reset_index(drop=True)
 

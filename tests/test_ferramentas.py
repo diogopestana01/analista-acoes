@@ -44,5 +44,14 @@ def test_pullback_com_causa_fundamental_e_eliminado():
                         "direcao": "compra", "pont_tecnica": 60.0, "retorno_esperado_liquido": 0.02})
     av = {t: sentimento.Avaliacao(sentimento=0, impacto="neutro", risco_evento=False,
                                   causa_fundamental=c, resumo="") for t, c in zip("ABC", [True, False, True])}
-    out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15})
+    out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15, "filtro_queda_com_noticia": True})
     assert sorted(out["ticker"]) == ["B", "C"]   # rompimento com notícia fica
+
+
+def test_filtro_queda_com_noticia_desligado_mantem_pullback():
+    tec = pd.DataFrame({"ticker": ["A"], "setup": ["pullback"], "direcao": "compra",
+                        "pont_tecnica": 60.0, "retorno_esperado_liquido": 0.02})
+    av = {"A": sentimento.Avaliacao(sentimento=0, impacto="neutro", risco_evento=False,
+                                    causa_fundamental=True, resumo="")}
+    out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15})
+    assert list(out["ticker"]) == ["A"] and bool(out["causa_fundamental"].iat[0])
