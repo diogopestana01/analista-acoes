@@ -24,6 +24,7 @@ def calcular(df: pd.DataFrame) -> pd.DataFrame:
     """df: preços de UMA ação ordenados por data. Devolve df com indicadores."""
     d = df.copy()
     c = d["close"]
+    d["sma5"] = c.rolling(5).mean()
     d["sma20"] = c.rolling(20).mean()
     d["sma50"] = c.rolling(50).mean()
     d["sma200"] = c.rolling(200).mean()

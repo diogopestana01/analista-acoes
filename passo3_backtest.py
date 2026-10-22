@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from src import indicadores, sinais
+from src import indicadores, saidas, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -69,6 +69,44 @@ def backtest(precos: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     custo = cfg.get("custo_cambio_pct_por_lado", 0.5) / 100 * 2
     t["retorno_liquido"] = t["retorno"] - np.where(t["regiao"] == "eua", custo, 0.0)
     return t.replace([np.inf, -np.inf], np.nan)
+
+
+def comparar_saidas(precos: pd.DataFrame, setups: list[str]) -> pd.DataFrame:
+    """Mesmas entradas, várias regras de saída (só setups de compra)."""
+    linhas = []
+    compras = [s for s in setups if sinais.SETUPS[s].direcao == "compra"]
+    for ticker, df in precos.sort_values("data").groupby("ticker"):
+        df = df.reset_index(drop=True)
+        if len(df) < 210:
+            continue
+        d = indicadores.calcular(df)
+        flags = sinais.detetar(d)
+        for nome in compras:
+            for i in np.flatnonzero(flags[nome].to_numpy()):
+                for regra in saidas.REGRAS.values():
+                    r = saidas.simular(d, i, regra)
+                    if r is not None:
+                        linhas.append((nome, regra.nome, d["data"].iat[i], r[0], r[1], r[2]))
+    return pd.DataFrame(linhas, columns=["setup", "saida", "data", "retorno", "dias", "motivo"])
+
+
+def resumir_saidas(t: pd.DataFrame) -> str:
+    if t.empty:
+        return ""
+    corte = t["data"].sort_values().iloc[len(t) // 2]
+    linhas = ["\n### Regras de saída (mesmas entradas): retorno médio %, 1.ª metade | 2.ª metade, "
+              "% de trades a ganhar, dias médios, retorno por dia"]
+    for setup, g in t.groupby("setup"):
+        linhas.append(f"\n{setup}:")
+        res = []
+        for saida, h in g.groupby("saida"):
+            a, b = h[h["data"] < corte]["retorno"].mean(), h[h["data"] >= corte]["retorno"].mean()
+            res.append((h["retorno"].mean(), saida, len(h), a, b, (h["retorno"] > 0).mean(), h["dias"].mean()))
+        for media, saida, n, a, b, ganha, dias in sorted(res, reverse=True):
+            linhas.append(f"  {saida:9s} {media*100:+.2f}% (n={n}) | {a*100:+.2f}% | {b*100:+.2f}% | "
+                          f"ganha {ganha*100:.0f}% | {dias:.1f} dias | {media/dias*100:+.3f}%/dia "
+                          f"| {saidas.REGRAS[saida].descricao}")
+    return "\n".join(linhas)
 
 
 def resumir(trades: pd.DataFrame) -> pd.DataFrame:
@@ -166,6 +204,9 @@ def main() -> None:
     print(resumo.to_string())
     print(por_caracteristica(trades))
     print(melhores_subconjuntos(trades))
+    t = comparar_saidas(precos[precos["ticker"].isin(filtrado["ticker"])], cfg["setups"])
+    t.to_csv(DADOS / "backtest_saidas.csv", index=False)
+    print(resumir_saidas(t))
 
 
 if __name__ == "__main__":

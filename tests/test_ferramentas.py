@@ -1,6 +1,8 @@
 """Testes das ferramentas de notícias e resultados (offline)."""
 from pathlib import Path
 
+import pytest
+
 import numpy as np
 import pandas as pd
 import yaml
@@ -97,3 +99,17 @@ def test_resumo_fecho_sem_chave_lista_movimentos(monkeypatch):
     txt = resumos.resumo_fecho(pd.Timestamp("2026-10-21", tz="UTC"), precos, filtrado, "3 sinais fechados",
                                {**cfg, "fecho": {**cfg["fecho"], "mais_subiram": 1, "mais_desceram": 1}})
     assert "A +20.0% (Alfa)" in txt and "B -10.0%" in txt and "S&amp;P 500 +0.5%" in txt
+
+
+def test_regras_de_saida():
+    from src import saidas
+    closes = np.r_[np.full(30, 100.0), [101.0, 103.0, 104.0, 99.0, 98.0, 97.0]]
+    d = indicadores.calcular(_precos(closes))
+    # ATR ~ 1; entrada 100 no dia 29
+    r = saidas.simular(d, 29, saidas.REGRAS["sma5"])
+    assert r[2] == "regra" and r[1] == 1 and np.isclose(r[0], 0.01)   # fecha acima da média de 5 dias logo no dia 30
+    r = saidas.simular(d, 29, saidas.REGRAS["fecho_5d"])
+    assert r == (pytest.approx(-0.02), 5, "prazo")
+    r = saidas.simular(d, 29, saidas.REGRAS["atr_2_1"])
+    assert r[2] == "objetivo" and r[1] == 2
+    assert saidas.simular(d, 33, saidas.REGRAS["fecho_5d"]) is None   # ainda não terminou
