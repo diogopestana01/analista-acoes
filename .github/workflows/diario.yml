@@ -2,13 +2,18 @@ name: Alertas do analista
 
 on:
   schedule:
-    - cron: "5,35 7-20 * * 1-5"   # de 30 em 30 min, 07:05 a 20:35 UTC, dias úteis (abertura da Europa ao fecho dos EUA)
+    - cron: "5,35 6-21 * * 1-5"   # de 30 em 30 min, 06:05 a 21:35 UTC, dias úteis (abertura da Europa ao fecho dos EUA)
   workflow_dispatch:           # permite correr à mão no separador Actions
     inputs:
       backtest:
         description: "Correr também o backtest (demora ~18 min)"
         type: boolean
         default: false
+      resumo:
+        description: "Enviar já um resumo de teste"
+        type: choice
+        options: [nenhum, manha, fecho]
+        default: nenhum
 
 permissions:
   contents: write              # para guardar o histórico de sinais
@@ -45,6 +50,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}   # vazio = claude-haiku-5-5
+          FORCAR_RESUMO: ${{ inputs.resumo }}
         run: python diario.py
       - name: Guardar histórico de sinais
         run: |

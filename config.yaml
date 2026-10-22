@@ -45,5 +45,5 @@ sinais:
   custo_cambio_pct_por_lado: 0.0   # 0: ações dos EUA negociadas na subconta USD da XTB (sem câmbio por trade). Sem subconta: 0.5
 
 execucao:
-  hora_resumo_utc: 20   # a partir desta hora envia o resumo diário mesmo sem sinais novos
-  minuto_resumo_utc: 30 # (às 20:35 UTC, a última execução do dia)
+  resumo_manha_utc: "06:30"   # resumo de abertura (antes da Europa abrir às 07:00 UTC)
+  minutos_apos_fecho_eua: 20  # resumo de fecho 20 min depois das 16:00 de Nova Iorque (acerta a hora de verão sozinho)

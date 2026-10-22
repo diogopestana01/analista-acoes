@@ -1,7 +1,7 @@
 name: Relógio
 
 # O agendamento (cron) do GitHub falha ou atrasa muito em repositórios novos.
-# Este "relógio" fica ligado e lança o diario.yml às :05 e :35 (07-20 UTC, dias úteis).
+# Este "relógio" fica ligado e lança o diario.yml às :05 e :35 (06-21 UTC, dias úteis).
 # Um job só pode durar 6 h, por isso ao fim de ~5h40 relança-se a si próprio.
 # O cron abaixo só serve para o reacender se a cadeia alguma vez parar.
 
@@ -32,7 +32,7 @@ jobs:
           while [ "$(date +%s)" -lt "$fim" ]; do
             dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
             slot="$(date -u +%Y%m%d%H)-$m"
-            if [ "$dia" -le 5 ] && [ "$h" -ge 7 ] && [ "$h" -le 20 ] \
+            if [ "$dia" -le 5 ] && [ "$h" -ge 6 ] && [ "$h" -le 21 ] \
                && { [ "$m" -eq 5 ] || [ "$m" -eq 35 ]; } && [ "$slot" != "$ultimo" ]; then
               echo "$(date -u) a lançar diario.yml"
               gh workflow run diario.yml -R "$REPO" --ref main || echo "falhou o lançamento"

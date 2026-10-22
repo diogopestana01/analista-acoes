@@ -55,3 +55,43 @@ def test_filtro_queda_com_noticia_desligado_mantem_pullback():
                                     causa_fundamental=True, resumo="")}
     out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15})
     assert list(out["ticker"]) == ["A"] and bool(out["causa_fundamental"].iat[0])
+
+
+def test_calendario_linhas_com_valor_e_hora():
+    from src import resultados as r
+    resp = {"data": {"rows": [{"symbol": "AAPL", "name": "Apple Inc.", "marketCap": "$3,000,000",
+                               "time": "time-after-hours"}, {"symbol": "X", "marketCap": "N/A"}]}}
+    linhas = r.linhas_do_dia(resp)
+    assert linhas[0] == {"ticker": "AAPL", "nome": "Apple Inc.", "quando": "depois do fecho",
+                         "valor_mercado": 3_000_000.0}
+    assert linhas[1]["valor_mercado"] == 0.0
+
+
+def test_hora_dos_resumos():
+    import diario
+    ex = {"resumo_manha_utc": "06:30", "minutos_apos_fecho_eua": 20}
+    # 22/10/2026: Nova Iorque em hora de verão (UTC-4) -> fecho às 20:00 UTC
+    assert diario.hora_dos_resumos(pd.Timestamp("2026-10-22 06:35", tz="UTC"), ex, {}) == (True, False)
+    assert diario.hora_dos_resumos(pd.Timestamp("2026-10-22 20:35", tz="UTC"), ex,
+                                   {"manha": "2026-10-22"}) == (False, True)
+    # 04/11/2026: hora de inverno (UTC-5) -> às 20:35 UTC ainda não fechou
+    assert diario.hora_dos_resumos(pd.Timestamp("2026-11-04 20:35", tz="UTC"), ex,
+                                   {"manha": "2026-11-04"}) == (False, False)
+    assert diario.hora_dos_resumos(pd.Timestamp("2026-11-04 21:35", tz="UTC"), ex,
+                                   {"manha": "2026-11-04", "fecho": "2026-11-04"}) == (False, False)
+
+
+def test_resumo_fecho_sem_chave_lista_movimentos(monkeypatch):
+    from src import resumos
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(resumos, "variacoes", lambda t: pd.DataFrame({"mercado": ["S&P 500"], "preco": [1.0],
+                                                                       "var_pct": [0.5]}))
+    monkeypatch.setattr(resumos, "manchetes_acao", lambda t, n, k=3: ["Beats estimates"])
+    datas = pd.bdate_range("2026-10-20", periods=2)
+    precos = pd.DataFrame({"data": list(datas) * 3, "ticker": ["A", "A", "B", "B", "C", "C"],
+                           "close": [10, 12, 10, 9, 10, 10.1]})
+    filtrado = pd.DataFrame({"ticker": ["A", "B", "C"], "nome": ["Alfa Inc.", "Beta Corp", ""]})
+    sobe, desce = resumos.maiores_movimentos(precos, filtrado, 1, 1)
+    assert sobe["ticker"].tolist() == ["A"] and desce["ticker"].tolist() == ["B"]
+    txt = resumos.resumo_fecho(pd.Timestamp("2026-10-21", tz="UTC"), precos, filtrado, "3 sinais fechados")
+    assert "A +20.0% (Alfa)" in txt and "B -10.0%" in txt and "S&amp;P 500 +0.5%" in txt
