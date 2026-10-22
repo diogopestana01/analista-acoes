@@ -29,3 +29,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-22,BAP,pullback,compra,368.9599914550781,,349.2746129666732,2.0,5,43.6,aberto,,,,sma5
 2026-10-22,CAKE,pullback,compra,111.83000183105469,,104.87295532401944,3.0,5,54.3,aberto,,,,sma5
 2026-10-22,HAE,pullback,compra,117.0,,110.13898672132274,1.5,5,57.5,aberto,,,,sma5
+2026-10-22,AMN,rompimento,compra,46.80500030517578,51.93958962811581,44.237705643705766,4.5,5,57.9,aberto,,,,atr_3_15
