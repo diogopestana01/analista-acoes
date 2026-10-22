@@ -22,7 +22,10 @@ INSTRUCOES = """És um analista de ações focado em operações de 1 dia a 1 se
 Recebes um sinal técnico e as notícias recentes de uma ação. Avalia se as notícias
 apoiam, contrariam ou são neutras para esse sinal no horizonte de 1 a 5 dias úteis.
 Dá mais peso a resultados, guidance, upgrades/downgrades, fusões, regulação e
-processos judiciais. Ignora notícias genéricas de mercado. Se não houver notícias
+processos judiciais. Ignora notícias genéricas de mercado.
+Diz também se o movimento recente do preço tem uma causa concreta nas notícias (causa_fundamental).
+Uma queda com causa (resultados fracos, corte de previsões, downgrade, processo) tende a continuar;
+uma queda sem notícia tende a recuperar. Se não houver notícias
 relevantes, o sentimento é 0 e o impacto "neutro". Escreve o resumo em português de Portugal,
 numa frase curta."""
 
@@ -31,6 +34,9 @@ class Avaliacao(BaseModel):
     sentimento: float = Field(description="-1 (muito negativo) a 1 (muito positivo)")
     impacto: Literal["apoia", "contraria", "neutro"]
     risco_evento: bool = Field(description="Há um evento próximo (resultados, decisão) que pode causar um gap")
+    causa_fundamental: bool = Field(default=False, description=(
+        "O movimento recente do preço (a subida ou a queda dos últimos dias) é explicado por uma notícia "
+        "concreta da empresa: resultados, previsões, recomendação de analista, processo, regulação, fusão"))
     resumo: str
 
 

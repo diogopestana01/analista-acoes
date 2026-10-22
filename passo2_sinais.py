@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import noticias, precos, sentimento, sinais
+from src import noticias, precos, resultados, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -23,10 +23,13 @@ def combinar(tecnico: pd.DataFrame, avaliacoes: dict, cfg: dict) -> pd.DataFrame
     s["impacto_noticias"] = s["ticker"].map(lambda t: avaliacoes[t].impacto if t in avaliacoes else "neutro")
     s["risco_evento"] = s["ticker"].map(lambda t: avaliacoes[t].risco_evento if t in avaliacoes else False)
     s["resumo_noticias"] = s["ticker"].map(lambda t: avaliacoes[t].resumo if t in avaliacoes else "")
+    s["causa_fundamental"] = s["ticker"].map(lambda t: avaliacoes[t].causa_fundamental if t in avaliacoes else False)
     direcao = s["direcao"].map({"compra": 1, "venda": -1})
     s["pontuacao"] = (s["pont_tecnica"] + cfg["peso_noticias"] * s["sentimento"] * direcao).round(1)
     s.loc[s["risco_evento"], "pontuacao"] -= 10
     s = s[s["impacto_noticias"] != "contraria"]  # notícias contra o sinal eliminam-no
+    # Pullback só vale para quedas sem notícia: uma queda com causa concreta tende a continuar.
+    s = s[~((s["setup"] == "pullback") & s["causa_fundamental"])]
     s["noticia_forte"] = (s["impacto_noticias"] == "apoia") & (s["sentimento"] * direcao >= 0.5)
     return s.sort_values(["noticia_forte", "retorno_esperado_liquido"], ascending=False).reset_index(drop=True)
 
@@ -54,6 +57,12 @@ def main() -> Path:
     tecnico = tecnico[tecnico["passa_filtros"]
                       & (tecnico["retorno_esperado_liquido"] * 100 >= cfg["retorno_minimo_pct"])]
     logging.info("Sinais fortes (antes das notícias): %d", len(tecnico))
+    # Radar de resultados: fora os sinais técnicos de empresas que apresentam contas nos próximos dias.
+    if cfg.get("evitar_resultados_dias", 0) and not tecnico.empty:
+        com_resultados = resultados.proximos(pd.Timestamp.now(tz="UTC"), cfg["evitar_resultados_dias"])
+        antes = len(tecnico)
+        tecnico = tecnico[~(tecnico["ticker"].isin(com_resultados) & (tecnico["setup"] != "gap_continuacao"))]
+        logging.info("Retirados por resultados próximos: %d", antes - len(tecnico))
     if tecnico.empty:
         pd.DataFrame().to_csv(saida, index=False)
         return saida
@@ -66,7 +75,7 @@ def main() -> Path:
         cache = {k: v for k, v in json.loads(cache_path.read_text()).items() if k.endswith(dia)}
     except (FileNotFoundError, ValueError):
         cache = {}
-    chave = lambda s: f"v2|{s['ticker']}|{s['setup']}|{dia}"
+    chave = lambda s: f"v3|{s['ticker']}|{s['setup']}|{dia}"
     falta = [s for s in candidatos.to_dict("records") if chave(s) not in cache]
     nomes = filtrado.set_index("ticker")["nome"].fillna("").to_dict()
     news = noticias.recolher({s["ticker"]: nomes.get(s["ticker"], "") for s in falta}) if falta else None

@@ -20,7 +20,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 RAIZ = Path(__file__).parent
 DADOS = RAIZ / "data"
 
-CARACTERISTICAS = ["vol_ratio", "rsi14", "ret20", "atr_pct", "dist_sma50", "amplitude_mercado"]
+CARACTERISTICAS = ["vol_ratio", "rsi14", "ret20", "atr_pct", "dist_sma50", "amplitude_mercado",
+                   "ret5", "gap", "pos_fecho"]
+BINARIAS = ["choque_baixa_5d"]   # 0/1: resumidas por valor, não por quintis
 
 
 def regiao(ticker: str) -> str:
@@ -54,7 +56,10 @@ def backtest(precos: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                                "regiao": regiao(ticker),
                                "vol_ratio": d["vol_ratio"].iat[i], "rsi14": d["rsi14"].iat[i],
                                "ret20": d["ret20"].iat[i], "atr_pct": d["atr_pct"].iat[i],
-                               "dist_sma50": d["close"].iat[i] / d["sma50"].iat[i] - 1})
+                               "dist_sma50": d["close"].iat[i] / d["sma50"].iat[i] - 1,
+                               "ret5": d["ret5"].iat[i], "gap": d["gap"].iat[i],
+                               "pos_fecho": d["pos_fecho"].iat[i],
+                               "choque_baixa_5d": d["choque_baixa_5d"].iat[i]})
     t = pd.DataFrame(trades)
     if t.empty:
         return t
@@ -96,6 +101,20 @@ def por_caracteristica(trades: pd.DataFrame) -> str:
             linhas.append(f"{c}: " + " | ".join(
                 f"{iv.left:.3g}..{iv.right:.3g}: {row.ret*100:+.2f}% obj {row.obj*100:.0f}%"
                 for iv, row in r.iterrows()))
+        for c in BINARIAS:
+            linhas.append(f"{c}: " + " | ".join(
+                f"{v:g}: {g['retorno'].mean()*100:+.2f}% obj {(g['resultado'] == 'objetivo').mean()*100:.0f}% "
+                f"(n={len(g)})" for v, g in t.groupby(c)))
+        # Regime: amplitude do mercado (% de ações acima da média de 50 dias) por patamar.
+        if t["amplitude_mercado"].notna().any():
+            pat = pd.cut(t["amplitude_mercado"], [0, 0.3, 0.4, 0.5, 0.6, 1.0])
+            linhas.append("regime: " + " | ".join(
+                f"{iv}: {g['retorno_liquido'].mean()*100:+.2f}% (n={len(g)})"
+                for iv, g in t.groupby(pat, observed=True)))
+        # Estabilidade: resultado por semestre.
+        sem = t["data"].dt.year.astype(str) + "S" + ((t["data"].dt.month > 6) + 1).astype(str)
+        linhas.append("por semestre: " + " | ".join(
+            f"{k}: {g['retorno_liquido'].mean()*100:+.2f}% (n={len(g)})" for k, g in t.groupby(sem)))
     return "\n".join(linhas)
 
 
@@ -114,6 +133,7 @@ def melhores_subconjuntos(trades: pd.DataFrame, n_min: int = 150, top: int = 12)
                 lo, hi = x[q == k].min(), x[q == k].max()
                 conds[f"{c} {lo:.3g}..{hi:.3g}"] = q == k
         conds.update({f"regiao {r}": t["regiao"] == r for r in t["regiao"].unique()})
+        conds.update({f"{c}={v:g}": t[c] == v for c in BINARIAS for v in t[c].dropna().unique()})
         nomes = list(conds)
         corte = t["data"].sort_values().iloc[len(t) // 2]  # 1.ª metade escolhe, 2.ª metade confirma
         treino = t["data"] < corte

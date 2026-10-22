@@ -37,4 +37,10 @@ def calcular(df: pd.DataFrame) -> pd.DataFrame:
     d["ret5"] = c.pct_change(5)
     d["ret20"] = c.pct_change(20)
     d["gap"] = d["open"] / c.shift() - 1
+    d["ret_dia"] = c.pct_change()
+    amplitude = (d["high"] - d["low"]).replace(0, np.nan)
+    d["pos_fecho"] = ((c - d["low"]) / amplitude).fillna(0.5)   # 0 = fechou no mínimo, 1 = no máximo
+    # Choque de baixa nos últimos 5 dias: gap ou queda forte com volume alto (quase sempre notícia).
+    choque = ((d["gap"] <= -0.04) | (d["ret_dia"] <= -0.06)) & (d["vol_ratio"] >= 2)
+    d["choque_baixa_5d"] = choque.astype(float).rolling(5, min_periods=1).max()
     return d
