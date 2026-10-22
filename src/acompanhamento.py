@@ -14,8 +14,9 @@ COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "s
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
+    # Colunas de texto lidas como texto: vazias, o pandas lia-as como números e falhava ao fechar.
     if caminho.exists():
-        return pd.read_csv(caminho)
+        return pd.read_csv(caminho, dtype={"data_sinal": str, "estado": str, "data_fecho": object})
     return pd.DataFrame(columns=COLUNAS)
 
 
@@ -36,6 +37,7 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame) -> tuple[pd.DataFrame, l
     """Verifica cada sinal aberto contra os preços desde a data do sinal."""
     fechos = []
     hist = hist.copy()
+    hist["data_fecho"] = hist["data_fecho"].astype(object)
     precos = precos.assign(data=pd.to_datetime(precos["data"]).dt.strftime("%Y-%m-%d"))
     for i, s in hist[hist["estado"] == "aberto"].iterrows():
         p = precos[(precos["ticker"] == s["ticker"]) & (precos["data"] > s["data_sinal"])].sort_values("data")

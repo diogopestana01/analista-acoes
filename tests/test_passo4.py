@@ -39,3 +39,12 @@ def test_acompanhamento_stop_e_expira():
     assert h.loc[0, "estado"] == "stop"
     h, f = acompanhamento.atualizar(base, _precos([99, 99], [101, 101], [100, 100.5]))
     assert h.loc[0, "estado"] == "expirou" and f[0]["preco_atual"] == 100.5
+
+
+def test_acompanhamento_fecha_depois_de_ler_csv(tmp_path):
+    # Bug de 2026-10-22: lido do CSV com colunas de fecho vazias, o fecho rebentava.
+    caminho = tmp_path / "hist.csv"
+    acompanhamento.registar(acompanhamento.carregar(caminho), pd.DataFrame([SINAL]),
+                            "2026-10-01", 5).to_csv(caminho, index=False)
+    h, f = acompanhamento.atualizar(acompanhamento.carregar(caminho), _precos([97], [101], [97.5]))
+    assert h.loc[0, "estado"] == "stop" and h.loc[0, "data_fecho"] == "2026-10-02"
