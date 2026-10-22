@@ -1,0 +1,45 @@
+name: Relógio
+
+# O agendamento (cron) do GitHub falha ou atrasa muito em repositórios novos.
+# Este "relógio" fica ligado e lança o diario.yml às :05 e :35 (07-20 UTC, dias úteis).
+# Um job só pode durar 6 h, por isso ao fim de ~5h40 relança-se a si próprio.
+# O cron abaixo só serve para o reacender se a cadeia alguma vez parar.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */4 * * *"
+
+permissions:
+  actions: write
+
+concurrency:
+  group: relogio
+  cancel-in-progress: false
+
+jobs:
+  relogio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Lançar o analista de 30 em 30 minutos
+        run: |
+          fim=$(( $(date +%s) + 340*60 ))
+          ultimo=""
+          while [ "$(date +%s)" -lt "$fim" ]; do
+            dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
+            slot="$(date -u +%Y%m%d%H)-$m"
+            if [ "$dia" -le 5 ] && [ "$h" -ge 7 ] && [ "$h" -le 20 ] \
+               && { [ "$m" -eq 5 ] || [ "$m" -eq 35 ]; } && [ "$slot" != "$ultimo" ]; then
+              echo "$(date -u) a lançar diario.yml"
+              gh workflow run diario.yml -R "$REPO" --ref main || echo "falhou o lançamento"
+              ultimo=$slot
+            fi
+            sleep 20
+          done
+      - name: Passar o testemunho ao próximo relógio
+        if: ${{ !cancelled() }}   # cancelar à mão desliga o relógio
+        run: gh workflow run relogio.yml -R "$REPO" --ref main
