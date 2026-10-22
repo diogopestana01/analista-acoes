@@ -1,0 +1,22 @@
+# Configuração dos resumos diários (independente do modelo de sinais em config.yaml).
+mercados:            # nome: ticker no Yahoo Finance
+  S&P 500: "^GSPC"
+  Nasdaq: "^IXIC"
+  Stoxx 600: "^STOXX"
+  DAX: "^GDAXI"
+  PSI: "PSI20.LS"
+  Futuros S&P: "ES=F"
+  Futuros Nasdaq: "NQ=F"
+  VIX: "^VIX"
+  EUR/USD: "EURUSD=X"
+  Brent: "BZ=F"
+  Ouro: "GC=F"
+
+manha:
+  pesquisas: ["stock market futures today", "European stocks open today", "premarket movers stocks"]
+  max_resultados: 12      # empresas com resultados no dia (as maiores do universo)
+
+fecho:
+  janela_nova_iorque: ["16:20", "16:50"]   # o resumo sai se a hora de Nova Iorque estiver nesta janela
+  mais_subiram: 6
+  mais_desceram: 4

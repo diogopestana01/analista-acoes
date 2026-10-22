@@ -44,6 +44,3 @@ sinais:
   max_alertas: 15               # limite de segurança contra excesso de mensagens
   custo_cambio_pct_por_lado: 0.0   # 0: ações dos EUA negociadas na subconta USD da XTB (sem câmbio por trade). Sem subconta: 0.5
 
-execucao:
-  resumo_manha_utc: "06:30"   # resumo de abertura (antes da Europa abrir às 07:00 UTC)
-  minutos_apos_fecho_eua: 20  # resumo de fecho 20 min depois das 16:00 de Nova Iorque (acerta a hora de verão sozinho)

@@ -1,6 +1,9 @@
 """Testes das ferramentas de notícias e resultados (offline)."""
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import yaml
 
 import passo2_sinais
 from src import indicadores, resultados, sentimento, sinais
@@ -67,18 +70,15 @@ def test_calendario_linhas_com_valor_e_hora():
     assert linhas[1]["valor_mercado"] == 0.0
 
 
-def test_hora_dos_resumos():
-    import diario
-    ex = {"resumo_manha_utc": "06:30", "minutos_apos_fecho_eua": 20}
-    # 22/10/2026: Nova Iorque em hora de verão (UTC-4) -> fecho às 20:00 UTC
-    assert diario.hora_dos_resumos(pd.Timestamp("2026-10-22 06:35", tz="UTC"), ex, {}) == (True, False)
-    assert diario.hora_dos_resumos(pd.Timestamp("2026-10-22 20:35", tz="UTC"), ex,
-                                   {"manha": "2026-10-22"}) == (False, True)
-    # 04/11/2026: hora de inverno (UTC-5) -> às 20:35 UTC ainda não fechou
-    assert diario.hora_dos_resumos(pd.Timestamp("2026-11-04 20:35", tz="UTC"), ex,
-                                   {"manha": "2026-11-04"}) == (False, False)
-    assert diario.hora_dos_resumos(pd.Timestamp("2026-11-04 21:35", tz="UTC"), ex,
-                                   {"manha": "2026-11-04", "fecho": "2026-11-04"}) == (False, False)
+def test_janela_do_fecho_so_uma_vez_por_dia():
+    import resumos_diarios as r
+    j = ["16:20", "16:50"]
+    # Verão em Nova Iorque (UTC-4): sai às 20:35 UTC, não às 21:35
+    assert r.na_janela_do_fecho(pd.Timestamp("2026-10-22 20:35", tz="UTC"), j)
+    assert not r.na_janela_do_fecho(pd.Timestamp("2026-10-22 21:35", tz="UTC"), j)
+    # Inverno (UTC-5): sai às 21:35 UTC, não às 20:35
+    assert not r.na_janela_do_fecho(pd.Timestamp("2026-11-04 20:35", tz="UTC"), j)
+    assert r.na_janela_do_fecho(pd.Timestamp("2026-11-04 21:35", tz="UTC"), j)
 
 
 def test_resumo_fecho_sem_chave_lista_movimentos(monkeypatch):
@@ -93,5 +93,7 @@ def test_resumo_fecho_sem_chave_lista_movimentos(monkeypatch):
     filtrado = pd.DataFrame({"ticker": ["A", "B", "C"], "nome": ["Alfa Inc.", "Beta Corp", ""]})
     sobe, desce = resumos.maiores_movimentos(precos, filtrado, 1, 1)
     assert sobe["ticker"].tolist() == ["A"] and desce["ticker"].tolist() == ["B"]
-    txt = resumos.resumo_fecho(pd.Timestamp("2026-10-21", tz="UTC"), precos, filtrado, "3 sinais fechados")
+    cfg = yaml.safe_load((Path(__file__).parents[1] / "config_resumos.yaml").read_text())
+    txt = resumos.resumo_fecho(pd.Timestamp("2026-10-21", tz="UTC"), precos, filtrado, "3 sinais fechados",
+                               {**cfg, "fecho": {**cfg["fecho"], "mais_subiram": 1, "mais_desceram": 1}})
     assert "A +20.0% (Alfa)" in txt and "B -10.0%" in txt and "S&amp;P 500 +0.5%" in txt

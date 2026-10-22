@@ -18,13 +18,6 @@ from . import noticias, resultados
 
 log = logging.getLogger(__name__)
 
-MERCADOS = {  # nome: ticker no Yahoo
-    "S&P 500": "^GSPC", "Nasdaq": "^IXIC", "Stoxx 600": "^STOXX", "DAX": "^GDAXI",
-    "PSI": "PSI20.LS", "Futuros S&P": "ES=F", "Futuros Nasdaq": "NQ=F", "VIX": "^VIX",
-    "EUR/USD": "EURUSD=X", "Brent": "BZ=F", "Ouro": "GC=F",
-}
-PESQUISAS_MANHA = ["stock market futures today", "European stocks open today", "premarket movers stocks"]
-
 INSTRUCOES = """És o analista de mercados de um investidor português que faz operações de 1 dia a 1 semana.
 Escreve em português de Portugal, direto e curto, para ler no telemóvel.
 Usa só os dados e as manchetes que recebes; não inventes números nem notícias.
@@ -116,9 +109,10 @@ def _linhas_movimentos(df: pd.DataFrame) -> list[str]:
             for r in df.itertuples()]
 
 
-def resumo_manha(hoje: pd.Timestamp, filtrado: pd.DataFrame, max_resultados: int = 12) -> str:
-    m = variacoes(MERCADOS)
-    titulos = manchetes_gerais(PESQUISAS_MANHA)
+def resumo_manha(hoje: pd.Timestamp, filtrado: pd.DataFrame, cfg: dict) -> str:
+    max_resultados = cfg["manha"]["max_resultados"]
+    m = variacoes(cfg["mercados"])
+    titulos = manchetes_gerais(cfg["manha"]["pesquisas"])
     cal = resultados.calendario(hoje)
     no_universo = set(filtrado["ticker"])
     cal = [c for c in cal if c["ticker"] in no_universo]
@@ -136,9 +130,10 @@ def resumo_manha(hoje: pd.Timestamp, filtrado: pd.DataFrame, max_resultados: int
             + (f"\n\n<b>Resultados hoje:</b> {html.escape(', '.join(linhas_res))}" if linhas_res else ""))[:4000]
 
 
-def resumo_fecho(hoje: pd.Timestamp, precos: pd.DataFrame, filtrado: pd.DataFrame, carteira: str) -> str:
-    m = variacoes({k: v for k, v in MERCADOS.items() if not k.startswith("Futuros")})
-    sobe, desce = maiores_movimentos(precos, filtrado)
+def resumo_fecho(hoje: pd.Timestamp, precos: pd.DataFrame, filtrado: pd.DataFrame, carteira: str,
+                 cfg: dict) -> str:
+    m = variacoes({k: v for k, v in cfg["mercados"].items() if not k.startswith("Futuros")})
+    sobe, desce = maiores_movimentos(precos, filtrado, cfg["fecho"]["mais_subiram"], cfg["fecho"]["mais_desceram"])
     motivos = []
     for r in pd.concat([sobe, desce]).itertuples():
         tit = manchetes_acao(r.ticker, r.nome)

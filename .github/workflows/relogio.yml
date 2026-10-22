@@ -1,7 +1,8 @@
 name: Relógio
 
 # O agendamento (cron) do GitHub falha ou atrasa muito em repositórios novos.
-# Este "relógio" fica ligado e lança o diario.yml às :05 e :35 (06-21 UTC, dias úteis).
+# Este "relógio" fica ligado e lança os sinais (diario.yml) às :05 e :35 das 07 às 21 UTC
+# e os resumos (resumos.yml) às 06:35, 20:35 e 21:35 UTC, nos dias úteis.
 # Um job só pode durar 6 h, por isso ao fim de ~5h40 relança-se a si próprio.
 # O cron abaixo só serve para o reacender se a cadeia alguma vez parar.
 
@@ -32,11 +33,20 @@ jobs:
           while [ "$(date +%s)" -lt "$fim" ]; do
             dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
             slot="$(date -u +%Y%m%d%H)-$m"
-            if [ "$dia" -le 5 ] && [ "$h" -ge 6 ] && [ "$h" -le 21 ] \
-               && { [ "$m" -eq 5 ] || [ "$m" -eq 35 ]; } && [ "$slot" != "$ultimo" ]; then
-              echo "$(date -u) a lançar diario.yml"
-              gh workflow run diario.yml -R "$REPO" --ref main || echo "falhou o lançamento"
+            if [ "$dia" -le 5 ] && { [ "$m" -eq 5 ] || [ "$m" -eq 35 ]; } && [ "$slot" != "$ultimo" ]; then
               ultimo=$slot
+              # Sinais: 07:05 a 21:35 UTC
+              if [ "$h" -ge 7 ] && [ "$h" -le 21 ]; then
+                echo "$(date -u) a lançar diario.yml"
+                gh workflow run diario.yml -R "$REPO" --ref main || echo "falhou o lançamento dos sinais"
+              fi
+              # Resumos (à parte): abertura às 06:35; fecho às 20:35 e 21:35 (o script escolhe a certa)
+              if [ "$h" -eq 6 ] && [ "$m" -eq 35 ]; then
+                gh workflow run resumos.yml -R "$REPO" --ref main -f tipo=manha || echo "falhou o resumo da manhã"
+              fi
+              if { [ "$h" -eq 20 ] || [ "$h" -eq 21 ]; } && [ "$m" -eq 35 ]; then
+                gh workflow run resumos.yml -R "$REPO" --ref main -f tipo=fecho || echo "falhou o resumo do fecho"
+              fi
             fi
             sleep 20
           done

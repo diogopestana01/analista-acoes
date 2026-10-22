@@ -1,0 +1,62 @@
+name: Resumos diários
+
+# À parte dos sinais: usa os preços guardados pelo modelo de sinais (só leitura) e não grava nada.
+# Lançado pelo relógio (abertura às 06:35 UTC, fecho às 20:35/21:35 UTC) ou à mão para testar.
+on:
+  workflow_dispatch:
+    inputs:
+      tipo:
+        description: "Que resumo"
+        type: choice
+        options: [manha, fecho]
+        default: manha
+      forcar:
+        description: "Enviar já (teste), mesmo fora da hora"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resumos
+  cancel-in-progress: false
+
+jobs:
+  resumo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ler os preços guardados pelos sinais
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/precos.parquet
+            data/universo.csv
+            data/universo_filtrado.csv
+            data/universo_atualizado_em.txt
+            data/avaliacoes_cache.json
+          key: dados-nenhum
+          restore-keys: dados-
+      - name: Enviar o resumo
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}
+        run: python resumos_diarios.py ${{ inputs.tipo }} ${{ inputs.forcar && '--forcar' || '' }}
+      - name: Avisar no Telegram se falhar
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=⚠️ O resumo (${{ inputs.tipo }}) falhou: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
