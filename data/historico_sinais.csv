@@ -44,3 +44,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-23,AES,pullback,compra,14.9399995803833,,14.852826938364226,2.0,5,62.6,aberto,,,,sma5
 2026-10-23,ECPG,pullback,compra,96.3949966430664,,89.47871599183213,2.0,5,51.2,aberto,,,,sma5
 2026-10-23,CVI,pullback,compra,57.599998474121094,,51.789959695982716,4.0,5,62.400000000000006,aberto,,,,sma5
+2026-10-23,PCVX,pullback,compra,60.83000183105469,,52.766552702535755,2.0,5,63.2,aberto,,,,sma5
