@@ -36,3 +36,5 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-23,GSAT,pullback,compra,82.04000091552734,,80.51414417269811,2.0,5,51.5,aberto,,,,sma5
 2026-10-23,BTSG,pullback,compra,60.04970169067383,,56.26837465934366,2.0,5,61.1,aberto,,,,sma5
 2026-10-23,PBR,rompimento,compra,26.204999923706055,28.350531396338873,25.132234187389646,5.0,5,64.5,aberto,,,,atr_3_15
+2026-10-23,DHL.DE,pullback,compra,56.68000030517578,,54.655538787048215,3.0,5,64.2,aberto,,,,sma5
+2026-10-23,GTE,rompimento,compra,11.890000343322754,13.275564805382617,11.197218112292823,5.0,5,59.6,aberto,,,,atr_3_15
