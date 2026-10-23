@@ -35,3 +35,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-22,OTEX,rompimento,compra,27.940000534057617,30.300849196133655,26.7595762030196,4.0,5,66.7,aberto,,,,atr_3_15
 2026-10-23,GSAT,pullback,compra,82.04000091552734,,80.51414417269811,2.0,5,51.5,aberto,,,,sma5
 2026-10-23,BTSG,pullback,compra,60.04970169067383,,56.26837465934366,2.0,5,61.1,aberto,,,,sma5
+2026-10-23,PBR,rompimento,compra,26.204999923706055,28.350531396338873,25.132234187389646,5.0,5,64.5,aberto,,,,atr_3_15
