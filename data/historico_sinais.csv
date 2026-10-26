@@ -53,3 +53,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-26,IOVA,pullback,compra,13.420000076293945,,11.633595403037457,1.0,5,54.1,aberto,,,,sma5
 2026-10-26,CFFI,rompimento,compra,109.7699966430664,118.27837736863037,105.51580628028442,5.0,5,54.8,aberto,,,,atr_3_15
 2026-10-26,NSIT,rompimento,compra,180.7899932861328,199.58436006910776,171.39280989464535,4.0,5,74.7,aberto,,,,atr_3_15
+2026-10-26,PAYS,pullback,compra,14.529999732971191,,13.030073756759052,2.5,5,62.5,aberto,,,,sma5
