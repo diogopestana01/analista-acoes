@@ -60,3 +60,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-27,PMTS,pullback,compra,25.905000686645508,,24.129308295690258,2.0,5,50.0,aberto,,,,sma5
 2026-10-27,IDT,pullback,compra,80.5199966430664,,75.83069209344424,2.0,5,61.099999999999994,aberto,,,,sma5
 2026-10-27,VEEV,pullback,compra,314.1300048828125,,295.90044949905626,3.0,5,73.5,aberto,,,,sma5
+2026-10-27,ACHC,pullback,compra,30.584999084472656,,28.145258919415326,3.0,5,59.1,aberto,,,,sma5
