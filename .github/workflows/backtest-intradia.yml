@@ -26,6 +26,7 @@ jobs:
             data/universo.csv
             data/universo_filtrado.csv
             data/universo_atualizado_em.txt
+            data/avaliacoes_cache.json
           key: dados-nenhum
           restore-keys: dados-
       - run: python passo3b_intradia.py
