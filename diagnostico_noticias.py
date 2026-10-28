@@ -23,6 +23,14 @@ def main(data: str | None = None) -> None:
     except FileNotFoundError:
         nomes = {}
     print(f"Sinais de {ficheiro.name}: {len(sinais)}")
+    import requests
+    for nome_url, url, cab in (("yahoo rss", noticias.YAHOO_RSS.format(t="AAPL"), noticias.NAVEGADOR),
+                               ("sec", noticias.SEC_ATOM.format(t="AAPL", tipo="8-K"), noticias.SEC_UA)):
+        try:
+            r = requests.get(url, timeout=20, headers=cab)
+            print(f"[{nome_url}] HTTP {r.status_code} {r.headers.get('content-type')} | {r.text[:300]!r}")
+        except Exception as e:
+            print(f"[{nome_url}] ERRO {e}")
     for s in sinais.drop_duplicates("ticker").to_dict("records"):
         t, nome = s["ticker"], nomes.get(s["ticker"], "")
         print(f"\n===== {t} ({noticias.limpar_nome(nome) or 'sem nome'}) | {s['setup']}")
