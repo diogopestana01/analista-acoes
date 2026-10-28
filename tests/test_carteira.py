@@ -392,3 +392,17 @@ def test_carteira_mostra_posicoes_ao_preco_de_agora(monkeypatch):
     assert "Valor agora: <b>101,00</b>" in texto and "Por realizar: <b>+1,00 USD</b>" in texto
     assert "agora 21,00 · <b>+1,00 USD</b> (+5,0%)" in texto and "dia 3 de 5" in texto
     assert "faltam +4,8%" in texto and "MAO</b>: 0,5 a 10,00 (5,00 USD, sem cotação agora)" in texto
+
+
+def test_alerta_de_noticia_vai_para_quem_tem_a_acao(monkeypatch):
+    e = _estado()
+    cart.comprar(e["utilizadores"][DONO], "GMAB", 0.4, 50.0, HOJE)
+    e["utilizadores"]["222"] = cart.novo_utilizador("Rui", CFG["regras_base"], "ativo", HOJE)
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"GMAB": 48.0})
+    alertas = [{"ticker": "GMAB", "motivo": "Processo em tribunal", "data_sinal": HOJE}]
+    msgs = bot.mensagens_vigia(e, alertas, DONO, lambda a: f"🕵️ {a['ticker']}: {a['motivo']}")
+    assert len(msgs) == 1 and msgs[0][0] == DONO  # o Rui não tem GMAB
+    assert "agora 48,00 (-4,0%)" in msgs[0][1] and msgs[0][2][0][0][1] == "v|GMAB|48.0000"
+    # Sem posição, o dono recebe só o aviso.
+    e["utilizadores"][DONO]["posicoes"].clear()
+    assert bot.mensagens_vigia(e, alertas, DONO, lambda a: "x") == [(DONO, "x", None)]

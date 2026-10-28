@@ -753,8 +753,15 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         linhas.append(f"🛑 Vender para travar a perda a <b>{cart.fmt(stop)}</b> ({cart.sinal_fmt((stop / e - 1) * 100, 1)}%)")
     dias = int(round(_num(s.get("max_dias")) or _num(s.get("dias_estimados")) or 5))
     linhas.append(f"⏳ Prazo: até {dias} dia{'s' if dias != 1 else ''} út{'eis' if dias != 1 else 'il'}")
-    if s.get("risco_evento"):
+    if isinstance(s.get("resultados_em"), str):
+        d = s["resultados_em"]
+        linhas.append(f"📅 Resultados a {d[8:10]}/{d[5:7]}, dentro do prazo: o preço pode dar um salto. "
+                      f"Considera vender antes.")
+    elif s.get("risco_evento"):
         linhas.append("⚠️ A empresa apresenta resultados em breve: o preço pode dar um salto, para cima ou para baixo.")
+    if isinstance(s.get("argumento_inv"), str) and s.get("argumento_inv"):
+        icone = {"rejeitar": "🚩", "duvidoso": "⚠️", "manter": "✔️"}.get(s.get("veredicto_inv"), "🕵️")
+        linhas.append(f"{icone} Advogado do diabo: {html.escape(s['argumento_inv'])}")
     linhas.append(rank)
     return "\n".join(linhas)
 
@@ -863,6 +870,33 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) 
             donos_avisados |= chat == dono
         if dono and not donos_avisados:
             out.append((dono, base, None))
+    return out
+
+
+def mensagens_vigia(estado: dict | None, alertas: list[dict], dono: str | None, base) -> list:
+    """Notícia de risco sobre uma ação: a cada pessoa que a tem, com o resultado ao preço de agora e
+    botões de venda; o dono recebe sempre. `base(a)` dá o texto do alerta (vigia.formatar)."""
+    out = []
+    px = _cotacoes(sorted({a["ticker"] for a in alertas}))
+    for a in alertas:
+        t, texto = a["ticker"], base(a)
+        dono_avisado = False
+        for chat, u in (cart.ativos(estado).items() if estado else []):
+            p = u["posicoes"].get(t)
+            if not p:
+                continue
+            agora = px.get(t)
+            if agora:
+                linha = (f"\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])}; agora "
+                         f"{cart.fmt(agora)} ({cart.sinal_fmt((agora / p['preco'] - 1) * 100, 1)}%).")
+                botoes = botoes_venda(t, agora)
+            else:
+                linha = f"\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])}."
+                botoes = [[("✏️ Vendi (escrever preço)", f"w|{t}"), ("🔒 Mantenho", f"m|{t}")]]
+            out.append((chat, texto + linha, botoes))
+            dono_avisado |= chat == dono
+        if dono and not dono_avisado:
+            out.append((dono, texto, None))
     return out
 
 

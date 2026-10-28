@@ -32,7 +32,7 @@ def ler_carteira() -> dict | None:
 
 
 def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dict) -> None:
-    """Notícias de risco novas sobre posições abertas. Por agora o alerta vai só para o dono."""
+    """Notícias de risco novas sobre posições abertas, para quem as tem (e para o dono)."""
     if not config.get("vigia", {}).get("ativo", False):
         return
     import json
@@ -50,8 +50,9 @@ def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dic
     except Exception as e:  # noqa: BLE001 — a vigia nunca pode parar os sinais
         logging.warning("Vigia das posições falhou: %s", e)
         return
-    for a in alertas:
-        telegram.enviar(vigia.formatar(a), dono)
+    # Cada pessoa que tem a ação recebe o alerta com botões de venda; o dono recebe sempre.
+    for chat, texto, botoes in bot.mensagens_vigia(ler_carteira(), alertas, dono, vigia.formatar):
+        telegram.enviar(texto, chat, botoes)
 
 
 def main() -> None:
@@ -60,6 +61,9 @@ def main() -> None:
     saida = passo2_sinais.main()
 
     precos = pd.read_parquet(DADOS / "precos.parquet")
+    # último preço guardado de cada ação: avalia as posições abertas (troca pela mais fraca, vigia)
+    ultimo = precos.sort_values("data").groupby("ticker")["close"].last()
+    bot.COTAR = lambda ts: {t: float(ultimo[t]) for t in ts if t in ultimo.index}
     hist = acompanhamento.carregar(HIST)
     hist, fechos = acompanhamento.atualizar(hist, precos)
     estado, dono = ler_carteira(), os.environ.get("TELEGRAM_CHAT_ID")
@@ -80,9 +84,6 @@ def main() -> None:
         cabecalho = (f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
         registos = [{**s, "data_sinal": data} for s in novos.to_dict("records")]
-        # último preço guardado de cada ação: serve para avaliar as posições abertas (troca pela mais fraca)
-        ultimo = precos.sort_values("data").groupby("ticker")["close"].last()
-        bot.COTAR = lambda ts: {t: float(ultimo[t]) for t in ts if t in ultimo.index}
         for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data):
             telegram.enviar(texto, chat, botoes)
 
