@@ -149,3 +149,24 @@ def test_intradia_momento_de_entrada():
     assert b.entrada(dia, e, "folga") == 4                    # 101.2 > 100.5 + 0.5
     assert b.entrada(dia, e, "depois_2h") == 3
     assert b.entrada(dia, e, "fecho") == 6
+
+
+def test_semanal_nao_ve_o_futuro():
+    # Subida forte só na última semana: de segunda a quinta o RSI semanal ainda é o da semana anterior.
+    closes = np.r_[np.full(200, 100.0) + np.sin(np.arange(200)), np.linspace(100, 130, 5)]
+    d = indicadores.calcular(_precos(closes))
+    dias = d["data"].dt.dayofweek
+    sexta_antes = d.index[(dias == 4) & (d.index < 200)][-1]
+    sexta_depois = d.index[(dias == 4) & (d.index >= 200)][0]
+    seg_a_qui = d.index[(d.index > sexta_antes) & (d.index < sexta_depois)]
+    assert len(seg_a_qui) == 4
+    assert (d.loc[seg_a_qui, "rsi_semanal"] == d.at[sexta_antes, "rsi_semanal"]).all()
+    assert d.at[sexta_depois, "rsi_semanal"] > d.at[sexta_antes, "rsi_semanal"]   # à sexta já conta a semana
+
+
+def test_semana_forte_detetada():
+    closes = np.r_[np.linspace(50, 100, 220), [101, 103, 105, 107, 110.0]]   # +10% em 5 dias, tendência
+    vols = np.r_[np.full(220, 1e6), np.full(5, 2e6)]
+    d = indicadores.calcular(_precos(closes, closes * 0.97, vols))
+    assert sinais.detetar(d)["semana_forte"].iat[-1]
+    assert "semana_forte" in yaml.safe_load(Path("config.yaml").read_text())["sinais"]["qualidade"]

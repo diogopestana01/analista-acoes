@@ -628,6 +628,8 @@ PORQUE = {
                 "costuma recuperar parte da queda em poucos dias. Foi o padrão com melhores resultados até agora.",
     "gap_volume": "A ação abriu com um salto forte e volume muito acima do normal (por exemplo depois de resultados) "
                   "e fechou em alta. Estes saltos às vezes continuam nos dias seguintes.",
+    "semana_forte": "A ação subiu 8% ou mais nesta semana, fechou perto do máximo do dia com volume forte e está "
+                    "numa tendência de subida. Este impulso costuma continuar mais uns dias.",
     "gap_continuacao": "No dia anterior a ação deu um salto forte com volume e aguentou-o. Isso mostra procura firme.",
 }
 

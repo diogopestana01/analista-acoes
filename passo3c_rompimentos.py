@@ -37,21 +37,8 @@ DADOS = RAIZ / "data"
 SAIDAS = ["atr_3_15", "sma5"]
 
 
-def semanal(d: pd.DataFrame) -> pd.DataFrame:
-    """Tendência e RSI do gráfico semanal, sem olhar para o futuro: de segunda a quinta usa a
-    semana anterior já fechada; à sexta usa a semana que fecha nesse dia (compra-se ao fecho)."""
-    c = d.set_index("data")["close"]
-    w = c.resample("W-FRI").last().dropna()
-    sma10 = w.rolling(10).mean()
-    out = pd.DataFrame({"semanal_sobe": ((w > sma10) & (sma10 > sma10.shift())).astype(float)
-                        .where(sma10.shift().notna()),
-                        "rsi_semanal": indicadores.rsi(w, 14)})
-    return out.reindex(c.index, method="ffill").reset_index(drop=True)
-
-
 def caracteristicas(df: pd.DataFrame) -> pd.DataFrame:
-    d = indicadores.calcular(df)
-    d = pd.concat([d, semanal(d)], axis=1)
+    d = indicadores.calcular(df)   # já traz semanal_sobe e rsi_semanal
     d["compressao"] = (d["high"].rolling(10).max() - d["low"].rolling(10).min()).shift() / d["atr14"].shift()
     d["esticado_atr"] = (d["close"] - d["max20"]) / d["atr14"]
     d["ret60"] = d["close"].pct_change(60)

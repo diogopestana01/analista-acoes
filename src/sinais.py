@@ -30,6 +30,8 @@ SETUPS = {
                         "Abertura com salto forte e volume muito acima do normal (ex. resultados), a fechar em alta"),
     "gap_continuacao": Setup("gap_continuacao", "compra",
                              "Dia seguinte a um salto forte com volume (ex. resultados) que se aguentou"),
+    "semana_forte": Setup("semana_forte", "compra",
+                          "Subiu 8% ou mais numa semana, fechou no topo do dia com volume forte, em tendência"),
     "rompimento_baixa": Setup("rompimento_baixa", "venda",
                               "Fecho abaixo do mínimo de 20 dias com volume forte, em tendência de descida"),
 }
@@ -47,6 +49,8 @@ def detetar(d: pd.DataFrame) -> pd.DataFrame:
     # Ontem: abriu +4% ou mais, volume 3x, fechou perto do máximo. Hoje: segurou o fecho de ontem.
     ontem_forte = (d["gap"] >= 0.04) & (d["vol_ratio"] >= 3) & (d["pos_fecho"] >= 0.7) & (d["close"] > d["open"])
     s["gap_continuacao"] = ontem_forte.shift(1, fill_value=False) & (d["close"] >= d["close"].shift())
+    s["semana_forte"] = (d["ret5"] >= 0.08) & (d["pos_fecho"] >= 0.8) & (d["vol_ratio"] >= 1.5) \
+        & (d["close"] > d["sma50"]) & (d["sma50"] > d["sma200"])
     s["rompimento_baixa"] = (d["close"] < d["min20"]) & (d["vol_ratio"] >= 1.5) \
         & (d["close"] < d["sma50"]) & (d["sma50"] < d["sma200"])
     return s.fillna(False)
@@ -155,6 +159,8 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
                 "sma5": hoje["sma5"],
                 "atr_pct": hoje["atr_pct"],
                 "rsi14": hoje["rsi14"],
+                "rsi_semanal": hoje.get("rsi_semanal", np.nan),
+                "semanal_sobe": hoje.get("semanal_sobe", np.nan),
                 "vol_ratio": hoje["vol_ratio"],
                 "ret20": hoje["ret20"],
                 "dist_sma50": hoje["close"] / hoje["sma50"] - 1,

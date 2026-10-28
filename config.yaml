@@ -26,7 +26,7 @@ precos:
   lote_rapido: 1000     # tickers por pedido nas atualizações de hora a hora
 
 sinais:
-  setups: [rompimento, pullback]   # rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
+  setups: [rompimento, pullback, semana_forte]   # semana_forte: estudo 28/10 +0,53% (4969 trades), positivo nas duas metades. rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
   mult_objetivo: 2.0     # só para setups de venda; as compras usam a regra de saída do setup (qualidade.*.saida)
   mult_stop: 1.0
   max_dias: 5            # horizonte máximo (dias úteis)
@@ -34,12 +34,16 @@ sinais:
   peso_base_casos: 10           # quantos casos "vale" a média do setup face ao histórico da própria ação
   qualidade:                    # média do backtest por setup (bruta, %), regra de saída (src/saidas.py) e filtros [mín, máx]
     pullback: {retorno_base_pct: 0.42, saida: sma5, filtros: {}}          # backtest 22/10: sma5 +0,42% vs atual +0,37%, ganha 64%
-    rompimento: {retorno_base_pct: 0.38, saida: atr_3_15, filtros: {}}    # atr_3_15 +0,38% vs atual +0,20%
+    # Rompimento e semana forte: só se o gráfico SEMANAL não estiver esticado (RSI semanal < 70).
+    # Estudo 28/10 (passo3c_rompimentos.py): rompimento +0,64%/+0,07% (1.ª/2.ª metade) -> +0,66%/+0,22% com o
+    # filtro; os de RSI semanal >= 70 deram -0,30% na 2.ª metade. Semana forte: +0,86%/+0,17% -> +0,89%/+0,24%.
+    rompimento: {retorno_base_pct: 0.46, saida: atr_3_15, filtros: {rsi_semanal: [null, 70]}}
+    semana_forte: {retorno_base_pct: 0.57, saida: atr_3_15, filtros: {rsi_semanal: [null, 70]}}
     gap_volume: {retorno_base_pct: 0.19, filtros: {}}
     gap_continuacao: {retorno_base_pct: 0.04, filtros: {}}   # backtest 2024-26: +0,04% (738 trades), desligado
   filtro_queda_com_noticia: false   # true = retira pullbacks cuja queda tem notícia concreta (fica registado no CSV)
-  evitar_resultados_dias: 2
-  pausa_apos_fecho_dias: 3      # uma ação fechada (objetivo, stop ou saída) não dá novo sinal durante 3 dias úteis     # não envia sinais (EUA) de empresas com resultados até 2 dias úteis à frente
+  evitar_resultados_dias: 2     # não envia sinais (EUA) de empresas com resultados até 2 dias úteis à frente
+  pausa_apos_fecho_dias: 3      # uma ação fechada (objetivo, stop ou saída) não dá novo sinal durante 3 dias úteis
   max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
   peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias
   max_alertas: 15               # limite de segurança contra excesso de mensagens

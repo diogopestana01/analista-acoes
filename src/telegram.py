@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 API = "https://api.telegram.org/bot{token}/sendMessage"
 SETUPS_PT = {"rompimento": "Rompimento em alta", "pullback": "Correção em tendência de alta",
              "gap_volume": "Salto na abertura com volume forte",
+             "semana_forte": "Semana forte com volume",
              "rompimento_baixa": "Rompimento em baixa"}
 
 

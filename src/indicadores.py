@@ -20,6 +20,18 @@ def atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
     return tr.ewm(alpha=1 / n, adjust=False, min_periods=n).mean()
 
 
+def semanal(d: pd.DataFrame) -> pd.DataFrame:
+    """Gráfico semanal sem olhar para o futuro: de segunda a quinta usa a semana anterior já
+    fechada; à sexta usa a semana que fecha nesse dia (os sinais compram ao fecho)."""
+    c = pd.Series(d["close"].to_numpy(), index=pd.to_datetime(d["data"]))
+    w = c.resample("W-FRI").last().dropna()
+    sma10 = w.rolling(10).mean()
+    out = pd.DataFrame({"semanal_sobe": ((w > sma10) & (sma10 > sma10.shift())).astype(float)
+                        .where(sma10.shift().notna()),
+                        "rsi_semanal": rsi(w, 14)})
+    return out.reindex(c.index, method="ffill").reset_index(drop=True).set_axis(d.index)
+
+
 def calcular(df: pd.DataFrame) -> pd.DataFrame:
     """df: preços de UMA ação ordenados por data. Devolve df com indicadores."""
     d = df.copy()
@@ -44,4 +56,7 @@ def calcular(df: pd.DataFrame) -> pd.DataFrame:
     # Choque de baixa nos últimos 5 dias: gap ou queda forte com volume alto (quase sempre notícia).
     choque = ((d["gap"] <= -0.04) | (d["ret_dia"] <= -0.06)) & (d["vol_ratio"] >= 2)
     d["choque_baixa_5d"] = choque.astype(float).rolling(5, min_periods=1).max()
+    # Tempo gráfico semanal (filtro dos rompimentos: estudo passo3c_rompimentos.py).
+    if "data" in d:
+        d[["semanal_sobe", "rsi_semanal"]] = semanal(d)
     return d
