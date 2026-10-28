@@ -73,6 +73,8 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame) -> tuple[pd.DataFrame, l
             continue
         k, r = linha
         preco = {"stop": s["stop"], "objetivo": s["objetivo"], "expirou": r["close"], "regra": r["close"]}[resultado]
+        if resultado == "stop" and pd.notna(r.get("open")):   # abriu já abaixo do stop: sai à abertura (pior)
+            preco = min(preco, r["open"]) if compra else max(preco, r["open"])
         hist.loc[i, ["estado", "data_fecho", "preco_fecho", "dias"]] = [resultado, r["data"], preco, k]
         var = (preco / s["entrada"] - 1) * (100 if compra else -100)
         fechos.append({**s.to_dict(), "resultado": resultado, "preco_atual": r["close"], "variacao_pct": var})
@@ -87,3 +89,12 @@ def resumo(hist: pd.DataFrame) -> str:
     ret = (f["preco_fecho"] / f["entrada"] - 1).where(compra, 1 - f["preco_fecho"] / f["entrada"])
     return (f"{len(f)} sinais fechados: {(ret > 0).mean() * 100:.0f}% a ganhar, "
             f"retorno médio {ret.mean() * 100:+.2f}% por sinal, {f['dias'].mean():.1f} dias em média.")
+
+
+def em_pausa(hist: pd.DataFrame, hoje: str, dias_uteis: int) -> set[str]:
+    """Ações fechadas há menos de `dias_uteis` dias úteis: não voltam a dar sinal logo a seguir."""
+    if not dias_uteis or hist.empty:
+        return set()
+    limite = (pd.Timestamp(hoje) - pd.offsets.BDay(dias_uteis)).strftime("%Y-%m-%d")
+    f = hist[(hist["estado"] != "aberto") & (hist["data_fecho"].astype(str) > limite)]
+    return set(f["ticker"])

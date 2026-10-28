@@ -37,7 +37,9 @@ def main() -> None:
         sinais = pd.DataFrame()
     data = saida.stem.removeprefix("sinais_") if saida else pd.Timestamp.today().strftime("%Y-%m-%d")
     abertos = set(hist.loc[hist["estado"] == "aberto", "ticker"])
-    novos = sinais[~sinais["ticker"].isin(abertos)] if not sinais.empty else sinais
+    # Pausa depois de fechar: evita voltar a comprar logo a seguir a um objetivo ou stop.
+    pausa = acompanhamento.em_pausa(hist, data, config["sinais"].get("pausa_apos_fecho_dias", 0))
+    novos = sinais[~sinais["ticker"].isin(abertos | pausa)] if not sinais.empty else sinais
 
     if not novos.empty:
         telegram.enviar(f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"

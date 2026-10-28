@@ -63,3 +63,13 @@ def test_acompanhamento_sai_pela_media_de_5_dias():
     assert "Sinal de saída" in telegram.formatar_fecho(f[0])
     m = telegram.formatar_sinal({**sinal, "entrada": 100.0})
     assert "média de 5 dias" in m and "Objetivo" not in m and "Stop-loss" in m
+
+
+def test_stop_com_gap_sai_a_abertura_e_pausa():
+    hist = acompanhamento.registar(acompanhamento.carregar(__import__("pathlib").Path("/x")),
+                                   pd.DataFrame([SINAL]), "2026-10-01", 5)
+    precos = _precos([95], [97], [96]).assign(open=96.0)   # abre a 96, abaixo do stop de 98
+    h, f = acompanhamento.atualizar(hist, precos)
+    assert h.loc[0, "estado"] == "stop" and h.loc[0, "preco_fecho"] == 96.0
+    assert acompanhamento.em_pausa(h, "2026-10-05", 3) == {"AAPL"}
+    assert acompanhamento.em_pausa(h, "2026-10-12", 3) == set()
