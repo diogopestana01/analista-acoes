@@ -106,8 +106,8 @@ def visita(chat: str, passo: int, origem: str) -> tuple[str, dict]:
 MENU = [["💼 Carteira", "📜 Histórico"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
         ["⚙️ Regras", "↩️ Desfazer"], ["🔄 Recomeçar", "❓ Ajuda"]]
 MENU_ACOES = {t for linha in MENU for t in linha}
-CONVIDAR = "🎟️ Convidar"
-MENU_DONO = MENU + [[CONVIDAR]]
+CONVIDAR, PESSOAS = "🎟️ Convidar", "👥 Pessoas"
+MENU_DONO = MENU + [[CONVIDAR, PESSOAS]]
 
 
 def _teclado_menu(menu: list) -> str:
@@ -243,16 +243,51 @@ def _start(estado, chat, nome, cfg, hoje, codigo: str = "") -> list:
         aviso = ("Este convite já foi usado ou caducou. Pede um novo a quem te convidou; "
                  "entretanto, pedi acesso por ti.\n" + aviso)
     if u and u["estado"] == "pendente":
-        return [_msg(chat, "O teu pedido ainda está à espera de aprovação.")]
+        # lembra o dono (pode não ter visto o primeiro pedido)
+        return [_msg(chat, "O teu pedido ainda está à espera de aprovação. Avisei outra vez; "
+                           "se tiveres um link de convite, abre-o e entras logo."),
+                _pedido_ao_dono(estado, chat, u["nome"], "🔔 Pede outra vez para usar o bot")]
     if u and u["estado"] == "recusado":
-        return []
+        return [_msg(chat, SO_CONVITE)]
     pendentes = sum(x["estado"] == "pendente" for x in estado["utilizadores"].values())
     if pendentes >= cfg.get("max_pendentes", 20):
         return [_msg(chat, "De momento não há vagas. Tenta mais tarde.")]
     estado["utilizadores"][chat] = cart.novo_utilizador(nome, cfg["regras_base"], "pendente", hoje)
     return [_msg(chat, f"Olá {nome}! Pedido enviado. Aviso quando fores aceite.\n{aviso}"),
-            _msg(estado["dono"], f"👤 Novo pedido para usar o bot: <b>{nome}</b> (chat {chat}).",
-                 [[("✅ Aceitar", f"a|{chat}"), ("❌ Recusar", f"r|{chat}")]])]
+            _pedido_ao_dono(estado, chat, nome, "👤 Novo pedido para usar o bot")]
+
+
+SO_CONVITE = ("Este bot é só por convite. Pede um link de convite a quem te falou dele, "
+              "abre-o e carrega em Iniciar.")
+
+
+def _pedido_ao_dono(estado: dict, chat: str, nome: str, titulo: str) -> tuple[str, dict]:
+    return _msg(estado["dono"], f"{titulo}: <b>{nome}</b>.",
+                [[("✅ Aceitar", f"a|{chat}"), ("❌ Recusar", f"r|{chat}")]])
+
+
+def _sem_acesso(u: dict | None) -> str:
+    """Resposta a quem ainda não pode usar o bot: nunca ficar calado."""
+    if not u:
+        return "Olá! Carrega em /start para começar."
+    if u["estado"] == "pendente":
+        return "O teu pedido ainda está à espera de aprovação. Aviso-te logo que fores aceite."
+    return SO_CONVITE
+
+
+def _pessoas(estado: dict) -> tuple[str, dict]:
+    """Painel do dono: quem usa o bot e pedidos por responder."""
+    nomes = {"ativo": "✅", "pendente": "⏳", "recusado": "⛔"}
+    linhas, botoes = ["👥 <b>Pessoas no bot</b>"], []
+    for c, x in sorted(estado["utilizadores"].items(), key=lambda kv: (kv[1]["estado"] != "pendente", kv[1]["nome"])):
+        extra = " (tu)" if c == estado.get("dono") else (" · convidado" if x.get("convidado") else "")
+        pos = f" · {len(x['posicoes'])} posições" if x["estado"] == "ativo" else ""
+        linhas.append(f"{nomes.get(x['estado'], '?')} {x['nome']}{extra}{pos} · desde {x.get('desde') or '?'}")
+        if x["estado"] in ("pendente", "recusado"):
+            botoes.append([(f"✅ Aceitar {x['nome'][:20]}", f"a|{c}")]
+                          + ([(f"❌ Recusar", f"r|{c}")] if x["estado"] == "pendente" else []))
+    linhas.append("\n✅ ativo · ⏳ à espera · ⛔ recusado")
+    return _msg(estado["dono"], "\n".join(linhas), botoes or None, menu=not botoes)
 
 
 # ---------- sinais no histórico ----------
@@ -292,8 +327,11 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
         return _start(estado, chat, nome, cfg, hoje, partes[1] if len(partes) > 1 else "")
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
-        return []
+        return [_msg(chat, _sem_acesso(u))]
     try:
+        if texto == PESSOAS and chat == estado.get("dono"):
+            u["aguarda"] = None
+            return [_pessoas(estado)]
         if texto == CONVIDAR and chat == estado.get("dono"):
             u["aguarda"] = None
             link = criar_convite(estado, hoje)
@@ -437,7 +475,7 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         if chat != estado.get("dono"):
             return out
         alvo = estado["utilizadores"].get(partes[1])
-        if not alvo or alvo["estado"] != "pendente":
+        if not alvo or alvo["estado"] not in ("pendente", "recusado") or (acao == "r" and alvo["estado"] != "pendente"):
             return out + [_tirar_botoes(cq)]
         alvo["estado"] = "ativo" if acao == "a" else "recusado"
         alvo["desde"] = hoje
@@ -447,7 +485,7 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
-        return out
+        return out + [_msg(chat, _sem_acesso(u))]
     ticker = partes[1] if len(partes) > 1 else ""
     if acao == "h":
         return out + [_msg(chat, TEMAS.get(ticker, TEMAS["sinal"])[1], botoes_ajuda())]

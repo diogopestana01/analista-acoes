@@ -47,6 +47,11 @@ def guardar_e_enviar(estado: dict, k: bytes, com_git: bool) -> None:
     log.error("Não consegui guardar a carteira no GitHub")
 
 
+def _chat(upd: dict) -> str:
+    m = upd.get("message") or (upd.get("callback_query") or {}).get("message") or {}
+    return str((m.get("chat") or {}).get("id", ""))
+
+
 def executar(chamadas: list) -> None:
     for metodo, params in chamadas:
         telegram.api(metodo, **params)
@@ -83,11 +88,16 @@ def main(minutos: float) -> None:
         for u in upds or []:
             estado["offset"] = u["update_id"] + 1
             try:
-                executar(bot.processar(estado, u, hist, hoje, cfg))
+                chamadas = bot.processar(estado, u, hist, hoje, cfg)
+                # registo sem ids nem nomes (os registos do Actions são públicos)
+                quem = (estado["utilizadores"].get(_chat(u)) or {}).get("estado", "novo")
+                log.info("Recebida %s de um utilizador %s: %d respostas",
+                         "mensagem" if "message" in u else "carregadela", quem, len(chamadas))
+                executar(chamadas)
             except Exception:  # uma mensagem estranha não pode parar o bot
                 log.exception("Falhou a processar %s", u.get("update_id"))
             mudou = True
-        if agora.dayofweek < 5 and agora.strftime("%H:%M") >= cfg["lembrete_utc"] and estado.get("lembrete") != hoje:
+        if agora.day_of_week < 5 and agora.strftime("%H:%M") >= cfg["lembrete_utc"] and estado.get("lembrete") != hoje:
             estado["lembrete"] = hoje
             executar(bot.lembretes(estado, hist, hoje))
             mudou = True
