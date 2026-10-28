@@ -106,7 +106,8 @@ def test_outras_pessoas_precisam_de_aprovacao_do_dono():
     out = bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
     assert e["utilizadores"]["222"]["estado"] == "pendente"
     assert any(p["chat_id"] == DONO and "Rui" in p["text"] for m, p in out if m == "sendMessage")
-    assert bot.processar(e, _txt("222", "/carteira"), HIST, HOJE, CFG) == []  # ainda não pode usar
+    out = bot.processar(e, _txt("222", "/carteira"), HIST, HOJE, CFG)  # ainda não pode usar, mas tem resposta
+    assert _textos(out) == ["O teu pedido ainda está à espera de aprovação. Aviso-te logo que fores aceite."]
     bot.processar(e, _cb("222", "a|222"), HIST, HOJE, CFG)  # só o dono aprova
     assert e["utilizadores"]["222"]["estado"] == "pendente"
     bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
@@ -114,7 +115,8 @@ def test_outras_pessoas_precisam_de_aprovacao_do_dono():
     out = bot.processar(e, _txt("222", "/carteira"), HIST, HOJE, CFG)
     assert "Carteira de Rui" in _textos(out)[0]
     # Um estranho não mexe na carteira de ninguém.
-    assert bot.processar(e, _cb("333", f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)[1:] == []
+    out = bot.processar(e, _cb("333", f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    assert _textos(out) == ["Olá! Carrega em /start para começar."] and not e["utilizadores"]["111"]["posicoes"]
 
 
 def test_mensagens_de_sinais_por_utilizador_com_tamanho():
@@ -358,3 +360,20 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     u["posicoes"]["VELHA"]["data"] = HOJE
     msgs = bot.mensagens_sinais(e, [{**nova, "pontuacao": 65.0}], "cab", DONO, hist, HOJE)
     assert len(msgs) == 1 and "Não entraram: NOVA (65)" in msgs[0][1]
+
+
+def test_ninguem_fica_sem_resposta_e_o_dono_ve_as_pessoas():
+    e = _estado()
+    bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
+    # Pedir outra vez lembra o dono, com os botões.
+    out = bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
+    assert any(p["chat_id"] == DONO and "a|222" in p.get("reply_markup", "") for m, p in out if m == "sendMessage")
+    bot.processar(e, _cb(DONO, "r|222"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
+    assert "só por convite" in _textos(out)[0]
+    # Painel do dono: lista as pessoas e deixa aceitar quem foi recusado.
+    out = bot.processar(e, _txt(DONO, "👥 Pessoas"), HIST, HOJE, CFG)
+    assert "Rui" in _textos(out)[0] and "⛔" in _textos(out)[0] and "a|222" in out[0][1]["reply_markup"]
+    assert "Pessoas" not in bot.processar(e, _txt("333", "👥 Pessoas"), HIST, HOJE, CFG)[0][1]["text"]
+    bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
+    assert e["utilizadores"]["222"]["estado"] == "ativo"
