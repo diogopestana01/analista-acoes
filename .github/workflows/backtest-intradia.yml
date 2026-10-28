@@ -3,13 +3,14 @@ name: Backtest intradiário
 # Só à mão. Estudos extra dos rompimentos:
 #   intradia     momento de entrada com preços de hora a hora (passo3b_intradia.py)
 #   rompimentos  filtros de vários tempos gráficos e setups novos (passo3c_rompimentos.py)
+#   confianca    treina e valida a confiança calibrada (passo3d_confianca.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia]
+        options: [rompimentos, intradia, confianca]
         default: rompimentos
 
 permissions:
@@ -41,6 +42,8 @@ jobs:
         if: inputs.estudo == 'intradia'
       - run: python passo3c_rompimentos.py
         if: inputs.estudo == 'rompimentos'
+      - run: python passo3d_confianca.py
+        if: inputs.estudo == 'confianca'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
