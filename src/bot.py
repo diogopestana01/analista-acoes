@@ -362,7 +362,7 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     """Um botão do menu fixo: responde já ou pergunta o que falta."""
     moeda = u["regras"]["moeda"]
     if botao == "💼 Carteira":
-        return _msg(chat, cart.formatar_carteira(u, cart.simular(hist, u["regras"], u.get("desde", ""))), menu=True)
+        return _msg(chat, carteira_agora(u, hist, hoje), menu=True)
     if botao == "📜 Histórico":
         return _msg(chat, cart.formatar_historico(u), menu=True)
     if botao == "🔄 Recomeçar":
@@ -432,7 +432,7 @@ def _comando(estado, chat: str, u: dict, cmd: str, args: list, hist, hoje: str) 
         u["aguarda"] = None
         return "Cancelado."
     if cmd == "/carteira":
-        return cart.formatar_carteira(u, cart.simular(hist, u["regras"], u.get("desde", "")))
+        return carteira_agora(u, hist, hoje)
     if cmd == "/historico":
         return cart.formatar_historico(u)
     if cmd == "/desfazer":
@@ -641,24 +641,36 @@ def _cotacoes(tickers: list[str]) -> dict:
         return {}
 
 
+def _conf_prazo(t: str, p: dict, hist: pd.DataFrame | None) -> tuple[float, int]:
+    """Confiança e prazo (dias úteis) do sinal que originou a posição."""
+    if hist is not None and p.get("sinal") and "|" in p["sinal"]:
+        h = hist[(hist["ticker"] == t) & (hist["data_sinal"].astype(str) == p["sinal"].split("|")[1])]
+        if not h.empty:
+            return (_num(h.iloc[-1].get("pontuacao")) or CONF_SEM_SINAL,
+                    int(_num(h.iloc[-1].get("max_dias")) or 5))
+    return CONF_SEM_SINAL, 5
+
+
 def forcas(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
     """Força de cada posição aberta = confiança do sinal x parte do prazo que ainda falta.
     Uma posição que já gastou o prazo quase todo vale pouco, mesmo que o sinal fosse bom."""
     px = _cotacoes(list(u["posicoes"]))
     out = []
     for t, p in u["posicoes"].items():
-        conf, prazo = CONF_SEM_SINAL, 5
-        if hist is not None and p.get("sinal") and "|" in p["sinal"]:
-            h = hist[(hist["ticker"] == t) & (hist["data_sinal"].astype(str) == p["sinal"].split("|")[1])]
-            if not h.empty:
-                conf = _num(h.iloc[-1].get("pontuacao")) or CONF_SEM_SINAL
-                prazo = int(_num(h.iloc[-1].get("max_dias")) or 5)
+        conf, prazo = _conf_prazo(t, p, hist)
         usados = int(np.busday_count(p.get("data") or hoje, hoje)) if hoje and p.get("data") else 0
         falta = max(prazo - usados, 0)
         preco = px.get(t) or p["preco"]
         out.append({"ticker": t, "conf": conf, "usados": usados, "prazo": prazo, "preco": preco,
                     "pct": (preco / p["preco"] - 1) * 100, "forca": conf * falta / prazo})
     return sorted(out, key=lambda x: (x["forca"], u["posicoes"][x["ticker"]].get("data", "")))
+
+
+def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str) -> str:
+    """💼 Carteira com as posições ao preço de agora e o prazo de cada sinal."""
+    prazos = {t: _conf_prazo(t, p, hist)[1] for t, p in u["posicoes"].items()}
+    return cart.formatar_carteira(u, cart.simular(hist, u["regras"], u.get("desde", "")),
+                                  _cotacoes(list(u["posicoes"])), hoje, prazos)
 
 
 def posicao_mais_fraca(u: dict, hist: pd.DataFrame | None, hoje: str) -> dict | None:
@@ -814,7 +826,7 @@ def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
     """Para quem começa (ou recomeça): os sinais em aberto mais fortes que cabem na carteira,
     ao preço de agora, com botões."""
     h = hist[(hist["estado"] == "aberto") & (hist["direcao"] == "compra")]
-    h = h[[cart.mercado(t) in u["regras"]["mercados"] and t not in u["posicoes"] for t in h["ticker"]]]
+    h = h[h["ticker"].map(lambda t: cart.mercado(t) in u["regras"]["mercados"] and t not in u["posicoes"]).astype(bool)]
     sinais = [{k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in r.items()}
               for r in h.assign(data_sinal=h["data_sinal"].astype(str),
                                 dias_estimados=h["dias_estimados"].fillna(5)).to_dict("records")]

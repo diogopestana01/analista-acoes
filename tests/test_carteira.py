@@ -377,3 +377,18 @@ def test_ninguem_fica_sem_resposta_e_o_dono_ve_as_pessoas():
     assert "Pessoas" not in bot.processar(e, _txt("333", "👥 Pessoas"), HIST, HOJE, CFG)[0][1]["text"]
     bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
     assert e["utilizadores"]["222"]["estado"] == "ativo"
+
+
+def test_carteira_mostra_posicoes_ao_preco_de_agora(monkeypatch):
+    hist = _hist([{"data_sinal": "2026-10-26", "ticker": "PDS", "entrada": 20.0, "objetivo": 22.0, "stop": 19.0,
+                   "max_dias": 5}])
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    u["desde"] = HOJE  # sem sinais desde hoje: a simulada não pode partir
+    cart.comprar(u, "PDS", 1, 20.0, "2026-10-26", bot._sinal(hist, "PDS"))
+    cart.comprar(u, "MAO", 0.5, 10.0, HOJE)
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"PDS": 21.0})
+    texto = _textos(bot.processar(e, _txt(DONO, "💼 Carteira"), hist, HOJE, CFG))[0]
+    assert "Valor agora: <b>101,00</b>" in texto and "Por realizar: <b>+1,00 USD</b>" in texto
+    assert "agora 21,00 · <b>+1,00 USD</b> (+5,0%)" in texto and "dia 3 de 5" in texto
+    assert "faltam +4,8%" in texto and "MAO</b>: 0,5 a 10,00 (5,00 USD, sem cotação agora)" in texto
