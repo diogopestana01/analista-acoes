@@ -22,7 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      # ref: main e não o commit do disparo: uma corrida que ficou em fila tem de partir do histórico
+      # mais recente, senão o "git pull --rebase" do fim dá conflito nos ficheiros de dados.
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
