@@ -1,7 +1,7 @@
 name: Relógio
 
 # O agendamento (cron) do GitHub falha ou atrasa muito em repositórios novos.
-# Este "relógio" fica ligado e lança os sinais (diario.yml) às :05 e :35 das 07 às 21 UTC
+# Este "relógio" fica ligado e lança os sinais (diario.yml) de 10 em 10 min (:05, :15, ... :55) das 07 às 21 UTC
 # e os resumos (resumos.yml) às 06:35, 20:35 e 21:35 UTC, nos dias úteis.
 # Um job só pode durar 6 h, por isso ao fim de ~5h40 relança-se a si próprio.
 # O cron abaixo só serve para o reacender se a cadeia alguma vez parar.
@@ -26,16 +26,16 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
     steps:
-      - name: Lançar o analista de 30 em 30 minutos
+      - name: Lançar o analista de 10 em 10 minutos
         run: |
           fim=$(( $(date +%s) + 340*60 ))
           ultimo=""
           while [ "$(date +%s)" -lt "$fim" ]; do
             dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
             slot="$(date -u +%Y%m%d%H)-$m"
-            if [ "$dia" -le 5 ] && { [ "$m" -eq 5 ] || [ "$m" -eq 35 ]; } && [ "$slot" != "$ultimo" ]; then
+            if [ "$dia" -le 5 ] && [ $(( m % 10 )) -eq 5 ] && [ "$slot" != "$ultimo" ]; then
               ultimo=$slot
-              # Sinais: 07:05 a 21:35 UTC
+              # Sinais: 07:05 a 21:55 UTC, de 10 em 10 min
               if [ "$h" -ge 7 ] && [ "$h" -le 21 ]; then
                 echo "$(date -u) a lançar diario.yml"
                 gh workflow run diario.yml -R "$REPO" --ref main || echo "falhou o lançamento dos sinais"
