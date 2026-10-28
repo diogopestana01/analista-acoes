@@ -27,8 +27,8 @@ Módulo à parte (`bot_carteira.py`, workflow "Carteira"). Cada sinal chega com 
 **Comprei / Outro preço / Ignorar** e a quantidade sugerida (por defeito 20% de uma carteira de 100 USD,
 máximo 5 posições, só ações dos EUA). Os avisos de venda chegam com **Vendi / Outro preço ou parte / Mantenho**.
 Ao lado da tua carteira há uma **simulada**, que entra em todos os sinais, para comparar.
-Comandos: `/carteira`, `/comprei`, `/vendi`, `/capital`, `/deposito`, `/levantamento`, `/regras`,
-`/desfazer`, `/historico`, `/ajuda`. Outras pessoas entram com `/start` e o dono aprova.
+Menu de botões fixo no fundo do chat (Carteira, Histórico, Comprei, Vendi, Depositar, Levantar,
+Regras, Desfazer, Ajuda); os comandos `/carteira`, `/comprei`, `/vendi`, etc. continuam a funcionar. Outras pessoas entram com `/start` e o dono aprova.
 O estado fica cifrado em `data/carteira.enc`. Para ligar: Actions > Carteira > Run workflow.
 
 ### Segredos no GitHub (Settings > Secrets and variables > Actions)

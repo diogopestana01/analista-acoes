@@ -162,3 +162,35 @@ def test_cofre_cifra_e_so_abre_com_a_chave(tmp_path, monkeypatch):
     monkeypatch.setenv("TELEGRAM_TOKEN", "999:outro")
     with pytest.raises(RuntimeError):
         cofre.carregar(caminho, cofre.chave())
+
+
+def test_menu_de_botoes_guia_compra_venda_deposito_e_regras():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    out = bot.processar(e, _txt(DONO, "/start", "Pestana"), HIST, HOJE, CFG)
+    assert "keyboard" in out[0][1]["reply_markup"] and "Carteira" in out[0][1]["reply_markup"]
+    bot.processar(e, _txt(DONO, "🟢 Comprei"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt(DONO, "gmab"), HIST, HOJE, CFG)
+    assert "GMAB" in _textos(out)[0] and u["aguarda"]["data"] == HOJE
+    bot.processar(e, _txt(DONO, "50 0,2"), HIST, HOJE, CFG)
+    assert u["posicoes"]["GMAB"]["qtd"] == 0.2 and u["posicoes"]["GMAB"]["stop"] == 47.0
+    out = bot.processar(e, _txt(DONO, "🔴 Vendi"), HIST, HOJE, CFG)
+    assert "w|GMAB" in out[0][1]["reply_markup"]
+    bot.processar(e, _cb(DONO, "w|GMAB"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "55"), HIST, HOJE, CFG)
+    assert "GMAB" not in u["posicoes"]
+    bot.processar(e, _txt(DONO, "💵 Depositar"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "50"), HIST, HOJE, CFG)
+    assert u["caixa"] == pytest.approx(151.0)
+    out = bot.processar(e, _txt(DONO, "⚙️ Regras"), HIST, HOJE, CFG)
+    assert "p|10" in out[0][1]["reply_markup"]
+    bot.processar(e, _cb(DONO, "p|10"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "x|10"), HIST, HOJE, CFG)
+    assert u["regras"]["pct"] == 10 and u["regras"]["max_posicoes"] == 10
+    bot.processar(e, _cb(DONO, "k|"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "200"), HIST, HOJE, CFG)
+    assert u["caixa"] == pytest.approx(200.0)
+    # Carregar num botão do menu a meio de uma pergunta cancela a pergunta.
+    bot.processar(e, _txt(DONO, "🟢 Comprei"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "💼 Carteira"), HIST, HOJE, CFG)
+    assert u["aguarda"] is None
