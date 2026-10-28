@@ -5,6 +5,7 @@ devolve a lista de chamadas à API a fazer, como (método, parâmetros). Assim t
 """
 from __future__ import annotations
 
+import html
 import json
 import secrets
 
@@ -278,7 +279,8 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
     if not texto:
         return []
     chat = str(msg["chat"]["id"])
-    nome = (msg.get("from") or {}).get("first_name") or "amigo"
+    # escapado: as mensagens vão em HTML e um nome com "&" ou "<" fazia o Telegram recusá-las
+    nome = html.escape((msg.get("from") or {}).get("first_name") or "amigo")
     partes = texto.split()
     cmd = partes[0].split("@")[0].lower()
     if cmd == "/start":

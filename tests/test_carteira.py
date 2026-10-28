@@ -320,3 +320,10 @@ def test_ajuda_por_temas_e_porque_do_sinal():
     assert "t|fim|a" in out[-1][1]["reply_markup"]
     texto = _textos(bot.processar(e, _cb(DONO, f"q|GMAB|{HOJE}"), HIST, HOJE, CFG))[0]
     assert "Porquê GMAB" in texto and "Confiança 70/100" in texto
+
+
+def test_nome_com_simbolos_nao_parte_o_html():
+    e = _estado()
+    out = bot.processar(e, _txt("222", "/start", "Zé & <Rui>"), HIST, HOJE, CFG)
+    assert all("<Rui>" not in p["text"] for m, p in out if m == "sendMessage")
+    assert "Zé &amp; &lt;Rui&gt;" in out[1][1]["text"]
