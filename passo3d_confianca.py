@@ -89,7 +89,8 @@ def main(guardar: bool = False) -> None:
     print(f"Treino até {corte:%Y-%m-%d} ({len(treino)}), teste depois ({len(teste)})")
 
     base = treino.groupby("setup")["retorno"].apply(lambda r: (r > 0).mean())
-    out = relatorio(teste, teste["setup"].map(base).fillna(y_tr.mean()).to_numpy(), "Só o setup (referência)")
+    p_ref = teste["setup"].map(base).fillna(y_tr.mean()).to_numpy()
+    out = relatorio(teste, p_ref, "Só o setup (referência)")
     m = confianca.treinar(treino, y_tr, setups)
     p_teste = confianca.prever(teste, m)
     out += relatorio(teste, p_teste, "Modelo, no período de teste")
@@ -100,9 +101,10 @@ def main(guardar: bool = False) -> None:
     y_te = (teste["retorno"] > 0).to_numpy().astype(int)
     q = pd.qcut(p_teste, 5, labels=False, duplicates="drop")
     melhora = y_te[q == q.max()].mean() - y_te[q == 0].mean()
-    if auc(y_te, p_teste) < 0.53 or melhora < 0.05:
-        print(f"\nNÃO GUARDAR: no teste a confiança quase não separa ganhadores de perdedores "
-              f"(diferença entre o 5.º e o 1.º quintil: {melhora*100:+.1f} pontos).")
+    ganho_auc = auc(y_te, p_teste) - auc(y_te, p_ref)
+    if ganho_auc < 0.02 or melhora < 0.05:
+        print(f"\nNÃO GUARDAR: no teste o modelo não separa melhor do que saber só o setup "
+              f"(AUC +{ganho_auc:.3f} face à referência; 5.º vs 1.º quintil {melhora*100:+.1f} pontos).")
         return
     final = confianca.treinar(t, (t["retorno"] > 0).astype(int), setups)
     final["treinado_em"] = f"{pd.Timestamp.now():%Y-%m-%d}"
