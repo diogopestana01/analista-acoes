@@ -232,3 +232,22 @@ def test_placar_por_estrategia():
     p = acompanhamento.placar(h, "2026-10-28")
     assert "Correção em tendência: 1 fechados, 100% a ganhar, +10.0% | 2 fechados, 50% a ganhar" in p
     assert "Rompimento: 1 fechados" in p
+
+
+def test_vigia_so_pergunta_com_manchetes_novas_e_uma_vez():
+    from src import investigador, vigia
+    abertos = pd.DataFrame({"ticker": ["A", "B"], "data_sinal": ["2026-10-26", "2026-10-26"],
+                            "entrada": 10.0, "setup": "pullback"})
+    riscos = {"A": pd.DataFrame({"titulo": ["A announces stock offering", "Velha"], "fonte": "x",
+                                 "data": pd.to_datetime(["2026-10-28", "2026-10-01"], utc=True)}),
+              "B": pd.DataFrame({"titulo": ["Velha B"], "fonte": "x", "data": pd.to_datetime(["2026-10-01"], utc=True)})}
+    perguntas = []
+
+    def rever(pos, novos):
+        perguntas.append((pos["ticker"], list(novos["titulo"])))
+        return investigador.AlertaPosicao(sair=True, motivo="Emissão de ações anunciada.")
+    cache = {}
+    a = vigia.vigiar(abertos, {}, cache, "2026-10-28", pesquisar=lambda t, n: riscos[t], rever=rever)
+    assert [x["ticker"] for x in a] == ["A"] and perguntas == [("A", ["A announces stock offering"])]
+    assert vigia.vigiar(abertos, {}, cache, "2026-10-28", pesquisar=lambda t, n: riscos[t], rever=rever) == []
+    assert len(perguntas) == 1 and "Notícia nova sobre A" in vigia.formatar(a[0])

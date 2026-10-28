@@ -13,7 +13,7 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import acompanhamento, bot, cofre, telegram
+from src import acompanhamento, bot, cofre, telegram, vigia
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -29,6 +29,29 @@ def ler_carteira() -> dict | None:
     except Exception as e:  # noqa: BLE001
         logging.warning("Carteira indisponível: %s", e)
         return None
+
+
+def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dict) -> None:
+    """Notícias de risco novas sobre posições abertas. Por agora o alerta vai só para o dono."""
+    if not config.get("vigia", {}).get("ativo", False):
+        return
+    import json
+    caminho = DADOS / "avaliacoes_cache.json"
+    try:
+        cache = json.loads(caminho.read_text())
+        # Uma vez por hora (a primeira corrida de cada hora) para não abusar do Google Notícias.
+        hora = f"vigia_hora|{pd.Timestamp.now(tz='UTC'):%H}|{data}"
+        if hora in cache:
+            return
+        cache[hora] = True
+        nomes = pd.read_csv(DADOS / "universo_filtrado.csv").set_index("ticker")["nome"].fillna("").to_dict()
+        alertas = vigia.vigiar(hist[hist["estado"] == "aberto"], nomes, cache, data)
+        caminho.write_text(json.dumps(cache))
+    except Exception as e:  # noqa: BLE001 — a vigia nunca pode parar os sinais
+        logging.warning("Vigia das posições falhou: %s", e)
+        return
+    for a in alertas:
+        telegram.enviar(vigia.formatar(a), dono)
 
 
 def main() -> None:
@@ -63,6 +86,7 @@ def main() -> None:
         for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data):
             telegram.enviar(texto, chat, botoes)
 
+    vigiar_posicoes(hist, data, dono, config)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"])
     hist.to_csv(HIST, index=False)
 

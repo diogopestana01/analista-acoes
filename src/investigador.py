@@ -104,3 +104,37 @@ def contestar(s: dict, noticias: pd.DataFrame, riscos: pd.DataFrame | None = Non
     except Exception as e:
         log.warning("Investigador falhou para %s: %s", s.get("ticker"), e)
         return None
+
+
+INSTRUCOES_POSICAO = """Vigias uma posição de compra já aberta (trade de 1 a 5 dias úteis). Recebes as manchetes de risco
+publicadas DEPOIS da compra. Diz se há um facto novo, concreto e desta empresa que justifique vender já, antes do
+stop: emissão de ações, investigação ou processo novo, downgrade forte, corte de previsões, saída do CEO, aviso
+de exclusão da bolsa, contas não fiáveis. Notícias genéricas, de outras empresas, antigas ou já conhecidas
+antes da compra não contam: nesse caso sair = false. Escreve o motivo em português de Portugal, numa frase."""
+
+
+class AlertaPosicao(BaseModel):
+    sair: bool = Field(description="true só se houver um facto novo e concreto que justifique vender já")
+    motivo: str
+
+
+def rever_posicao(pos: dict, riscos: pd.DataFrame, cliente=None) -> AlertaPosicao | None:
+    """None sem chave da Anthropic ou se o pedido falhar."""
+    if cliente is None and not os.environ.get("ANTHROPIC_API_KEY"):
+        return None
+    try:
+        import anthropic
+
+        cliente = cliente or anthropic.Anthropic()
+        pedido = (f"Posição: {pos['ticker']} comprada a {pos['entrada']:.2f} em {pos['data_sinal']} "
+                  f"(setup {pos['setup']}).\n\nManchetes de risco depois da compra:\n{_linhas(riscos, 10)}")
+        extra = {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"} \
+            if MODELO in _COM_FALLBACK else {}
+        resp = cliente.beta.messages.parse(
+            model=MODELO, max_tokens=800, system=INSTRUCOES_POSICAO,
+            messages=[{"role": "user", "content": pedido}],
+            output_config={"effort": "low"}, output_format=AlertaPosicao, **extra)
+        return resp.parsed_output
+    except Exception as e:
+        log.warning("Vigia da posição %s falhou: %s", pos.get("ticker"), e)
+        return None
