@@ -82,6 +82,7 @@ def main() -> Path:
     # (após custos) acima da fasquia. Não há número fixo de sinais por dia.
     tecnico = tecnico[tecnico["passa_filtros"]
                       & (tecnico["retorno_esperado_liquido"] * 100 >= cfg["retorno_minimo_pct"])]
+    tecnico = tecnico.drop_duplicates("ticker")   # vários setups na mesma ação: fica o de maior retorno esperado
     logging.info("Sinais fortes (antes das notícias): %d", len(tecnico))
     # Radar de resultados: fora os sinais técnicos de empresas que apresentam contas nos próximos dias.
     if cfg.get("evitar_resultados_dias", 0) and not tecnico.empty:
