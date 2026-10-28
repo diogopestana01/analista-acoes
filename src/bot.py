@@ -20,12 +20,13 @@ Usa o menu de botões em baixo:
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
 ⚙️ Regras: % por sinal, máximo de posições e capital
 ↩️ Desfazer: anula a última operação
+🔄 Recomeçar: põe a carteira a zero (pede confirmação)
 
 Os sinais e os avisos de venda trazem os seus próprios botões.
 Se o menu desaparecer, envia /start."""
 
 MENU = [["💼 Carteira", "📜 Histórico"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
-        ["⚙️ Regras", "↩️ Desfazer", "❓ Ajuda"]]
+        ["⚙️ Regras", "↩️ Desfazer"], ["🔄 Recomeçar", "❓ Ajuda"]]
 MENU_ACOES = {t for linha in MENU for t in linha}
 TECLADO_MENU = json.dumps({"keyboard": [[{"text": t} for t in linha] for linha in MENU],
                            "resize_keyboard": True, "is_persistent": True})
@@ -142,6 +143,10 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
         return _msg(chat, cart.formatar_carteira(u, cart.simular(hist, u["regras"], u.get("desde", ""))), menu=True)
     if botao == "📜 Histórico":
         return _msg(chat, cart.formatar_historico(u), menu=True)
+    if botao == "🔄 Recomeçar":
+        return _msg(chat, f"🔄 Recomeçar a carteira do zero? Apaga posições e operações e volta a "
+                          f"{cart.fmt(u['regras']['capital_inicial'])} {moeda}. As regras ficam iguais.",
+                    [[("✅ Sim, recomeçar", "z|sim"), ("❌ Cancelar", "z|nao")]])
     if botao == "↩️ Desfazer":
         return _msg(chat, cart.desfazer(u), menu=True)
     if botao == "❓ Ajuda":
@@ -255,6 +260,7 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         if acao == "a":
             out.append(_msg(partes[1], f"✅ Foste aceite! A tua carteira começa com "
                                        f"{cart.fmt(alvo['caixa'])} {alvo['regras']['moeda']} (muda em ⚙️ Regras).\n\n{AJUDA}", menu=True))
+            out += sinais_abertos(partes[1], alvo, hist)
         return out
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
@@ -269,6 +275,13 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         r = u["regras"]
         return out + [_tirar_botoes(cq), _msg(chat, f"⚙️ Feito: {r['pct']:g}% por sinal, máximo {r['max_posicoes']} posições.",
                                                menu=True)]
+    if acao == "z":
+        if ticker != "sim":
+            return out + [_tirar_botoes(cq), _msg(chat, "Ficou tudo como estava.", menu=True)]
+        cart.recomecar(u, hoje)
+        return out + [_tirar_botoes(cq), _msg(chat, f"🔄 Carteira recomeçada com {cart.fmt(u['caixa'])} "
+                                                    f"{u['regras']['moeda']}. Se foi engano, carrega em ↩️ Desfazer.",
+                                               menu=True)] + sinais_abertos(chat, u, hist)
     if acao == "k":
         u["aguarda"] = {"tipo": "valor", "op": "capital"}
         return out + [_tirar_botoes(cq), _msg(chat, f"💰 Qual é o capital total da carteira ({u['regras']['moeda']})? Ex.: <code>100</code>")]
@@ -321,18 +334,39 @@ def mensagens_sinais(estado: dict | None, novos: list[dict], cabecalho: str, don
         return out
     for chat, u in cart.ativos(estado).items():
         out.append((chat, cabecalho, None))
-        reservado, ocupadas = 0.0, 0
-        for s in novos:
-            t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
-            if not t["motivo"]:
-                reservado, ocupadas = reservado + t["valor"], ocupadas + 1
-            texto = telegram.formatar_sinal(s) + "\n" + cart.linha_tamanho(u, t)
-            fraca = cart.posicao_mais_fraca(u, s["data_sinal"])
-            if t["motivo"] in ("max_posicoes", "sem_capital") and fraca:
-                texto += f"\nA posição mais antiga é {fraca} (desde {u['posicoes'][fraca].get('data', '')}); a decisão de trocar é tua."
-            b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
-            out.append((chat, texto, b))
+        out += [(chat, texto, b) for texto, b in _sinais_para(u, novos)]
     return out
+
+
+def _sinais_para(u: dict, sinais: list[dict]) -> list:
+    """Texto e botões de cada sinal para este utilizador; o dinheiro vai sendo reservado pela ordem."""
+    out, reservado, ocupadas = [], 0.0, 0
+    for s in sinais:
+        t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
+        if not t["motivo"]:
+            reservado, ocupadas = reservado + t["valor"], ocupadas + 1
+        texto = telegram.formatar_sinal(s) + "\n" + cart.linha_tamanho(u, t)
+        fraca = cart.posicao_mais_fraca(u, s["data_sinal"])
+        if t["motivo"] in ("max_posicoes", "sem_capital") and fraca:
+            texto += f"\nA posição mais antiga é {fraca} (desde {u['posicoes'][fraca].get('data', '')}); a decisão de trocar é tua."
+        b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
+        out.append((texto, b))
+    return out
+
+
+def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame, maximo: int = 10) -> list:
+    """Para quem começa (ou recomeça): os sinais que o bot já leu e ainda estão em aberto, com botões."""
+    h = hist[(hist["estado"] == "aberto") & (hist["direcao"] == "compra")]
+    h = h[[cart.mercado(t) in u["regras"]["mercados"] for t in h["ticker"]]]
+    if h.empty:
+        return [_msg(chat, "Não há sinais em aberto neste momento. Aviso-te quando chegar o próximo.", menu=True)]
+    h = h.sort_values(["data_sinal", "pontuacao"], ascending=[False, False]).head(maximo)
+    sinais = [{k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in r.items()}
+              for r in h.assign(data_sinal=h["data_sinal"].astype(str),
+                                dias_estimados=h["dias_estimados"].fillna(5)).to_dict("records")]
+    out = [_msg(chat, f"📋 <b>Sinais ainda em aberto ({len(sinais)})</b>\nO preço é o do dia do sinal; "
+                      f"confirma o preço atual na XTB antes de entrar.")]
+    return out + [_msg(chat, texto, b) for texto, b in _sinais_para(u, sinais)]
 
 
 def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) -> list:
