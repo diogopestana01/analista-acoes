@@ -25,12 +25,19 @@ def main(data: str | None = None) -> None:
     print(f"Sinais de {ficheiro.name}: {len(sinais)}")
     import requests
     for nome_url, url, cab in (("yahoo rss", noticias.YAHOO_RSS.format(t="AAPL"), noticias.NAVEGADOR),
-                               ("sec", noticias.SEC_ATOM.format(t="AAPL", tipo="8-K"), noticias.SEC_UA)):
+                               ("sec", noticias.SEC_ATOM.format(t="AAPL", tipo="8-K"), noticias.SEC_UA),
+                               ("sec tickers", "https://www.sec.gov/files/company_tickers.json",
+                                {**noticias.SEC_UA, "Accept-Encoding": "gzip, deflate"}),
+                               ("sec api", "https://data.sec.gov/submissions/CIK0000320193.json",
+                                {**noticias.SEC_UA, "Accept-Encoding": "gzip, deflate"}),
+                               ("nasdaq rss", "https://www.nasdaq.com/feed/rssoutbound?symbol=AAPL", noticias.NAVEGADOR)):
         try:
             r = requests.get(url, timeout=20, headers=cab)
             print(f"[{nome_url}] HTTP {r.status_code} {r.headers.get('content-type')} | {r.text[:300]!r}")
         except Exception as e:
             print(f"[{nome_url}] ERRO {e}")
+    if "--so-fontes" in sys.argv:
+        return
     for s in sinais.drop_duplicates("ticker").to_dict("records"):
         t, nome = s["ticker"], nomes.get(s["ticker"], "")
         print(f"\n===== {t} ({noticias.limpar_nome(nome) or 'sem nome'}) | {s['setup']}")
@@ -63,4 +70,5 @@ def main(data: str | None = None) -> None:
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    main(args[0] if args else None)

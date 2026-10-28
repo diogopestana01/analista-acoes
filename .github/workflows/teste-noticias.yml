@@ -4,6 +4,11 @@ name: Teste das notícias
 # para os sinais do último dia. Não envia nada nem mexe nos dados.
 on:
   workflow_dispatch:
+    inputs:
+      so_fontes:
+        description: "Só testar se as fontes respondem (sem chamar o Claude)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -30,7 +35,7 @@ jobs:
             data/avaliacoes_cache.json
           key: dados-nenhum
           restore-keys: dados-
-      - run: python diagnostico_noticias.py
+      - run: python diagnostico_noticias.py ${{ inputs.so_fontes && '--so-fontes' || '' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}
