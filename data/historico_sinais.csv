@@ -73,3 +73,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-28,PVLA,rompimento,compra,143.58999633789062,164.5009397038525,133.13452465490968,5.0,5,52.0,aberto,,,,atr_3_15,
 2026-10-28,WMK,pullback,compra,74.41000366210938,,70.57634713276099,2.5,5,55.3,aberto,,,,sma5,
 2026-10-28,ROKU,pullback,compra,155.72999572753906,,151.82185794824346,2.0,5,45.7,aberto,,,,sma5,duvidoso
+2026-10-28,VLGEA,pullback,compra,42.900001525878906,,40.1304297787574,3.0,5,52.5,aberto,,,,sma5,manter
