@@ -124,9 +124,8 @@ def test_mensagens_de_sinais_por_utilizador_com_tamanho():
              {"ticker": "RAND.AS", "data_sinal": HOJE, "setup": "rompimento", "direcao": "compra", "entrada": 40.0,
               "objetivo": 44.0, "stop": 38.0, "dias_estimados": 3, "saida": "atr_3_15"}]
     msgs = bot.mensagens_sinais(e, novos, "cabeçalho", DONO)
-    assert len(msgs) == 3
+    assert len(msgs) == 2  # o europeu nem aparece (conta só EUA)
     assert "compra <b>0,4</b> ações" in msgs[1][1] and msgs[1][2][0][0][1] == f"c|GMAB|{HOJE}"
-    assert "fora da tua carteira" in msgs[2][1] and msgs[2][2] is None
     # Sem carteira (bot desligado), o dono recebe os sinais como antes.
     assert len(bot.mensagens_sinais(None, novos, "cab", DONO)) == 3
 
@@ -216,7 +215,7 @@ def test_recomecar_pergunta_capital_e_posicoes_e_mostra_sinais_abertos():
     textos = _textos(out)
     assert "Carteira pronta" in textos[0]
     # Recebe logo o sinal em aberto dos EUA (GMAB), com botões; o europeu fica de fora.
-    assert any("Sinais ainda em aberto (1)" in t for t in textos)
+    assert any("Sinais ainda em aberto" in t and "o melhor" in t for t in textos)
     assert any("COMPRA GMAB" in t and "1,9997" in t and "33%" in t for t in textos)
     # Desfazer volta a antes do recomeço.
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
@@ -233,3 +232,25 @@ def test_quem_e_aceite_configura_a_carteira_e_recebe_os_sinais_em_aberto():
     rui = e["utilizadores"]["222"]
     assert rui["caixa"] == 500 and rui["regras"]["max_posicoes"] == 5
     assert any("COMPRA GMAB" in t and "2" in t for t in _textos(out))
+
+
+def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.definir_posicoes(u, 3)
+    cart.comprar(u, "AAA", 1, 10.0, HOJE)  # 1 de 3 ocupada -> 2 lugares livres
+    base = {"data_sinal": HOJE, "setup": "rompimento", "direcao": "compra", "objetivo": 22.0, "stop": 19.0,
+            "dias_estimados": 3, "saida": "atr_3_15", "entrada": 20.0}
+    novos = [{**base, "ticker": t, "pontuacao": p} for t, p in [("FRACO", 55.0), ("FORTE", 92.0), ("MEDIO", 70.0),
+                                                                 ("AAA", 99.0)]]
+    msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
+    textos = [m[1] for m in msgs]
+    assert "os 2 melhores" in textos[0] and "2 lugares livres" in textos[0]
+    assert "COMPRA FORTE" in textos[1] and "Confiança 92/100 (n.º 1 de 3)" in textos[1]
+    assert "COMPRA MEDIO" in textos[2]
+    assert "Ficaram de fora 1" in textos[3] and "FRACO" in textos[3] and msgs[3][2] is None
+    # Carteira cheia: só um aviso, sem sinais.
+    bot.definir_posicoes(u, 1)
+    msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
+    assert "carteira está cheia (1/1)" in msgs[0][1] and "AAA" in msgs[0][1]
+    assert not any("COMPRA" in m[1] for m in msgs)

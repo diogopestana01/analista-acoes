@@ -385,8 +385,8 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
 # ---------- mensagens enviadas pelos sinais (diario.py) ----------
 
 def mensagens_sinais(estado: dict | None, novos: list[dict], cabecalho: str, dono: str | None) -> list:
-    """Para cada utilizador ativo: cabeçalho + cada sinal com o tamanho sugerido e botões.
-    Sem estado (carteira desligada), só o dono recebe, com botões nas ações dos EUA."""
+    """Para cada utilizador ativo: só os sinais mais fortes que cabem nos lugares livres da carteira,
+    com tamanho e botões; os restantes numa linha. Sem estado (carteira desligada), o dono recebe todos."""
     out = []
     if not estado:
         if dono:
@@ -396,40 +396,76 @@ def mensagens_sinais(estado: dict | None, novos: list[dict], cabecalho: str, don
                 out.append((dono, telegram.formatar_sinal(s), b))
         return out
     for chat, u in cart.ativos(estado).items():
-        out.append((chat, cabecalho, None))
-        out += [(chat, texto, b) for texto, b in _sinais_para(u, novos)]
+        out += [(chat, texto, b) for texto, b in _ronda(u, novos, cabecalho)]
     return out
 
 
-def _sinais_para(u: dict, sinais: list[dict]) -> list:
+def _confianca(s: dict) -> float:
+    try:
+        v = float(s.get("pontuacao"))
+    except (TypeError, ValueError):
+        return 0.0
+    return 0.0 if pd.isna(v) else v
+
+
+def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
+    """Sinais que servem a esta carteira, do mais forte para o mais fraco, partidos em
+    (os que cabem nos lugares livres, os que ficam de fora, lugares livres)."""
+    elegiveis = [s for s in sinais if cart.mercado(s["ticker"]) in u["regras"]["mercados"]
+                 and s["ticker"] not in u["posicoes"]]
+    elegiveis.sort(key=_confianca, reverse=True)
+    livres = max(u["regras"]["max_posicoes"] - len(u["posicoes"]), 0)
+    return elegiveis[:livres], elegiveis[livres:], livres
+
+
+def _ronda(u: dict, sinais: list[dict], cabecalho: str) -> list:
+    """Cabeçalho + os melhores sinais (com botões) + uma linha com os que ficaram de fora."""
+    top, resto, livres = escolher(u, sinais)
+    if not top and not resto:
+        return []
+    r = u["regras"]
+    ocupadas = f"{len(u['posicoes'])}/{r['max_posicoes']}"
+    if top:
+        extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
+                 f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
+    else:
+        fraca = cart.posicao_mais_fraca(u, "")
+        extra = (f"\n💼 A tua carteira está cheia ({ocupadas}), por isso não te mostro estes sinais."
+                 + (f" A posição mais antiga é {fraca}; se a venderes, abres lugar." if fraca else ""))
+    out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto))
+    if resto:
+        nomes = ", ".join(f"{s['ticker']} ({_confianca(s):.0f})" for s in resto[:8])
+        mais = f" e mais {len(resto) - 8}" if len(resto) > 8 else ""
+        out.append((f"➖ Ficaram de fora {len(resto)} com menos confiança: {nomes}{mais}.", None))
+    return out
+
+
+def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
     """Texto e botões de cada sinal para este utilizador; o dinheiro vai sendo reservado pela ordem."""
     out, reservado, ocupadas = [], 0.0, 0
-    for s in sinais:
+    for k, s in enumerate(sinais, start=1):
         t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
         if not t["motivo"]:
             reservado, ocupadas = reservado + t["valor"], ocupadas + 1
-        texto = telegram.formatar_sinal(s) + "\n" + cart.linha_tamanho(u, t)
-        fraca = cart.posicao_mais_fraca(u, s["data_sinal"])
-        if t["motivo"] in ("max_posicoes", "sem_capital") and fraca:
-            texto += f"\nA posição mais antiga é {fraca} (desde {u['posicoes'][fraca].get('data', '')}); a decisão de trocar é tua."
+        rank = f"⭐ Confiança {_confianca(s):.0f}/100 (n.º {k} de {total or len(sinais)})\n"
+        texto = rank + telegram.formatar_sinal(s) + "\n" + cart.linha_tamanho(u, t, u["caixa"] - reservado)
         b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
         out.append((texto, b))
     return out
 
 
-def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame, maximo: int = 10) -> list:
-    """Para quem começa (ou recomeça): os sinais que o bot já leu e ainda estão em aberto, com botões."""
+def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
+    """Para quem começa (ou recomeça): os sinais em aberto mais fortes que cabem na carteira, com botões."""
     h = hist[(hist["estado"] == "aberto") & (hist["direcao"] == "compra")]
-    h = h[[cart.mercado(t) in u["regras"]["mercados"] for t in h["ticker"]]]
-    if h.empty:
-        return [_msg(chat, "Não há sinais em aberto neste momento. Aviso-te quando chegar o próximo.", menu=True)]
-    h = h.sort_values(["data_sinal", "pontuacao"], ascending=[False, False]).head(maximo)
     sinais = [{k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in r.items()}
               for r in h.assign(data_sinal=h["data_sinal"].astype(str),
                                 dias_estimados=h["dias_estimados"].fillna(5)).to_dict("records")]
-    out = [_msg(chat, f"📋 <b>Sinais ainda em aberto ({len(sinais)})</b>\nO preço é o do dia do sinal; "
-                      f"confirma o preço atual na XTB antes de entrar.")]
-    return out + [_msg(chat, texto, b) for texto, b in _sinais_para(u, sinais)]
+    cab = ("📋 <b>Sinais ainda em aberto</b>\nO preço é o do dia do sinal; "
+           "confirma o preço atual na XTB antes de entrar.")
+    ronda = _ronda(u, sinais, cab)
+    if not ronda:
+        return [_msg(chat, "Não há sinais em aberto neste momento. Aviso-te quando chegar o próximo.", menu=True)]
+    return [_msg(chat, texto, b) for texto, b in ronda]
 
 
 def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) -> list:
