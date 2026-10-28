@@ -180,6 +180,7 @@ def test_pesquisa_nao_usa_ticker_sozinho():
     assert '"KIDS stock"' in t and '"KIDS"' not in t.replace('"KIDS stock"', "").replace('"KIDS shares"', "")
     assert noticias.termo_pesquisa("SAP.DE", "SAP SE").startswith('"SAP"')
     assert noticias.noticias_sec("SAP.DE") == []     # SEC só para ações dos EUA
+    assert noticias.noticias_nasdaq("SAP.DE") == []
 
 
 def test_investigador_le_a_sua_pesquisa_de_risco():

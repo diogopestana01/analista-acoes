@@ -2,8 +2,9 @@
 
   yahoo   desligado: a partir do GitHub o Yahoo responde "Too Many Requests" (429)
   google  Google Notícias (RSS), pesquisa pelo nome da empresa e pelo ticker
-  sec     comunicações oficiais à SEC (ações dos EUA): 8-K (factos relevantes) e
-          prospetos de emissão de ações (diluição). É a fonte mais fiável de todas.
+  nasdaq  feed RSS de notícias da Nasdaq por ação (só EUA): comunicados das empresas e agências
+  sec     comunicações oficiais à SEC (8-K e prospetos de emissão). A SEC bloqueia os servidores
+          do GitHub (403), por isso só é usada se a variável SEC_USER_AGENT estiver definida.
 
 Só é usado para as ações candidatas (passo 2), porque pedir notícias para
 milhares de ações todos os dias seria lento e desnecessário.
@@ -21,6 +22,7 @@ import pandas as pd
 log = logging.getLogger(__name__)
 
 GOOGLE_NEWS = "https://news.google.com/rss/search?q={q}&hl=en-US&gl=US&ceid=US:en"
+NASDAQ_RSS = "https://www.nasdaq.com/feed/rssoutbound?symbol={t}"
 YAHOO_RSS = "https://feeds.finance.yahoo.com/rss/2.0/headline?s={t}&region=US&lang=en-US"
 SEC_ATOM = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={t}&type={tipo}&dateb=&owner=include"
             "&count=15&output=atom")
@@ -137,9 +139,22 @@ def riscos_google(ticker: str, nome: str = "") -> list[dict]:
     return pesquisar_google(ticker, f"({termo_pesquisa(ticker, nome)}) ({PALAVRAS_RISCO}) when:14d", n=10)
 
 
+def noticias_nasdaq(ticker: str) -> list[dict]:
+    """Feed RSS da Nasdaq por ação (só EUA). Responde a partir do GitHub, ao contrário do Yahoo."""
+    if "." in ticker:
+        return []
+    import feedparser
+    import requests
+
+    r = requests.get(NASDAQ_RSS.format(t=ticker), timeout=20, headers=NAVEGADOR)
+    return [{"ticker": ticker, "titulo": e.get("title", ""), "resumo": "", "fonte": "Nasdaq",
+             "data": e.get("published"), "url": e.get("link", "")}
+            for e in feedparser.parse(r.text).entries[:15] if not _RUIDO.search(e.get("title", ""))]
+
+
 def noticias_sec(ticker: str, dias: int = 14) -> list[dict]:
     """Comunicações oficiais à SEC (só EUA): 8-K com os itens explicados e prospetos de emissão."""
-    if "." in ticker:
+    if "." in ticker or not os.environ.get("SEC_USER_AGENT"):
         return []
     import feedparser
     import requests
@@ -174,7 +189,7 @@ def recolher(tickers: dict[str, str], dias: int = 7) -> pd.DataFrame:
             except Exception:
                 nome = ""
         contagem = {}
-        fontes = (("google", lambda x: noticias_google(x, nome)), ("sec", noticias_sec))
+        fontes = (("google", lambda x: noticias_google(x, nome)), ("nasdaq", noticias_nasdaq), ("sec", noticias_sec))
         for nome_fonte, fonte in fontes:
             try:
                 itens = fonte(t)
