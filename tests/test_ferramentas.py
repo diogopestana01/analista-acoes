@@ -119,11 +119,13 @@ def test_investigador_avisa_e_bloqueia_so_se_configurado(monkeypatch):
     from src import investigador
     chamadas = []
 
-    def falso(s, news, cliente=None):
+    def falso(s, news, riscos=None, cliente=None):
         chamadas.append(s["ticker"])
+        assert list(riscos["titulo"]) == ["Downgrade"]
         return investigador.Contraditorio(veredicto="rejeitar" if s["ticker"] == "A" else "manter",
                                           argumento="Subida já esticada.")
     monkeypatch.setattr(investigador, "contestar", falso)
+    monkeypatch.setattr(investigador, "pesquisar_riscos", lambda t, nome="": pd.DataFrame({"titulo": ["Downgrade"]}))
     final = pd.DataFrame({"ticker": ["A", "B"], "setup": "pullback", "entrada": 10.0})
     news = pd.DataFrame({"ticker": ["A", "B"], "titulo": ["x", "y"], "data": pd.NaT})
     cache = {}
@@ -170,3 +172,20 @@ def test_semana_forte_detetada():
     d = indicadores.calcular(_precos(closes, closes * 0.97, vols))
     assert sinais.detetar(d)["semana_forte"].iat[-1]
     assert "semana_forte" in yaml.safe_load(Path("config.yaml").read_text())["sinais"]["qualidade"]
+
+
+def test_pesquisa_nao_usa_ticker_sozinho():
+    from src import noticias
+    t = noticias.termo_pesquisa("KIDS", "")
+    assert '"KIDS stock"' in t and '"KIDS"' not in t.replace('"KIDS stock"', "").replace('"KIDS shares"', "")
+    assert noticias.termo_pesquisa("SAP.DE", "SAP SE").startswith('"SAP"')
+    assert noticias.noticias_sec("SAP.DE") == []     # SEC só para ações dos EUA
+
+
+def test_investigador_le_a_sua_pesquisa_de_risco():
+    from src import investigador
+    s = {"ticker": "A", "setup": "rompimento", "entrada": 10.0}
+    riscos = pd.DataFrame({"titulo": ["A Corp announces $50M stock offering"], "fonte": ["Reuters"],
+                           "data": [pd.Timestamp("2026-10-27", tz="UTC")]})
+    p = investigador._pedido(s, pd.DataFrame(columns=["titulo", "fonte", "data"]), riscos)
+    assert "pesquisa de risco" in p and "stock offering" in p and "(nada encontrado)" in p

@@ -41,18 +41,21 @@ def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news:
     """Investigador advogado do diabo: uma vez por dia e sinal (cache), só nos sinais finais."""
     if final.empty or not cfg_inv.get("ativo", False):
         return final
-    chave = lambda s: f"inv1|{s['ticker']}|{s['setup']}|{dia}"
+    chave = lambda s: f"inv2|{s['ticker']}|{s['setup']}|{dia}"
     falta = [s for s in final.to_dict("records") if chave(s) not in cache]
     sem_news = [s["ticker"] for s in falta if news is None or s["ticker"] not in set(news["ticker"])]
     if sem_news:
         extra = noticias.recolher({t: nomes.get(t, "") for t in sem_news})
         news = extra if news is None else pd.concat([news, extra], ignore_index=True)
     for s in falta:
-        c = investigador.contestar(s, news[news["ticker"] == s["ticker"]] if news is not None else pd.DataFrame())
-        cache[chave(s)] = c.model_dump() if c else {"veredicto": "", "argumento": ""}
+        riscos = investigador.pesquisar_riscos(s["ticker"], nomes.get(s["ticker"], ""))
+        c = investigador.contestar(s, news[news["ticker"] == s["ticker"]] if news is not None else pd.DataFrame(),
+                                   riscos)
+        cache[chave(s)] = c.model_dump() if c else {"veredicto": "", "argumento": "", "risco": None}
     f = final.copy()
     f["veredicto_inv"] = [cache[chave(s)]["veredicto"] for s in f.to_dict("records")]
     f["argumento_inv"] = [cache[chave(s)]["argumento"] for s in f.to_dict("records")]
+    f["risco_inv"] = [cache[chave(s)].get("risco") for s in f.to_dict("records")]
     logging.info("Investigador: %d analisados agora; veredictos %s", len(falta),
                  f["veredicto_inv"].value_counts().to_dict())
     if cfg_inv.get("bloquear"):

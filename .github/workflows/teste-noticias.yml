@@ -1,0 +1,36 @@
+name: Teste das notícias
+
+# Só à mão: mostra quantas notícias dá cada fonte e o que dizem o analista e o advogado do diabo
+# para os sinais do último dia. Não envia nada nem mexe nos dados.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ler o universo guardado pelos sinais
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/precos.parquet
+            data/universo.csv
+            data/universo_filtrado.csv
+            data/universo_atualizado_em.txt
+            data/avaliacoes_cache.json
+          key: dados-nenhum
+          restore-keys: dados-
+      - run: python diagnostico_noticias.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}
