@@ -12,18 +12,23 @@ import pandas as pd
 from . import carteira as cart
 from . import telegram
 
-AJUDA = """<b>Comandos</b>
-/carteira: posições, dinheiro livre e a carteira simulada
-/comprei TICKER quantidade preço: regista uma compra (ex. /comprei NVDA 0,4 135,20)
-/vendi TICKER quantidade preço: regista uma venda (quantidade "tudo" vende tudo)
-/capital 100: define o capital da carteira
-/deposito 50, /levantamento 50: entradas e saídas de dinheiro
-/regras pct 20 max 5: % por sinal e máximo de posições
-/desfazer: anula a última operação
-/historico: últimas vendas e resultado
-/cancelar: cancela uma pergunta pendente
+AJUDA = """<b>Como usar</b>
+Usa o menu de botões em baixo:
+💼 Carteira: posições, dinheiro livre e a carteira simulada
+📜 Histórico: últimas vendas e resultado
+🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
+💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
+⚙️ Regras: % por sinal, máximo de posições e capital
+↩️ Desfazer: anula a última operação
 
-Nos sinais e nos avisos de venda usa os botões."""
+Os sinais e os avisos de venda trazem os seus próprios botões.
+Se o menu desaparecer, envia /start."""
+
+MENU = [["💼 Carteira", "📜 Histórico"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
+        ["⚙️ Regras", "↩️ Desfazer", "❓ Ajuda"]]
+MENU_ACOES = {t for linha in MENU for t in linha}
+TECLADO_MENU = json.dumps({"keyboard": [[{"text": t} for t in linha] for linha in MENU],
+                           "resize_keyboard": True, "is_persistent": True})
 
 
 # ---------- botões ----------
@@ -38,10 +43,12 @@ def botoes_venda(ticker: str, preco: float) -> list:
             [("✏️ Outro preço ou parte", f"w|{ticker}"), ("🔒 Mantenho", f"m|{ticker}")]]
 
 
-def _msg(chat, texto: str, botoes: list | None = None) -> tuple[str, dict]:
+def _msg(chat, texto: str, botoes: list | None = None, menu: bool = False) -> tuple[str, dict]:
     p = {"chat_id": str(chat), "text": texto, "parse_mode": "HTML", "disable_web_page_preview": "true"}
     if botoes:
         p["reply_markup"] = telegram.teclado(botoes)
+    elif menu:
+        p["reply_markup"] = TECLADO_MENU
     return "sendMessage", p
 
 
@@ -66,9 +73,9 @@ def _start(estado, chat, nome, cfg, hoje) -> list:
     if chat == estado.get("dono"):
         garantir_dono(estado, cfg["regras_base"], hoje, nome)
         estado["utilizadores"][chat]["nome"] = nome
-        return [_msg(chat, f"Olá {nome}! A tua carteira está ativa.\n{aviso}\n\n{AJUDA}")]
+        return [_msg(chat, f"Olá {nome}! A tua carteira está ativa.\n{aviso}\n\n{AJUDA}", menu=True)]
     if u and u["estado"] == "ativo":
-        return [_msg(chat, AJUDA)]
+        return [_msg(chat, AJUDA, menu=True)]
     if u and u["estado"] == "pendente":
         return [_msg(chat, "O teu pedido ainda está à espera de aprovação.")]
     if u and u["estado"] == "recusado":
@@ -118,15 +125,63 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
     if not u or u["estado"] != "ativo":
         return []
     try:
+        if texto in MENU_ACOES:
+            u["aguarda"] = None
+            return [_menu(chat, u, texto, hist, hoje)]
         if u.get("aguarda") and not cmd.startswith("/"):
-            return [_msg(chat, _resposta(u, partes, hist, hoje))]
-        return [_msg(chat, _comando(estado, chat, u, cmd, partes[1:], hist, hoje))]
+            return [_msg(chat, _resposta(u, partes, hist, hoje), menu=True)]
+        return [_msg(chat, _comando(estado, chat, u, cmd, partes[1:], hist, hoje), menu=True)]
     except (ValueError, IndexError):
         return [_msg(chat, "Não percebi os números. Exemplo: 51,20 0,4 (ou /ajuda).")]
 
 
+def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
+    """Um botão do menu fixo: responde já ou pergunta o que falta."""
+    moeda = u["regras"]["moeda"]
+    if botao == "💼 Carteira":
+        return _msg(chat, cart.formatar_carteira(u, cart.simular(hist, u["regras"], u.get("desde", ""))), menu=True)
+    if botao == "📜 Histórico":
+        return _msg(chat, cart.formatar_historico(u), menu=True)
+    if botao == "↩️ Desfazer":
+        return _msg(chat, cart.desfazer(u), menu=True)
+    if botao == "❓ Ajuda":
+        return _msg(chat, AJUDA, menu=True)
+    if botao == "🟢 Comprei":
+        u["aguarda"] = {"tipo": "ticker"}
+        return _msg(chat, "🟢 Que ação compraste? Escreve o ticker (ex. <code>NVDA</code>).")
+    if botao == "🔴 Vendi":
+        if not u["posicoes"]:
+            return _msg(chat, "Não tens posições abertas.", menu=True)
+        botoes = [[(f"{t} ({cart.fmt_qtd(p['qtd'])} a {cart.fmt(p['preco'])})", f"w|{t}")]
+                  for t, p in sorted(u["posicoes"].items())]
+        return _msg(chat, "🔴 Qual vendeste?", botoes)
+    if botao in ("💵 Depositar", "🏧 Levantar"):
+        op = "deposito" if botao == "💵 Depositar" else "levantamento"
+        u["aguarda"] = {"tipo": "valor", "op": op}
+        return _msg(chat, f"{botao.split()[0]} Quanto ({moeda})? Ex.: <code>50</code>")
+    r = u["regras"]  # ⚙️ Regras
+    return _msg(chat, f"⚙️ Agora: <b>{r['pct']:g}%</b> por sinal, máximo <b>{r['max_posicoes']}</b> posições, "
+                      f"capital {cart.fmt(r['capital_inicial'])} {moeda}. Escolhe para mudar:",
+                [[(f"{p}% por sinal", f"p|{p}") for p in (10, 20, 25)],
+                 [(f"Máx. {n} posições", f"x|{n}") for n in (3, 5, 10)],
+                 [("💰 Mudar capital", "k|")]])
+
+
 def _resposta(u: dict, partes: list, hist, hoje: str) -> str:
     a = u["aguarda"]
+    if a["tipo"] == "ticker":
+        t = partes[0].upper()
+        sinal = _sinal(hist, t)
+        data = sinal["data"] if sinal and sinal["estado"] == "aberto" else None
+        u["aguarda"] = {"tipo": "compra", "ticker": t, "data": data}
+        return (f"🟢 {t}: a que preço compraste? Podes juntar a quantidade.\n"
+                f"Ex.: <code>51,20</code> ou <code>51,20 0,4</code>")
+    if a["tipo"] == "valor":
+        v = cart.numero(partes[0])
+        u["aguarda"] = None
+        if a["op"] == "capital":
+            return cart.definir_capital(u, v, hoje)
+        return cart.movimento(u, abs(v) if a["op"] == "deposito" else -abs(v), hoje)
     preco = cart.numero(partes[0])
     qtd = cart.numero(partes[1]) if len(partes) > 1 else None
     if a["tipo"] == "venda":
@@ -199,12 +254,24 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         out += [_tirar_botoes(cq), _msg(chat, f"{alvo['nome']}: {'aceite' if acao == 'a' else 'recusado'}.")]
         if acao == "a":
             out.append(_msg(partes[1], f"✅ Foste aceite! A tua carteira começa com "
-                                       f"{cart.fmt(alvo['caixa'])} {alvo['regras']['moeda']} (muda com /capital).\n\n{AJUDA}"))
+                                       f"{cart.fmt(alvo['caixa'])} {alvo['regras']['moeda']} (muda em ⚙️ Regras).\n\n{AJUDA}", menu=True))
         return out
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
         return out
     ticker = partes[1] if len(partes) > 1 else ""
+    if acao in ("p", "x"):
+        n = cart.numero(ticker)
+        if acao == "p":
+            u["regras"]["pct"] = min(max(n, 1.0), 100.0)
+        else:
+            u["regras"]["max_posicoes"] = max(int(n), 1)
+        r = u["regras"]
+        return out + [_tirar_botoes(cq), _msg(chat, f"⚙️ Feito: {r['pct']:g}% por sinal, máximo {r['max_posicoes']} posições.",
+                                               menu=True)]
+    if acao == "k":
+        u["aguarda"] = {"tipo": "valor", "op": "capital"}
+        return out + [_tirar_botoes(cq), _msg(chat, f"💰 Qual é o capital total da carteira ({u['regras']['moeda']})? Ex.: <code>100</code>")]
     if acao in ("c", "o", "i"):
         data = partes[2]
         chave = cart.chave_sinal(ticker, data)

@@ -5,6 +5,7 @@ Corre no workflow "Carteira" (sempre ligado, relança-se a cada ~5h40, como o Re
 Uso: python bot_carteira.py [--minutos 340]
 """
 import argparse
+import json
 import logging
 import os
 import subprocess
@@ -61,6 +62,10 @@ def main(minutos: float) -> None:
     hoje = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d")
     bot.garantir_dono(estado, cfg["regras_base"], hoje)
     guardar_e_enviar(estado, k, com_git)
+    telegram.api("setMyCommands", commands=json.dumps([
+        {"command": "start", "description": "Mostrar o menu de botões"},
+        {"command": "carteira", "description": "Ver a carteira"},
+        {"command": "ajuda", "description": "Como usar"}]))
     hist, ultimo_pull = acompanhamento.carregar(HIST), 0.0
     fim = time.time() + minutos * 60
     while time.time() < fim:
