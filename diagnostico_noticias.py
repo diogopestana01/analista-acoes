@@ -41,7 +41,7 @@ def main(data: str | None = None) -> None:
     for s in sinais.drop_duplicates("ticker").to_dict("records"):
         t, nome = s["ticker"], nomes.get(s["ticker"], "")
         print(f"\n===== {t} ({noticias.limpar_nome(nome) or 'sem nome'}) | {s['setup']}")
-        fontes = {"google": lambda: noticias.noticias_google(t, nome), "nasdaq": lambda: noticias.noticias_nasdaq(t),
+        fontes = {"google": lambda: noticias.noticias_google(t, nome), "nasdaq": lambda: noticias.noticias_nasdaq(t, nome),
                   "sec": lambda: noticias.noticias_sec(t)}
         todas = []
         for f, fn in fontes.items():

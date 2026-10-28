@@ -139,17 +139,22 @@ def riscos_google(ticker: str, nome: str = "") -> list[dict]:
     return pesquisar_google(ticker, f"({termo_pesquisa(ticker, nome)}) ({PALAVRAS_RISCO}) when:14d", n=10)
 
 
-def noticias_nasdaq(ticker: str) -> list[dict]:
-    """Feed RSS da Nasdaq por ação (só EUA). Responde a partir do GitHub, ao contrário do Yahoo."""
+def noticias_nasdaq(ticker: str, nome: str = "") -> list[dict]:
+    """Feed RSS da Nasdaq por ação (só EUA). Responde a partir do GitHub, ao contrário do Yahoo.
+    O feed mistura artigos sobre outras empresas; ficam só os que falam desta (ticker ou nome)."""
     if "." in ticker:
         return []
+    palavra = (limpar_nome(nome).split() or [""])[0]
+    relevante = re.compile(rf"\b{re.escape(ticker)}\b" + (rf"|\b{re.escape(palavra)}\b" if len(palavra) >= 4 else ""),
+                           re.IGNORECASE)
     import feedparser
     import requests
 
     r = requests.get(NASDAQ_RSS.format(t=ticker), timeout=20, headers=NAVEGADOR)
     return [{"ticker": ticker, "titulo": e.get("title", ""), "resumo": "", "fonte": "Nasdaq",
              "data": e.get("published"), "url": e.get("link", "")}
-            for e in feedparser.parse(r.text).entries[:15] if not _RUIDO.search(e.get("title", ""))]
+            for e in feedparser.parse(r.text).entries
+            if relevante.search(e.get("title", "")) and not _RUIDO.search(e.get("title", ""))][:15]
 
 
 def noticias_sec(ticker: str, dias: int = 14) -> list[dict]:
@@ -189,7 +194,7 @@ def recolher(tickers: dict[str, str], dias: int = 7) -> pd.DataFrame:
             except Exception:
                 nome = ""
         contagem = {}
-        fontes = (("google", lambda x: noticias_google(x, nome)), ("nasdaq", noticias_nasdaq), ("sec", noticias_sec))
+        fontes = (("google", lambda x: noticias_google(x, nome)), ("nasdaq", lambda x: noticias_nasdaq(x, nome)), ("sec", noticias_sec))
         for nome_fonte, fonte in fontes:
             try:
                 itens = fonte(t)

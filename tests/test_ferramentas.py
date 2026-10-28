@@ -190,3 +190,15 @@ def test_investigador_le_a_sua_pesquisa_de_risco():
                            "data": [pd.Timestamp("2026-10-27", tz="UTC")]})
     p = investigador._pedido(s, pd.DataFrame(columns=["titulo", "fonte", "data"]), riscos)
     assert "pesquisa de risco" in p and "stock offering" in p and "(nada encontrado)" in p
+
+
+def test_nasdaq_so_fica_com_artigos_da_empresa(monkeypatch):
+    import requests
+    from src import noticias
+    rss = """<rss><channel>
+      <item><title>Roku (ROKU) Q3 Earnings Preview</title><pubDate>Tue, 28 Oct 2026 10:00:00 GMT</pubDate></item>
+      <item><title>Netflix's Advertising Business Expands</title><pubDate>Tue, 28 Oct 2026 10:00:00 GMT</pubDate></item>
+    </channel></rss>"""
+    monkeypatch.setattr(requests, "get", lambda *a, **k: type("R", (), {"text": rss})())
+    out = noticias.noticias_nasdaq("ROKU", "Roku, Inc. Class A Common Stock")
+    assert [i["titulo"] for i in out] == ["Roku (ROKU) Q3 Earnings Preview"]
