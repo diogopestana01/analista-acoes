@@ -6,6 +6,7 @@ Sem estas variáveis, as mensagens são só impressas no ecrã.
 from __future__ import annotations
 
 import html
+import json
 import logging
 import os
 
@@ -71,13 +72,38 @@ def formatar_fecho(f: dict) -> str:
             f"({f['variacao_pct']:+.1f}%).")
 
 
-def enviar(texto: str) -> bool:
-    token, chat = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+def teclado(botoes: list[list[tuple[str, str]]] | None) -> str:
+    """Botões por baixo da mensagem: linhas de (texto, dados devolvidos ao bot)."""
+    return json.dumps({"inline_keyboard": [[{"text": t, "callback_data": d} for t, d in linha]
+                                           for linha in (botoes or [])]})
+
+
+def api(metodo: str, espera: int = 30, **dados) -> dict | None:
+    """Chamada à API do Telegram. Devolve o "result" ou None se falhar."""
+    token = os.environ.get("TELEGRAM_TOKEN")
+    if not token:
+        print(metodo, dados, "\n")
+        return None
+    try:
+        r = requests.post(f"https://api.telegram.org/bot{token}/{metodo}", data=dados, timeout=espera)
+    except requests.RequestException as e:
+        log.error("Telegram %s falhou: %s", metodo, e)
+        return None
+    if not r.ok:
+        log.error("Telegram %s falhou: %s %s", metodo, r.status_code, r.text[:200])
+        return None
+    return r.json().get("result")
+
+
+def enviar(texto: str, chat_id: str | int | None = None, botoes: list | None = None) -> bool:
+    token, chat = os.environ.get("TELEGRAM_TOKEN"), chat_id or os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat:
         print(texto, "\n")
         return False
-    r = requests.post(API.format(token=token), timeout=30, data={
-        "chat_id": chat, "text": texto, "parse_mode": "HTML", "disable_web_page_preview": "true"})
+    dados = {"chat_id": chat, "text": texto, "parse_mode": "HTML", "disable_web_page_preview": "true"}
+    if botoes:
+        dados["reply_markup"] = teclado(botoes)
+    r = requests.post(API.format(token=token), timeout=30, data=dados)
     if not r.ok:
         log.error("Telegram falhou: %s %s", r.status_code, r.text[:200])
     return r.ok

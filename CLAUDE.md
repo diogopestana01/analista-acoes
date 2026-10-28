@@ -5,6 +5,7 @@ Modelo de sinais de curto prazo (1 dia a 1 semana) com alertas no Telegram. O do
 - Módulos independentes (um a falhar não trava os outros):
   - Sinais: `.github/workflows/diario.yml` -> `diario.py`, config em `config.yaml`. De 30 em 30 min, 07:05-21:35 UTC.
   - Resumos de abertura e fecho: `.github/workflows/resumos.yml` -> `resumos_diarios.py`, config em `config_resumos.yaml`. Só lê os preços guardados pelos sinais.
+  - Carteira (bot Telegram com botões e comandos, vários utilizadores): `.github/workflows/carteira.yml` -> `bot_carteira.py`, lógica em `src/bot.py` + `src/carteira.py`, config em `config_carteira.yaml`. Sempre ligado (long polling), relança-se a cada ~5h40. É o único que escreve `data/carteira.enc` (cifrado com `src/cofre.py`, o repositório é público); `diario.py` só o lê para pôr tamanho e botões nos sinais. Desliga-se desativando o workflow "Carteira".
   - Relógio: `.github/workflows/relogio.yml` lança os dois (o cron do GitHub não dispara neste repo). Desliga-se desativando o workflow "Relógio".
 - Código partilhado em `src/` (notícias, preços, Telegram, calendário de resultados).
 - Setups em `src/sinais.py` (`SETUPS` + `detetar`).

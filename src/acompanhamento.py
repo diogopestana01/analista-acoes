@@ -77,7 +77,8 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame) -> tuple[pd.DataFrame, l
             preco = min(preco, r["open"]) if compra else max(preco, r["open"])
         hist.loc[i, ["estado", "data_fecho", "preco_fecho", "dias"]] = [resultado, r["data"], preco, k]
         var = (preco / s["entrada"] - 1) * (100 if compra else -100)
-        fechos.append({**s.to_dict(), "resultado": resultado, "preco_atual": r["close"], "variacao_pct": var})
+        fechos.append({**s.to_dict(), "resultado": resultado, "preco_atual": r["close"], "preco_saida": preco,
+                       "variacao_pct": var})
     return hist, fechos
 
 
