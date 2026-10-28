@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import noticias, precos, resultados, sentimento, sinais
+from src import investigador, noticias, precos, resultados, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -34,6 +34,30 @@ def combinar(tecnico: pd.DataFrame, avaliacoes: dict, cfg: dict) -> pd.DataFrame
         s = s[~((s["setup"] == "pullback") & s["causa_fundamental"])]
     s["noticia_forte"] = (s["impacto_noticias"] == "apoia") & (s["sentimento"] * direcao >= 0.5)
     return s.sort_values(["noticia_forte", "retorno_esperado_liquido"], ascending=False).reset_index(drop=True)
+
+
+def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news: pd.DataFrame | None,
+                  cfg_inv: dict) -> pd.DataFrame:
+    """Investigador advogado do diabo: uma vez por dia e sinal (cache), só nos sinais finais."""
+    if final.empty or not cfg_inv.get("ativo", False):
+        return final
+    chave = lambda s: f"inv1|{s['ticker']}|{s['setup']}|{dia}"
+    falta = [s for s in final.to_dict("records") if chave(s) not in cache]
+    sem_news = [s["ticker"] for s in falta if news is None or s["ticker"] not in set(news["ticker"])]
+    if sem_news:
+        extra = noticias.recolher({t: nomes.get(t, "") for t in sem_news})
+        news = extra if news is None else pd.concat([news, extra], ignore_index=True)
+    for s in falta:
+        c = investigador.contestar(s, news[news["ticker"] == s["ticker"]] if news is not None else pd.DataFrame())
+        cache[chave(s)] = c.model_dump() if c else {"veredicto": "", "argumento": ""}
+    f = final.copy()
+    f["veredicto_inv"] = [cache[chave(s)]["veredicto"] for s in f.to_dict("records")]
+    f["argumento_inv"] = [cache[chave(s)]["argumento"] for s in f.to_dict("records")]
+    logging.info("Investigador: %d analisados agora; veredictos %s", len(falta),
+                 f["veredicto_inv"].value_counts().to_dict())
+    if cfg_inv.get("bloquear"):
+        f = f[f["veredicto_inv"] != "rejeitar"].reset_index(drop=True)
+    return f
 
 
 def main() -> Path:
@@ -89,6 +113,8 @@ def main() -> Path:
     logging.info("Notícias analisadas agora: %d (resto vem da cache)", len(falta))
 
     final = combinar(candidatos, avaliacoes, cfg).head(cfg["max_alertas"])
+    final = contraditorio(final, cache, dia, nomes, news, config.get("investigador", {}))
+    cache_path.write_text(json.dumps(cache))
     final.to_csv(saida, index=False)
     logging.info("Alertas finais: %d -> %s", len(final), saida)
     return saida

@@ -12,13 +12,15 @@ import pandas as pd
 from . import indicadores, saidas
 
 COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "stop",
-           "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida"]
+           "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
+           "veredicto_inv"]
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
     # Colunas de texto lidas como texto: vazias, o pandas lia-as como números e falhava ao fechar.
     if caminho.exists():
-        h = pd.read_csv(caminho, dtype={"data_sinal": str, "estado": str, "data_fecho": object, "saida": object})
+        h = pd.read_csv(caminho, dtype={"data_sinal": str, "estado": str, "data_fecho": object, "saida": object,
+                                       "veredicto_inv": object})
         return h.reindex(columns=COLUNAS)
     return pd.DataFrame(columns=COLUNAS)
 
@@ -27,7 +29,7 @@ def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int) 
     if novos.empty:
         return hist
     n = novos.reindex(columns=["ticker", "setup", "direcao", "entrada", "objetivo", "stop", "dias_estimados",
-                                "pontuacao", "saida", "max_dias"]).copy()
+                                "pontuacao", "saida", "max_dias", "veredicto_inv"]).copy()
     n.insert(0, "data_sinal", data)
     n["max_dias"] = n["max_dias"].fillna(max_dias)
     n["estado"] = "aberto"

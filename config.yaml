@@ -45,3 +45,7 @@ sinais:
   max_alertas: 15               # limite de segurança contra excesso de mensagens
   custo_cambio_pct_por_lado: 0.0   # 0: ações dos EUA negociadas na subconta USD da XTB (sem câmbio por trade). Sem subconta: 0.5
 
+
+investigador:            # "advogado do diabo": um segundo Claude procura razões para não comprar
+  ativo: true
+  bloquear: false        # false = só avisa no alerta e regista; true = retira os sinais com veredicto "rejeitar"

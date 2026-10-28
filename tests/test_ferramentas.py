@@ -113,3 +113,26 @@ def test_regras_de_saida():
     r = saidas.simular(d, 29, saidas.REGRAS["atr_2_1"])
     assert r[2] == "objetivo" and r[1] == 2
     assert saidas.simular(d, 33, saidas.REGRAS["fecho_5d"]) is None   # ainda não terminou
+
+
+def test_investigador_avisa_e_bloqueia_so_se_configurado(monkeypatch):
+    from src import investigador
+    chamadas = []
+
+    def falso(s, news, cliente=None):
+        chamadas.append(s["ticker"])
+        return investigador.Contraditorio(veredicto="rejeitar" if s["ticker"] == "A" else "manter",
+                                          argumento="Subida já esticada.")
+    monkeypatch.setattr(investigador, "contestar", falso)
+    final = pd.DataFrame({"ticker": ["A", "B"], "setup": "pullback", "entrada": 10.0})
+    news = pd.DataFrame({"ticker": ["A", "B"], "titulo": ["x", "y"], "data": pd.NaT})
+    cache = {}
+    out = passo2_sinais.contraditorio(final, cache, "2026-10-28", {}, news, {"ativo": True})
+    assert list(out["veredicto_inv"]) == ["rejeitar", "manter"] and len(out) == 2
+    out = passo2_sinais.contraditorio(final, cache, "2026-10-28", {}, news, {"ativo": True, "bloquear": True})
+    assert list(out["ticker"]) == ["B"] and chamadas == ["A", "B"]   # segunda vez vem da cache
+    from src import telegram
+    m = telegram.formatar_sinal({"ticker": "A", "direcao": "compra", "entrada": 10.0, "objetivo": 11.0,
+                                 "stop": 9.5, "dias_estimados": 3, "setup": "pullback",
+                                 "veredicto_inv": "rejeitar", "argumento_inv": "Subida já esticada."})
+    assert "Advogado do diabo (rejeitar): Subida já esticada." in m
