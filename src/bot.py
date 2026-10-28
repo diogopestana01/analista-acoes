@@ -18,9 +18,9 @@ Usa o menu de botões em baixo:
 📜 Histórico: últimas vendas e resultado
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
-⚙️ Regras: % por sinal, máximo de posições e capital
+⚙️ Regras: capital e número de posições
 ↩️ Desfazer: anula a última operação
-🔄 Recomeçar: põe a carteira a zero (pede confirmação)
+🔄 Recomeçar: põe a carteira a zero e volta a perguntar o capital e as posições
 
 Os sinais e os avisos de venda trazem os seus próprios botões.
 Se o menu desaparecer, envia /start."""
@@ -58,6 +58,53 @@ def _tirar_botoes(cq: dict) -> tuple[str, dict]:
     return "editMessageReplyMarkup", {"chat_id": str(m.get("chat", {}).get("id", "")),
                                       "message_id": m.get("message_id"),
                                       "reply_markup": json.dumps({"inline_keyboard": []})}
+
+
+# ---------- configuração guiada (entrada nova ou recomeço) ----------
+
+def pergunta_capital(chat: str, u: dict, intro: str = "") -> tuple[str, dict]:
+    moeda = u["regras"]["moeda"]
+    return _msg(chat, f"{intro}💰 <b>Passo 1 de 2:</b> com quanto dinheiro ({moeda}) começa esta carteira?\n"
+                      f"Usa o valor que vais mesmo pôr na corretora para estes sinais.",
+                [[(f"{v} {moeda}", f"cap|{v}") for v in (100, 250, 500)],
+                 [(f"{v} {moeda}", f"cap|{v}") for v in (1000, 2500)] + [("✏️ Outro valor", "cap|outro")]])
+
+
+def pergunta_posicoes(chat: str, u: dict) -> tuple[str, dict]:
+    cap, moeda = u["regras"]["capital_inicial"], u["regras"]["moeda"]
+
+    def por(n):
+        return f"{cart.fmt(cap / n)} {moeda}"
+    texto = (f"📊 <b>Passo 2 de 2:</b> quantas posições queres ter abertas ao mesmo tempo?\n"
+             f"Cada sinal recebe o capital a dividir por esse número.\n\n"
+             f"<b>Menos posições</b> (ex. 3, ~{por(3)} cada): cada trade pesa mais, para o bem e para o mal. "
+             f"Enches a carteira depressa e ficas mais vezes sem capital quando chegam sinais novos, "
+             f"por isso só entras nos primeiros.\n\n"
+             f"<b>Mais posições</b> (ex. 10, ~{por(10)} cada): o risco fica mais espalhado e apanhas mais sinais, "
+             f"mas cada ganho conta menos e, com pouco capital, as ordens ficam muito pequenas.\n\n"
+             f"<b>5</b> é o meio-termo que recomendo para começar.")
+    return _msg(chat, texto, [[(f"{n} posições", f"pos|{n}") for n in (3, 5)],
+                              [(f"{n} posições", f"pos|{n}") for n in (8, 10)]])
+
+
+def _fim_configuracao(chat: str, u: dict, hist) -> list:
+    r = u["regras"]
+    resumo = (f"✅ Carteira pronta: <b>{cart.fmt(r['capital_inicial'])} {r['moeda']}</b>, até "
+              f"<b>{r['max_posicoes']}</b> posições de ~{cart.fmt(r['capital_inicial'] / r['max_posicoes'])} "
+              f"{r['moeda']} cada. Podes mudar isto em ⚙️ Regras.")
+    return [_msg(chat, resumo, menu=True)] + sinais_abertos(chat, u, hist)
+
+
+def _capital_inicio(u: dict, v: float) -> None:
+    """Capital escolhido na configuração (não conta como operação, para o ↩️ Desfazer voltar a antes do recomeço)."""
+    u["regras"]["capital_inicial"] = float(v)
+    u["caixa"] = float(v) - cart.investido(u)
+
+
+def definir_posicoes(u: dict, n: int) -> None:
+    n = max(int(n), 1)
+    u["regras"]["max_posicoes"] = n
+    u["regras"]["pct"] = round(100 / n, 2)
 
 
 # ---------- utilizadores ----------
@@ -129,7 +176,15 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
         if texto in MENU_ACOES:
             u["aguarda"] = None
             return [_menu(chat, u, texto, hist, hoje)]
-        if u.get("aguarda") and not cmd.startswith("/"):
+        a = u.get("aguarda") or {}
+        if a.get("op") == "capital_inicio" and not cmd.startswith("/"):
+            v = cart.numero(partes[0])
+            if v <= 0:
+                raise ValueError(v)
+            u["aguarda"] = None
+            _capital_inicio(u, v)
+            return [pergunta_posicoes(chat, u)]
+        if a and not cmd.startswith("/"):
             return [_msg(chat, _resposta(u, partes, hist, hoje), menu=True)]
         return [_msg(chat, _comando(estado, chat, u, cmd, partes[1:], hist, hoje), menu=True)]
     except (ValueError, IndexError):
@@ -165,10 +220,11 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
         u["aguarda"] = {"tipo": "valor", "op": op}
         return _msg(chat, f"{botao.split()[0]} Quanto ({moeda})? Ex.: <code>50</code>")
     r = u["regras"]  # ⚙️ Regras
-    return _msg(chat, f"⚙️ Agora: <b>{r['pct']:g}%</b> por sinal, máximo <b>{r['max_posicoes']}</b> posições, "
-                      f"capital {cart.fmt(r['capital_inicial'])} {moeda}. Escolhe para mudar:",
-                [[(f"{p}% por sinal", f"p|{p}") for p in (10, 20, 25)],
-                 [(f"Máx. {n} posições", f"x|{n}") for n in (3, 5, 10)],
+    return _msg(chat, f"⚙️ Agora: capital <b>{cart.fmt(r['capital_inicial'])} {moeda}</b>, até "
+                      f"<b>{r['max_posicoes']}</b> posições ({cart.fmt(r['pct'], 0)}% por sinal).\n"
+                      f"Menos posições = mais dinheiro em cada sinal e mais risco por trade; "
+                      f"mais posições = risco mais espalhado, ordens mais pequenas. Escolhe para mudar:",
+                [[(f"{n} posições", f"x|{n}") for n in (3, 5, 8, 10)],
                  [("💰 Mudar capital", "k|")]])
 
 
@@ -237,7 +293,7 @@ def _comando(estado, chat: str, u: dict, cmd: str, args: list, hist, hoje: str) 
             r["pct"] = min(max(cart.numero(pares["pct"]), 1.0), 100.0)
         if "max" in pares:
             r["max_posicoes"] = max(int(cart.numero(pares["max"])), 1)
-        return f"Regras: {r['pct']:g}% por sinal, máximo {r['max_posicoes']} posições."
+        return f"Regras: {cart.fmt(r['pct'], 0)}% por sinal, máximo {r['max_posicoes']} posições."
     if cmd == "/utilizadores" and chat == estado.get("dono"):
         return "\n".join(f"• {x['nome']} ({c}): {x['estado']}" for c, x in estado["utilizadores"].items())
     return "Não conheço esse comando. Envia /ajuda."
@@ -258,9 +314,8 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         alvo["desde"] = hoje
         out += [_tirar_botoes(cq), _msg(chat, f"{alvo['nome']}: {'aceite' if acao == 'a' else 'recusado'}.")]
         if acao == "a":
-            out.append(_msg(partes[1], f"✅ Foste aceite! A tua carteira começa com "
-                                       f"{cart.fmt(alvo['caixa'])} {alvo['regras']['moeda']} (muda em ⚙️ Regras).\n\n{AJUDA}", menu=True))
-            out += sinais_abertos(partes[1], alvo, hist)
+            out.append(_msg(partes[1], f"✅ Foste aceite!\n\n{AJUDA}", menu=True))
+            out.append(pergunta_capital(partes[1], alvo, "Vamos configurar a tua carteira.\n"))
         return out
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
@@ -271,17 +326,25 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         if acao == "p":
             u["regras"]["pct"] = min(max(n, 1.0), 100.0)
         else:
-            u["regras"]["max_posicoes"] = max(int(n), 1)
+            definir_posicoes(u, int(n))
         r = u["regras"]
-        return out + [_tirar_botoes(cq), _msg(chat, f"⚙️ Feito: {r['pct']:g}% por sinal, máximo {r['max_posicoes']} posições.",
+        return out + [_tirar_botoes(cq), _msg(chat, f"⚙️ Feito: {cart.fmt(r['pct'], 0)}% por sinal, máximo {r['max_posicoes']} posições.",
                                                menu=True)]
     if acao == "z":
         if ticker != "sim":
             return out + [_tirar_botoes(cq), _msg(chat, "Ficou tudo como estava.", menu=True)]
         cart.recomecar(u, hoje)
-        return out + [_tirar_botoes(cq), _msg(chat, f"🔄 Carteira recomeçada com {cart.fmt(u['caixa'])} "
-                                                    f"{u['regras']['moeda']}. Se foi engano, carrega em ↩️ Desfazer.",
-                                               menu=True)] + sinais_abertos(chat, u, hist)
+        return out + [_tirar_botoes(cq), pergunta_capital(chat, u, "🔄 Carteira a zero (se foi engano, carrega em "
+                                                                     "↩️ Desfazer).\n\n")]
+    if acao == "cap":
+        if ticker == "outro":
+            u["aguarda"] = {"tipo": "valor", "op": "capital_inicio"}
+            return out + [_tirar_botoes(cq), _msg(chat, f"✏️ Escreve o valor ({u['regras']['moeda']}). Ex.: <code>300</code>")]
+        _capital_inicio(u, cart.numero(ticker))
+        return out + [_tirar_botoes(cq), pergunta_posicoes(chat, u)]
+    if acao == "pos":
+        definir_posicoes(u, int(cart.numero(ticker)))
+        return out + [_tirar_botoes(cq)] + _fim_configuracao(chat, u, hist)
     if acao == "k":
         u["aguarda"] = {"tipo": "valor", "op": "capital"}
         return out + [_tirar_botoes(cq), _msg(chat, f"💰 Qual é o capital total da carteira ({u['regras']['moeda']})? Ex.: <code>100</code>")]

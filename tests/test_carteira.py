@@ -183,8 +183,7 @@ def test_menu_de_botoes_guia_compra_venda_deposito_e_regras():
     bot.processar(e, _txt(DONO, "50"), HIST, HOJE, CFG)
     assert u["caixa"] == pytest.approx(151.0)
     out = bot.processar(e, _txt(DONO, "⚙️ Regras"), HIST, HOJE, CFG)
-    assert "p|10" in out[0][1]["reply_markup"]
-    bot.processar(e, _cb(DONO, "p|10"), HIST, HOJE, CFG)
+    assert "x|10" in out[0][1]["reply_markup"]
     bot.processar(e, _cb(DONO, "x|10"), HIST, HOJE, CFG)
     assert u["regras"]["pct"] == 10 and u["regras"]["max_posicoes"] == 10
     bot.processar(e, _cb(DONO, "k|"), HIST, HOJE, CFG)
@@ -196,7 +195,7 @@ def test_menu_de_botoes_guia_compra_venda_deposito_e_regras():
     assert u["aguarda"] is None
 
 
-def test_recomecar_pede_confirmacao_pode_desfazer_e_mostra_sinais_abertos():
+def test_recomecar_pergunta_capital_e_posicoes_e_mostra_sinais_abertos():
     e = _estado()
     u = e["utilizadores"][DONO]
     cart.comprar(u, "GMAB", 0.4, 50.0, HOJE)
@@ -206,18 +205,31 @@ def test_recomecar_pede_confirmacao_pode_desfazer_e_mostra_sinais_abertos():
     bot.processar(e, _cb(DONO, "z|nao"), HIST, HOJE, CFG)
     assert u["posicoes"]
     out = bot.processar(e, _cb(DONO, "z|sim"), HIST, HOJE, CFG)
-    assert not u["posicoes"] and u["caixa"] == pytest.approx(100.0) and not u["decisoes"]
+    assert not u["posicoes"] and not u["decisoes"]
+    assert "Passo 1 de 2" in _textos(out)[0] and "cap|500" in out[-1][1]["reply_markup"]
+    # Capital escrito à mão, depois o número de posições (a % por sinal acompanha).
+    bot.processar(e, _cb(DONO, "cap|outro"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt(DONO, "300"), HIST, HOJE, CFG)
+    assert u["caixa"] == pytest.approx(300.0) and "Menos posições" in _textos(out)[0] and "100,00 USD" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "pos|3"), HIST, HOJE, CFG)
+    assert u["regras"]["max_posicoes"] == 3 and u["regras"]["pct"] == pytest.approx(33.33)
     textos = _textos(out)
+    assert "Carteira pronta" in textos[0]
     # Recebe logo o sinal em aberto dos EUA (GMAB), com botões; o europeu fica de fora.
     assert any("Sinais ainda em aberto (1)" in t for t in textos)
-    assert any("COMPRA GMAB" in t and "0,4" in t for t in textos)
+    assert any("COMPRA GMAB" in t and "1,9997" in t and "33%" in t for t in textos)
+    # Desfazer volta a antes do recomeço.
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
-    assert "GMAB" in u["posicoes"]
+    assert "GMAB" in u["posicoes"] and u["regras"]["capital_inicial"] == 100
 
 
-def test_quem_e_aceite_recebe_os_sinais_em_aberto():
+def test_quem_e_aceite_configura_a_carteira_e_recebe_os_sinais_em_aberto():
     e = _estado()
     bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
     out = bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
-    para_rui = [p["text"] for m, p in out if m == "sendMessage" and p["chat_id"] == "222"]
-    assert any("COMPRA GMAB" in t for t in para_rui)
+    assert any(p["chat_id"] == "222" and "Passo 1 de 2" in p["text"] for m, p in out if m == "sendMessage")
+    bot.processar(e, _cb("222", "cap|500"), HIST, HOJE, CFG)
+    out = bot.processar(e, _cb("222", "pos|5"), HIST, HOJE, CFG)
+    rui = e["utilizadores"]["222"]
+    assert rui["caixa"] == 500 and rui["regras"]["max_posicoes"] == 5
+    assert any("COMPRA GMAB" in t and "2" in t for t in _textos(out))
