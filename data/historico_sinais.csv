@@ -75,3 +75,9 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-28,ROKU,pullback,compra,155.72999572753906,,151.82185794824346,2.0,5,45.7,aberto,,,,sma5,duvidoso,,,
 2026-10-28,VLGEA,pullback,compra,42.900001525878906,,40.1304297787574,3.0,5,52.5,aberto,,,,sma5,manter,,,
 2026-10-28,PDS,semana_forte,compra,105.6449966430664,117.34684736340851,99.79407128289536,5.0,5,76.6,aberto,,,,atr_3_15,duvidoso,,,
+2026-10-28,FCBC,pullback,compra,46.845001220703125,,44.30618948784892,2.0,5,71.8,aberto,,,,sma5,duvidoso,4.0,apoia,0.6
+2026-10-28,EBF,pullback,compra,22.1200008392334,,21.308845830170757,2.0,5,52.5,aberto,,,,sma5,manter,1.0,neutro,0.0
+2026-10-28,CVS,pullback,compra,90.19000244140625,,85.90525822855307,2.0,5,47.6,aberto,,,,sma5,duvidoso,4.0,apoia,0.15
+2026-10-28,CI,pullback,compra,295.04998779296875,,279.9613682850825,3.5,5,62.0,aberto,,,,sma5,manter,2.0,neutro,0.3
+2026-10-28,PSO,pullback,compra,17.299999237060547,,16.63310898644946,3.0,5,66.7,aberto,,,,sma5,manter,2.0,apoia,0.3
+2026-10-28,DIS,pullback,compra,109.16000366210938,,105.28088888896265,2.0,5,41.4,aberto,,,,sma5,duvidoso,4.0,neutro,0.15
