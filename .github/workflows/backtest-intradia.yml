@@ -1,0 +1,35 @@
+name: Backtest intradiário
+
+# Só à mão: compara o momento de entrada nos rompimentos com preços de hora a hora.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ler os preços guardados pelos sinais
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/precos.parquet
+            data/universo.csv
+            data/universo_filtrado.csv
+            data/universo_atualizado_em.txt
+          key: dados-nenhum
+          restore-keys: dados-
+      - run: python passo3b_intradia.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backtest-intradia
+          path: data/backtest_intradia.csv

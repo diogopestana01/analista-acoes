@@ -136,3 +136,16 @@ def test_investigador_avisa_e_bloqueia_so_se_configurado(monkeypatch):
                                  "stop": 9.5, "dias_estimados": 3, "setup": "pullback",
                                  "veredicto_inv": "rejeitar", "argumento_inv": "Subida já esticada."})
     assert "Advogado do diabo (rejeitar): Subida já esticada." in m
+
+
+def test_intradia_momento_de_entrada():
+    import passo3b_intradia as b
+    idx = pd.date_range("2026-10-01 13:30", periods=7, freq="h", tz="UTC")
+    dia = pd.DataFrame({"open": 100.0, "high": 101.0, "low": 99.0,
+                        "close": [99, 100.6, 99.5, 100.8, 101.2, 101.5, 101.4], "volume": 400.0}, index=idx)
+    e = {"max20": 100.5, "atr": 1.0, "vol_media": 1000.0}   # volume do dia 2800 >= 1,5 x 1000
+    assert b.entrada(dia, e, "imediato") == 1
+    assert b.entrada(dia, e, "confirma_1h") is None          # a hora 2 voltou abaixo
+    assert b.entrada(dia, e, "folga") == 4                    # 101.2 > 100.5 + 0.5
+    assert b.entrada(dia, e, "depois_2h") == 3
+    assert b.entrada(dia, e, "fecho") == 6
