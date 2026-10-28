@@ -194,3 +194,30 @@ def test_menu_de_botoes_guia_compra_venda_deposito_e_regras():
     bot.processar(e, _txt(DONO, "🟢 Comprei"), HIST, HOJE, CFG)
     bot.processar(e, _txt(DONO, "💼 Carteira"), HIST, HOJE, CFG)
     assert u["aguarda"] is None
+
+
+def test_recomecar_pede_confirmacao_pode_desfazer_e_mostra_sinais_abertos():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "GMAB", 0.4, 50.0, HOJE)
+    bot.processar(e, _cb(DONO, f"i|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt(DONO, "🔄 Recomeçar"), HIST, HOJE, CFG)
+    assert "z|sim" in out[0][1]["reply_markup"] and u["posicoes"]  # ainda nada apagado
+    bot.processar(e, _cb(DONO, "z|nao"), HIST, HOJE, CFG)
+    assert u["posicoes"]
+    out = bot.processar(e, _cb(DONO, "z|sim"), HIST, HOJE, CFG)
+    assert not u["posicoes"] and u["caixa"] == pytest.approx(100.0) and not u["decisoes"]
+    textos = _textos(out)
+    # Recebe logo o sinal em aberto dos EUA (GMAB), com botões; o europeu fica de fora.
+    assert any("Sinais ainda em aberto (1)" in t for t in textos)
+    assert any("COMPRA GMAB" in t and "0,4" in t for t in textos)
+    bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
+    assert "GMAB" in u["posicoes"]
+
+
+def test_quem_e_aceite_recebe_os_sinais_em_aberto():
+    e = _estado()
+    bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
+    out = bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
+    para_rui = [p["text"] for m, p in out if m == "sendMessage" and p["chat_id"] == "222"]
+    assert any("COMPRA GMAB" in t for t in para_rui)

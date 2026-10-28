@@ -51,9 +51,8 @@ def formatar_sinal(s: dict) -> str:
     if pd.notna(s.get("retorno_esperado_liquido")):
         custo = " (já desconta o câmbio da XTB)" if s.get("custo", 0) > 0 else ""
         linhas.append(f"Retorno médio esperado: <b>{s['retorno_esperado_liquido'] * 100:+.1f}%</b>{custo}")
-    linhas += [
-        f"Histórico nesta ação: {acerto}",
-    ]
+    if "n_historico" in s:  # os sinais lidos do histórico não trazem esta estatística
+        linhas.append(f"Histórico nesta ação: {acerto}")
     if s.get("resumo_noticias"):
         linhas.append(f"Notícias: {html.escape(str(s['resumo_noticias']))}")
     if s.get("risco_evento"):

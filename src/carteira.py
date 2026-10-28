@@ -208,6 +208,13 @@ def definir_capital(u: dict, valor: float, data: str) -> str:
     return f"Capital definido: {fmt(valor)} {u['regras']['moeda']}. Livre: {fmt(u['caixa'])}."
 
 
+def recomecar(u: dict, hoje: str) -> None:
+    """Carteira do zero com o mesmo capital e regras. Pode ser desfeito com desfazer()."""
+    _guardar_anterior(u)
+    u.update({"caixa": float(u["regras"]["capital_inicial"]), "desde": hoje, "posicoes": {},
+              "operacoes": [], "decisoes": {}, "aguarda": None})
+
+
 def desfazer(u: dict) -> str:
     ant = u.get("anterior")
     if not ant:
