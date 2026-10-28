@@ -100,14 +100,14 @@ MOTIVOS = {"fora_mercado": "fora da tua carteira (só {mercados})",
            "sem_capital": "sem capital livre para mais uma posição"}
 
 
-def linha_tamanho(u: dict, t: dict) -> str:
+def linha_tamanho(u: dict, t: dict, livre: float | None = None) -> str:
     r = u["regras"]
     if t["motivo"]:
         txt = MOTIVOS[t["motivo"]].format(mercados=", ".join(m.upper() for m in r["mercados"]),
                                           max=r["max_posicoes"])
         return f"💼 Carteira: {txt}."
     return (f"💼 Carteira: compra <b>{fmt_qtd(t['qtd'])}</b> ações (~{fmt(t['valor'])} {r['moeda']}, "
-            f"{fmt(r['pct'], 0)}%). Livre: {fmt(u['caixa'])} {r['moeda']}.")
+            f"{fmt(r['pct'], 0)}%). Livre depois: {fmt(u['caixa'] - t['valor'] if livre is None else livre)} {r['moeda']}.")
 
 
 def posicao_mais_fraca(u: dict, hoje: str) -> str | None:
