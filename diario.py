@@ -57,7 +57,10 @@ def main() -> None:
         cabecalho = (f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
         registos = [{**s, "data_sinal": data} for s in novos.to_dict("records")]
-        for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono):
+        # último preço guardado de cada ação: serve para avaliar as posições abertas (troca pela mais fraca)
+        ultimo = precos.sort_values("data").groupby("ticker")["close"].last()
+        bot.COTAR = lambda ts: {t: float(ultimo[t]) for t in ts if t in ultimo.index}
+        for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data):
             telegram.enviar(texto, chat, botoes)
 
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"])

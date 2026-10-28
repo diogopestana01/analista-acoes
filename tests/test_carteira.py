@@ -255,11 +255,12 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
     assert "COMPRAR FORTE" in textos[1] and "Confiança 92/100 (n.º 1 de 3)" in textos[1]
     assert "COMPRAR MEDIO" in textos[2]
     assert "Ficaram de fora 1" in textos[3] and "FRACO" in textos[3] and msgs[3][2] is None
-    # Carteira cheia: só um aviso, sem sinais.
+    # Carteira cheia e nenhum sinal claramente melhor: só um aviso, sem sinais.
     bot.definir_posicoes(u, 1)
-    msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
-    assert "carteira está cheia (1/1)" in msgs[0][1] and "AAA" in msgs[0][1]
-    assert not any("COMPRA" in m[1] for m in msgs)
+    fracos = [{**n, "pontuacao": 60.0} for n in novos if n["ticker"] != "AAA"]
+    msgs = bot.mensagens_sinais(e, fracos, "cab", DONO)
+    assert len(msgs) == 1 and "carteira está cheia (1/1)" in msgs[0][1] and "Não entraram" in msgs[0][1]
+    assert "AAA (força 50)" in msgs[0][1] and "COMPRAR" not in msgs[0][1]
 
 
 def test_sinais_em_aberto_ao_preco_de_agora(monkeypatch):
@@ -327,3 +328,33 @@ def test_nome_com_simbolos_nao_parte_o_html():
     out = bot.processar(e, _txt("222", "/start", "Zé & <Rui>"), HIST, HOJE, CFG)
     assert all("<Rui>" not in p["text"] for m, p in out if m == "sendMessage")
     assert "Zé &amp; &lt;Rui&gt;" in out[1][1]["text"]
+
+
+def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
+    hist = _hist([{"data_sinal": "2026-10-22", "ticker": "VELHA", "entrada": 10.0, "objetivo": 11.0, "stop": 9.5,
+                   "pontuacao": 55.0, "max_dias": 5},
+                  {"data_sinal": HOJE, "ticker": "NOVA", "entrada": 20.0, "objetivo": 22.0, "stop": 19.0,
+                   "pontuacao": 77.0}])
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.definir_posicoes(u, 1)
+    cart.comprar(u, "VELHA", 2, 10.0, "2026-10-22", bot._sinal(hist, "VELHA"))
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"VELHA": 10.5, "NOVA": 20.0})
+    nova = {**hist.iloc[1].to_dict(), "data_sinal": HOJE}
+    msgs = bot.mensagens_sinais(e, [nova], "cab", DONO, hist, HOJE)
+    # VELHA já usou 4 de 5 dias: força 55 x 1/5 = 11; NOVA tem 77 -> troca.
+    assert "mas há um sinal melhor" in msgs[0][1]
+    texto, botoes = msgs[1][1], msgs[1][2]
+    assert "Vender <b>VELHA</b>" in texto and "Força 11" in texto and "COMPRAR NOVA" in texto
+    assert botoes[0][0][1] == f"s|VELHA|NOVA|{HOJE}"
+    out = bot.processar(e, _cb(DONO, f"s|VELHA|NOVA|{HOJE}"), hist, HOJE, CFG)
+    assert "Troca registada" in _textos(out)[0]
+    assert "VELHA" not in u["posicoes"] and u["posicoes"]["NOVA"]["preco"] == 20.0
+    assert u["posicoes"]["NOVA"]["stop"] == 19.0
+    # Desfazer anula a troca inteira.
+    bot.processar(e, _txt(DONO, "↩️ Desfazer"), hist, HOJE, CFG)
+    assert "VELHA" in u["posicoes"] and "NOVA" not in u["posicoes"]
+    # Posição comprada hoje (força 55) contra um sinal de 65: diferença pequena, não troca.
+    u["posicoes"]["VELHA"]["data"] = HOJE
+    msgs = bot.mensagens_sinais(e, [{**nova, "pontuacao": 65.0}], "cab", DONO, hist, HOJE)
+    assert len(msgs) == 1 and "Não entraram: NOVA (65)" in msgs[0][1]

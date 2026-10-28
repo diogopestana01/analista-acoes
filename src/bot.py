@@ -9,6 +9,9 @@ import html
 import json
 import secrets
 
+import copy
+
+import numpy as np
 import pandas as pd
 
 from . import carteira as cart
@@ -21,6 +24,8 @@ FUGIU = 0.5   # já percorreu mais de metade do caminho até ao objetivo -> não
 USERNAME = None   # nome do bot no Telegram (para os links de convite); o bot_carteira.py preenche-o
 DONO = ""         # chat do dono, para lhe mostrar o botão 🎟️ Convidar no menu
 DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
+MARGEM_TROCA = 15  # só propõe trocar se o sinal novo tiver pelo menos mais estes pontos que a posição mais fraca
+CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (sem sinal)
 
 AJUDA = """<b>Como usar</b>
 Usa o menu de botões em baixo:
@@ -454,6 +459,11 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, "👍 Qualquer dúvida, carrega em ❓ Ajuda.", menu=True)]
     if acao == "q":
         return out + [_msg(chat, porque(hist, ticker, partes[2]))]
+    if acao == "s":
+        return out + [_tirar_botoes(cq), _msg(chat, _trocar(u, ticker, partes[2], partes[3], hist, hoje), menu=True)]
+    if acao == "n":
+        u["decisoes"].setdefault(cart.chave_sinal(ticker, partes[2]), "ignorei")
+        return out + [_tirar_botoes(cq), _msg(chat, "🔒 Mantive a carteira como está.")]
     if acao in ("p", "x"):
         n = cart.numero(ticker)
         if acao == "p":
@@ -518,7 +528,8 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
 
 # ---------- mensagens enviadas pelos sinais (diario.py) ----------
 
-def mensagens_sinais(estado: dict | None, novos: list[dict], cabecalho: str, dono: str | None) -> list:
+def mensagens_sinais(estado: dict | None, novos: list[dict], cabecalho: str, dono: str | None,
+                     hist: pd.DataFrame | None = None, hoje: str = "") -> list:
     """Para cada utilizador ativo: só os sinais mais fortes que cabem nos lugares livres da carteira,
     com tamanho e botões; os restantes numa linha. Sem estado (carteira desligada), o dono recebe todos."""
     out = []
@@ -530,7 +541,7 @@ def mensagens_sinais(estado: dict | None, novos: list[dict], cabecalho: str, don
                 out.append((dono, telegram.formatar_sinal(s), b))
         return out
     for chat, u in cart.ativos(estado).items():
-        out += [(chat, texto, b) for texto, b in _ronda(u, novos, cabecalho)]
+        out += [(chat, texto, b) for texto, b in _ronda(u, novos, cabecalho, hist, hoje)]
     return out
 
 
@@ -552,26 +563,117 @@ def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
     return elegiveis[:livres], elegiveis[livres:], livres
 
 
-def _ronda(u: dict, sinais: list[dict], cabecalho: str) -> list:
-    """Cabeçalho + os melhores sinais (com botões) + uma linha com os que ficaram de fora."""
+def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | None = None, hoje: str = "") -> list:
+    """Cabeçalho + os melhores sinais (com botões) + uma linha com os que ficaram de fora.
+    Com a carteira cheia: propõe trocar a posição mais fraca pelo melhor sinal, se valer a pena."""
     top, resto, livres = escolher(u, sinais)
     if not top and not resto:
         return []
     r = u["regras"]
     ocupadas = f"{len(u['posicoes'])}/{r['max_posicoes']}"
-    if top:
-        extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
-                 f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
-    else:
-        fraca = cart.posicao_mais_fraca(u, "")
-        extra = (f"\n💼 A tua carteira está cheia ({ocupadas}), por isso não te mostro estes sinais."
-                 + (f" A posição mais antiga é {fraca}; se a venderes, abres lugar." if fraca else ""))
+    nomes = ", ".join(f"{s['ticker']} ({_confianca(s):.0f})" for s in resto[:8])
+    nomes += f" e mais {len(resto) - 8}" if len(resto) > 8 else ""
+    if not top:
+        troca = proposta_troca(u, resto[0], hist, hoje)
+        if troca:
+            return [(cabecalho + f"\n💼 A tua carteira está cheia ({ocupadas}), mas há um sinal melhor do que "
+                                 f"uma das tuas posições.", None), troca]
+        fraca = posicao_mais_fraca(u, hist, hoje)
+        txt = (f"\n💼 A tua carteira está cheia ({ocupadas}). Não entraram: {nomes}.")
+        if fraca:
+            txt += (f"\nA tua posição mais fraca é {fraca['ticker']} (força {fraca['forca']:.0f}); "
+                    f"nenhum sinal novo a supera por {MARGEM_TROCA} pontos, por isso não proponho troca.")
+        return [(cabecalho + txt, None)]
+    extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
+             f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
     out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto))
     if resto:
-        nomes = ", ".join(f"{s['ticker']} ({_confianca(s):.0f})" for s in resto[:8])
-        mais = f" e mais {len(resto) - 8}" if len(resto) > 8 else ""
-        out.append((f"➖ Ficaram de fora {len(resto)} com menos confiança: {nomes}{mais}.", None))
+        out.append((f"➖ Ficaram de fora {len(resto)} com menos confiança: {nomes}.", None))
     return out
+
+
+# ---------- troca pela posição mais fraca ----------
+
+def _cotacoes(tickers: list[str]) -> dict:
+    if COTAR is None or not tickers:
+        return {}
+    try:
+        return COTAR(sorted(set(tickers))) or {}
+    except Exception:  # noqa: BLE001  sem cotação, usa-se o preço de compra
+        return {}
+
+
+def forcas(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
+    """Força de cada posição aberta = confiança do sinal x parte do prazo que ainda falta.
+    Uma posição que já gastou o prazo quase todo vale pouco, mesmo que o sinal fosse bom."""
+    px = _cotacoes(list(u["posicoes"]))
+    out = []
+    for t, p in u["posicoes"].items():
+        conf, prazo = CONF_SEM_SINAL, 5
+        if hist is not None and p.get("sinal") and "|" in p["sinal"]:
+            h = hist[(hist["ticker"] == t) & (hist["data_sinal"].astype(str) == p["sinal"].split("|")[1])]
+            if not h.empty:
+                conf = _num(h.iloc[-1].get("pontuacao")) or CONF_SEM_SINAL
+                prazo = int(_num(h.iloc[-1].get("max_dias")) or 5)
+        usados = int(np.busday_count(p.get("data") or hoje, hoje)) if hoje and p.get("data") else 0
+        falta = max(prazo - usados, 0)
+        preco = px.get(t) or p["preco"]
+        out.append({"ticker": t, "conf": conf, "usados": usados, "prazo": prazo, "preco": preco,
+                    "pct": (preco / p["preco"] - 1) * 100, "forca": conf * falta / prazo})
+    return sorted(out, key=lambda x: (x["forca"], u["posicoes"][x["ticker"]].get("data", "")))
+
+
+def posicao_mais_fraca(u: dict, hist: pd.DataFrame | None, hoje: str) -> dict | None:
+    f = forcas(u, hist, hoje)
+    return f[0] if f else None
+
+
+def proposta_troca(u: dict, s: dict, hist: pd.DataFrame | None, hoje: str) -> tuple | None:
+    """(texto, botões) a propor vender a posição mais fraca para comprar o sinal `s`, ou None."""
+    fraca = posicao_mais_fraca(u, hist, hoje)
+    if not fraca or not u["posicoes"][fraca["ticker"]].get("acompanhar", True):
+        return None
+    if _confianca(s) < fraca["forca"] + MARGEM_TROCA:
+        return None
+    # Simular a carteira depois da venda para dizer quanto comprar do sinal novo.
+    depois = copy.deepcopy(u)
+    pos = depois["posicoes"].pop(fraca["ticker"])
+    depois["caixa"] += pos["qtd"] * fraca["preco"] * (1 - u["regras"]["custo_pct"] / 100)
+    t = cart.tamanho(depois, s["ticker"], s["entrada"])
+    if t["motivo"]:
+        return None
+    rank = f"⭐ Confiança {_confianca(s):.0f}/100"
+    texto = (f"🔁 <b>Proposta de troca</b>\n"
+             f"Vender <b>{fraca['ticker']}</b> a ~{cart.fmt(fraca['preco'])} ({cart.sinal_fmt(fraca['pct'], 1)}%). "
+             f"Força {fraca['forca']:.0f}: confiança {fraca['conf']:.0f}, já usou {fraca['usados']} de "
+             f"{fraca['prazo']} dias do prazo.\n"
+             f"Para comprar:\n\n" + sinal_simples(depois, s, t, depois["caixa"] - t["valor"], rank)
+             + "\n\nFizeste a troca na XTB? Registo as duas operações ao preço de agora.")
+    dados = f"s|{fraca['ticker']}|{s['ticker']}|{s['data_sinal']}"
+    return texto, [[("✅ Troquei", dados), ("❌ Manter", f"n|{s['ticker']}|{s['data_sinal']}")],
+                   [("ℹ️ Porquê este sinal?", f"q|{s['ticker']}|{s['data_sinal']}")]]
+
+
+def _trocar(u: dict, vende: str, compra: str, data: str, hist: pd.DataFrame, hoje: str) -> str:
+    if vende not in u["posicoes"]:
+        return f"Já não tens {vende} na carteira; se ainda quiseres {compra}, usa 🟢 Comprei."
+    if compra in u["posicoes"]:
+        return f"Já tens {compra} na carteira."
+    sinal = _sinal(hist, compra, data)
+    px = _cotacoes([vende, compra])
+    preco_venda = px.get(vende) or u["posicoes"][vende]["preco"]
+    preco_compra = px.get(compra) or (sinal or {}).get("entrada")
+    if not preco_compra:
+        return f"Não tenho o preço de {compra}. Regista com 🔴 Vendi e 🟢 Comprei."
+    txt_venda = cart.vender(u, vende, None, preco_venda, hoje)
+    anterior = u["anterior"]
+    t = cart.tamanho(u, compra, preco_compra)
+    if t["motivo"]:
+        return txt_venda + "\n" + cart.linha_tamanho(u, t)
+    txt_compra = cart.comprar(u, compra, t["qtd"], preco_compra, hoje, sinal)
+    u["anterior"] = anterior  # ↩️ Desfazer anula a troca inteira
+    return (f"🔁 Troca registada.\n{txt_venda}\n{txt_compra}\n"
+            f"Se os preços na XTB foram outros, carrega em ↩️ Desfazer e regista com 🔴 Vendi e 🟢 Comprei.")
 
 
 def _num(x) -> float | None:
