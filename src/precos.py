@@ -50,6 +50,35 @@ def descarregar(tickers: list[str], periodo: str = "2y", lote: int = 200) -> pd.
     return pd.concat(partes, ignore_index=True)
 
 
+def atuais(tickers: list[str]) -> dict[str, float]:
+    """Último preço de cada ação (velas de 5 min de hoje; fora de horas, o último fecho)."""
+    import yfinance as yf
+
+    if not tickers:
+        return {}
+    out: dict[str, float] = {}
+    try:
+        bruto = yf.download(tickers, period="5d", interval="5m", group_by="ticker",
+                            auto_adjust=True, threads=True, progress=False)
+    except Exception as e:  # noqa: BLE001
+        log.warning("Cotações atuais falharam: %s", e)
+        return out
+    for t in tickers:
+        serie = None
+        for chave in ((t, "Close"), ("Close", t), "Close"):
+            try:
+                serie = bruto[chave]
+                break
+            except KeyError:
+                continue
+        if serie is None:
+            continue
+        serie = pd.Series(serie.squeeze() if hasattr(serie, "squeeze") else serie).dropna()
+        if len(serie):
+            out[t] = float(serie.iloc[-1])
+    return out
+
+
 def taxas_eur() -> dict[str, float]:
     """Quantas unidades de cada moeda vale 1 EUR (último fecho)."""
     import yfinance as yf

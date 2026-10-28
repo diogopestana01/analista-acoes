@@ -254,3 +254,21 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
     msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
     assert "carteira está cheia (1/1)" in msgs[0][1] and "AAA" in msgs[0][1]
     assert not any("COMPRA" in m[1] for m in msgs)
+
+
+def test_sinais_em_aberto_ao_preco_de_agora(monkeypatch):
+    base = {"data_sinal": "2026-10-27", "estado": "aberto"}
+    hist = _hist([{**base, "ticker": "SOBE", "entrada": 50.0, "objetivo": 56.0, "stop": 47.0, "pontuacao": 90.0},
+                  {**base, "ticker": "STOP", "entrada": 50.0, "objetivo": 56.0, "stop": 47.0, "pontuacao": 85.0},
+                  {**base, "ticker": "FUGIU", "entrada": 50.0, "objetivo": 56.0, "stop": 47.0, "pontuacao": 80.0},
+                  {**base, "ticker": "BOM", "entrada": 50.0, "objetivo": 56.0, "stop": 47.0, "pontuacao": 70.0}])
+    cot = {"SOBE": 56.5, "STOP": 46.0, "FUGIU": 54.0, "BOM": 51.0}
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {t: cot[t] for t in ts})
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    textos = [p["text"] for m, p in bot.sinais_abertos(DONO, u, hist)]
+    assert "preço de agora" in textos[0]
+    assert len(textos) == 2 and "COMPRA BOM" in textos[1] and "51.00" in textos[1]  # só o BOM, ao preço atual
+    # O botão Comprei regista ao preço mostrado (51), não ao do sinal (50).
+    bot.processar(e, _cb(DONO, "c|BOM|2026-10-27"), hist, HOJE, CFG)
+    assert u["posicoes"]["BOM"]["preco"] == 51.0 and u["posicoes"]["BOM"]["stop"] == 47.0
