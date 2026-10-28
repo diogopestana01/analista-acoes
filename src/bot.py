@@ -12,6 +12,11 @@ import pandas as pd
 from . import carteira as cart
 from . import telegram
 
+# Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
+# precos.atuais; nos testes fica None (usa o preço do sinal).
+COTAR = None
+FUGIU = 0.5   # já percorreu mais de metade do caminho até ao objetivo -> não sugerir
+
 AJUDA = """<b>Como usar</b>
 Usa o menu de botões em baixo:
 💼 Carteira: posições, dinheiro livre e a carteira simulada
@@ -363,10 +368,11 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         sinal = _sinal(hist, ticker, data)
         if not sinal:
             return out + [_msg(chat, f"Ainda não tenho o sinal de {ticker}. Tenta outra vez daqui a 1 minuto.")]
-        t = cart.tamanho(u, ticker, sinal["entrada"])
+        preco = (u.get("precos_mostrados") or {}).get(chave, sinal["entrada"])
+        t = cart.tamanho(u, ticker, preco)
         if t["motivo"]:
             return out + [_msg(chat, cart.linha_tamanho(u, t) + "\nSe compraste na mesma, usa ✏️ Outro preço com a quantidade.")]
-        return out + [_tirar_botoes(cq), _msg(chat, cart.comprar(u, ticker, t["qtd"], sinal["entrada"], hoje, sinal))]
+        return out + [_tirar_botoes(cq), _msg(chat, cart.comprar(u, ticker, t["qtd"], preco, hoje, sinal))]
     if ticker not in u["posicoes"]:
         return out + [_tirar_botoes(cq), _msg(chat, f"Já não tens {ticker} na carteira.")]
     if acao == "v":
@@ -454,17 +460,45 @@ def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
     return out
 
 
+def atualizar_precos(sinais: list[dict]) -> list[dict]:
+    """Troca o preço de entrada pelo preço de agora e tira os sinais que já não servem:
+    sem cotação, já abaixo do stop, já no objetivo ou que já fizeram mais de metade do caminho."""
+    if COTAR is None:
+        return sinais
+    px = COTAR(sorted({s["ticker"] for s in sinais}))
+    out = []
+    for s in sinais:
+        p, e, o, st = px.get(s["ticker"]), s["entrada"], s.get("objetivo"), s.get("stop")
+        if p is None or (st and p <= st) or (o and p >= o):
+            continue
+        alvo = o or (e + (e - st) if st else None)
+        if alvo and p > e + FUGIU * (alvo - e):
+            continue
+        out.append({**s, "entrada": p, "entrada_sinal": e})
+    return out
+
+
 def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
-    """Para quem começa (ou recomeça): os sinais em aberto mais fortes que cabem na carteira, com botões."""
+    """Para quem começa (ou recomeça): os sinais em aberto mais fortes que cabem na carteira,
+    ao preço de agora, com botões."""
     h = hist[(hist["estado"] == "aberto") & (hist["direcao"] == "compra")]
+    h = h[[cart.mercado(t) in u["regras"]["mercados"] and t not in u["posicoes"] for t in h["ticker"]]]
     sinais = [{k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in r.items()}
               for r in h.assign(data_sinal=h["data_sinal"].astype(str),
                                 dias_estimados=h["dias_estimados"].fillna(5)).to_dict("records")]
-    cab = ("📋 <b>Sinais ainda em aberto</b>\nO preço é o do dia do sinal; "
-           "confirma o preço atual na XTB antes de entrar.")
+    sinais = atualizar_precos(sinais)
+    if COTAR is not None:
+        # guardar o preço mostrado: o botão ✅ Comprei regista a esse preço, não ao do dia do sinal
+        u["precos_mostrados"] = {cart.chave_sinal(s["ticker"], s["data_sinal"]): s["entrada"] for s in sinais}
+        cab = ("📋 <b>Sinais ainda em aberto, ao preço de agora</b>\nSó os que ainda não bateram no stop "
+               "nem no objetivo e não subiram demasiado desde o sinal.")
+    else:
+        cab = ("📋 <b>Sinais ainda em aberto</b>\nO preço é o do dia do sinal; "
+               "confirma o preço atual na XTB antes de entrar.")
     ronda = _ronda(u, sinais, cab)
     if not ronda:
-        return [_msg(chat, "Não há sinais em aberto neste momento. Aviso-te quando chegar o próximo.", menu=True)]
+        return [_msg(chat, "Não há sinais em aberto que ainda valham a pena agora. Aviso-te quando chegar o próximo.",
+                     menu=True)]
     return [_msg(chat, texto, b) for texto, b in ronda]
 
 

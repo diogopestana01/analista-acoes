@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, bot, cofre, telegram
+from src import acompanhamento, bot, cofre, precos, telegram
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("carteira")
@@ -55,6 +55,7 @@ def executar(chamadas: list) -> None:
 def main(minutos: float) -> None:
     cfg = yaml.safe_load((RAIZ / "config_carteira.yaml").read_text())
     k = cofre.chave()
+    bot.COTAR = precos.atuais  # sinais em aberto mostrados ao preço de agora
     if k is None:
         raise SystemExit("Falta TELEGRAM_TOKEN.")
     com_git = os.environ.get("CARTEIRA_GIT") == "1"
