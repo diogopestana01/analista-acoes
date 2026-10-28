@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import math
 
+import numpy as np
 import pandas as pd
 
 REGRAS_BASE = {"capital_inicial": 100.0, "pct": 20.0, "max_posicoes": 5, "moeda": "USD",
@@ -237,7 +238,7 @@ def simular(hist: pd.DataFrame, regras: dict, desde: str = "") -> dict:
     e sai ao preço de fecho registado no histórico."""
     r = {**REGRAS_BASE, **regras}
     h = hist[(hist["direcao"] == "compra") & (hist["data_sinal"].astype(str) >= (desde or ""))].copy()
-    h = h[[mercado(t) in r["mercados"] for t in h["ticker"]]]
+    h = h[h["ticker"].map(lambda t: mercado(t) in r["mercados"]).astype(bool)]  # lista vazia selecionava colunas
     h = h.sort_values(["data_sinal", "pontuacao"], ascending=[True, False])
     caixa, abertas, fechadas, ganhas = float(r["capital_inicial"]), {}, 0, 0
 
@@ -269,18 +270,51 @@ def simular(hist: pd.DataFrame, regras: dict, desde: str = "") -> dict:
             "abertas": len(abertas), "fechadas": fechadas, "ganhas": ganhas}
 
 
-def formatar_carteira(u: dict, sim: dict | None = None) -> str:
-    r, moeda = u["regras"], u["regras"]["moeda"]
-    linhas = [f"💼 <b>Carteira de {u['nome']}</b> ({moeda})",
-              f"Valor (ao preço de compra): <b>{fmt(valor_total(u))}</b> · livre {fmt(u['caixa'])} · "
-              f"{len(u['posicoes'])}/{r['max_posicoes']} posições"]
+def formatar_carteira(u: dict, sim: dict | None = None, cot: dict | None = None, hoje: str = "",
+                      prazos: dict | None = None) -> str:
+    """Carteira com cada posição ao preço de agora (`cot`), lucro por realizar, distância ao objetivo
+    e ao stop e dias do prazo. Sem cotação, usa o preço de compra."""
+    r, moeda, cot, prazos = u["regras"], u["regras"]["moeda"], cot or {}, prazos or {}
+    linhas_pos, em_acoes, por_realizar = [], 0.0, 0.0
     for t, p in sorted(u["posicoes"].items(), key=lambda x: x[1].get("data", "")):
-        extra = f" · stop {fmt(p['stop'])}" if p.get("stop") and pd.notna(p["stop"]) else ""
-        extra += "" if p.get("acompanhar", True) else " · sem acompanhamento"
-        linhas.append(f"• {t}: {fmt_qtd(p['qtd'])} a {fmt(p['preco'])} ({fmt(p['qtd'] * p['preco'])}){extra} · desde {p.get('data', '')}")
+        agora = cot.get(t)
+        px = agora or p["preco"]
+        valor, lucro = p["qtd"] * px, p["qtd"] * (px - p["preco"])
+        em_acoes, por_realizar = em_acoes + valor, por_realizar + lucro
+        pct = (px / p["preco"] - 1) * 100
+        cor = "⚪" if not agora else ("🟢" if lucro >= 0 else "🔴")
+        linha = f"{cor} <b>{t}</b>: {fmt_qtd(p['qtd'])} a {fmt(p['preco'])}"
+        linha += (f" → agora {fmt(agora)} · <b>{sinal_fmt(lucro)} {moeda}</b> ({sinal_fmt(pct, 1)}%)" if agora
+                  else f" ({fmt(valor)} {moeda}, sem cotação agora)")
+        info = []
+        obj, stop = p.get("objetivo"), p.get("stop")
+        if obj and pd.notna(obj):
+            info.append(f"🎯 {fmt(obj)} (faltam {sinal_fmt((obj / px - 1) * 100, 1)}%)")
+        if stop and pd.notna(stop):
+            info.append(f"🛑 {fmt(stop)} (a {sinal_fmt((stop / px - 1) * 100, 1)}%)")
+        prazo = prazos.get(t)
+        if prazo and hoje and p.get("data"):
+            dia = int(np.busday_count(p["data"], hoje)) + 1
+            info.append(f"⏳ dia {min(dia, prazo)} de {prazo}" + (" (último)" if dia >= prazo else ""))
+        elif p.get("data"):
+            info.append(f"desde {p['data']}")
+        if not p.get("acompanhar", True):
+            info.append("sem avisos de venda")
+        linhas_pos.append(linha + ("\n    " + " · ".join(info) if info else ""))
+    total = u["caixa"] + em_acoes
+    ganho = total - r["capital_inicial"]
+    linhas = [f"💼 <b>Carteira de {u['nome']}</b> ({moeda})",
+              f"Valor agora: <b>{fmt(total)}</b> ({sinal_fmt(ganho)} {moeda}, "
+              f"{sinal_fmt(ganho / r['capital_inicial'] * 100 if r['capital_inicial'] else 0, 1)}% desde o início)",
+              f"Em ações {fmt(em_acoes)} · livre {fmt(u['caixa'])} · {len(u['posicoes'])}/{r['max_posicoes']} posições"]
+    if u["posicoes"]:
+        linhas.append(f"Por realizar: <b>{sinal_fmt(por_realizar)} {moeda}</b>\n")
+        linhas += linhas_pos
+        if cot:
+            linhas.append("<i>Preços do Yahoo, podem ter até 15 min de atraso.</i>")
     lucro, n, g = realizado(u)
     if n:
-        linhas.append(f"Lucro realizado: {sinal_fmt(lucro)} {moeda} em {n} vendas ({g} a ganhar).")
+        linhas.append(f"\nLucro realizado: {sinal_fmt(lucro)} {moeda} em {n} vendas ({g} a ganhar).")
     if sim:
         linhas.append(f"🤖 Simulada (entra em todos os sinais): {fmt(sim['valor'])} "
                       f"({sinal_fmt(sim['retorno_pct'], 1)}%), "
