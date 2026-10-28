@@ -1,6 +1,6 @@
 """Recolhe notícias recentes por ação, só de fontes gratuitas e fiáveis.
 
-  yahoo   feed RSS de manchetes do Yahoo Finance (a biblioteca yfinance fica de reserva)
+  yahoo   desligado: a partir do GitHub o Yahoo responde "Too Many Requests" (429)
   google  Google Notícias (RSS), pesquisa pelo nome da empresa e pelo ticker
   sec     comunicações oficiais à SEC (ações dos EUA): 8-K (factos relevantes) e
           prospetos de emissão de ações (diluição). É a fonte mais fiável de todas.
@@ -26,7 +26,11 @@ SEC_ATOM = ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={t}&
             "&count=15&output=atom")
 NAVEGADOR = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36"}
 # A SEC pede um User-Agent que identifique quem pede (pode ser mudado com a variável SEC_USER_AGENT).
-SEC_UA = {"User-Agent": os.environ.get("SEC_USER_AGENT", "analista-acoes github.com/diogopestana01/analista-acoes")}
+# Sem um e-mail no User-Agent a SEC recusa (403); usa-se o endereço noreply do bot do repositório.
+SEC_UA = {"User-Agent": os.environ.get("SEC_USER_AGENT", "analista-acoes analista-bot@users.noreply.github.com")}
+# Páginas de cotação e previsões que o Google devolve como "notícia" mas não dizem nada.
+_RUIDO = re.compile(r"stock price, news, quote|stock quote|quote & history|estimates [–-]|forecast [—-] price target|"
+                    r"balance sheet & financial health|symbol__", re.IGNORECASE)
 
 # Itens dos 8-K que interessam num trade de dias, em linguagem simples.
 ITENS_8K = {"1.01": "acordo relevante", "1.02": "fim de acordo relevante", "1.03": "falência",
@@ -109,6 +113,7 @@ def pesquisar_google(ticker: str, consulta: str, n: int = 15) -> list[dict]:
 
     r = requests.get(GOOGLE_NEWS.format(q=quote_plus(consulta)), timeout=20, headers=NAVEGADOR)
     feed = feedparser.parse(r.text)
+    entradas = [e for e in feed.entries if not _RUIDO.search(e.get("title", ""))]
     return [{
         "ticker": ticker,
         "titulo": e.get("title", ""),
@@ -116,7 +121,7 @@ def pesquisar_google(ticker: str, consulta: str, n: int = 15) -> list[dict]:
         "fonte": (e.get("source") or {}).get("title", "Google News"),
         "data": e.get("published"),
         "url": e.get("link", ""),
-    } for e in feed.entries[:n]]
+    } for e in entradas[:n]]
 
 
 def noticias_google(ticker: str, nome: str = "") -> list[dict]:
@@ -169,7 +174,7 @@ def recolher(tickers: dict[str, str], dias: int = 7) -> pd.DataFrame:
             except Exception:
                 nome = ""
         contagem = {}
-        fontes = (("yahoo", noticias_yahoo), ("google", lambda x: noticias_google(x, nome)), ("sec", noticias_sec))
+        fontes = (("google", lambda x: noticias_google(x, nome)), ("sec", noticias_sec))
         for nome_fonte, fonte in fontes:
             try:
                 itens = fonte(t)

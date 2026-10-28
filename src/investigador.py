@@ -78,6 +78,8 @@ def pesquisar_riscos(ticker: str, nome: str = "") -> pd.DataFrame:
             log.warning("Pesquisa de risco %s falhou: %s", ticker, e)
     df = pd.DataFrame(linhas, columns=["ticker", "titulo", "resumo", "fonte", "data", "url"])
     df["data"] = pd.to_datetime(df["data"], utc=True, errors="coerce", format="mixed")
+    # O Google nem sempre respeita o "when:14d": notícias de risco antigas já estão no preço.
+    df = df[df["data"].isna() | (df["data"] >= pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=21))]
     return df.drop_duplicates("titulo").sort_values("data", ascending=False).reset_index(drop=True)
 
 
