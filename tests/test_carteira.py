@@ -125,7 +125,7 @@ def test_mensagens_de_sinais_por_utilizador_com_tamanho():
               "objetivo": 44.0, "stop": 38.0, "dias_estimados": 3, "saida": "atr_3_15"}]
     msgs = bot.mensagens_sinais(e, novos, "cabeçalho", DONO)
     assert len(msgs) == 2  # o europeu nem aparece (conta só EUA)
-    assert "compra <b>0,4</b> ações" in msgs[1][1] and msgs[1][2][0][0][1] == f"c|GMAB|{HOJE}"
+    assert "<b>0,4</b> ações" in msgs[1][1] and msgs[1][2][0][0][1] == f"c|GMAB|{HOJE}"
     # Sem carteira (bot desligado), o dono recebe os sinais como antes.
     assert len(bot.mensagens_sinais(None, novos, "cab", DONO)) == 3
 
@@ -216,7 +216,7 @@ def test_recomecar_pergunta_capital_e_posicoes_e_mostra_sinais_abertos():
     assert "Carteira pronta" in textos[0]
     # Recebe logo o sinal em aberto dos EUA (GMAB), com botões; o europeu fica de fora.
     assert any("Sinais ainda em aberto" in t and "o melhor" in t for t in textos)
-    assert any("COMPRA GMAB" in t and "1,9997" in t and "33%" in t for t in textos)
+    assert any("COMPRAR GMAB" in t and "1,9997" in t for t in textos)
     # Desfazer volta a antes do recomeço.
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
     assert "GMAB" in u["posicoes"] and u["regras"]["capital_inicial"] == 100
@@ -226,12 +226,18 @@ def test_quem_e_aceite_configura_a_carteira_e_recebe_os_sinais_em_aberto():
     e = _estado()
     bot.processar(e, _txt("222", "/start", "Rui"), HIST, HOJE, CFG)
     out = bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
-    assert any(p["chat_id"] == "222" and "Passo 1 de 2" in p["text"] for m, p in out if m == "sendMessage")
+    assert any(p["chat_id"] == "222" and "Como funciona" in p["text"] for m, p in out if m == "sendMessage")
+    # Visita guiada de 3 ecrãs e, no fim, a configuração da carteira.
+    assert "Um sinal" in _textos(bot.processar(e, _cb("222", "t|2|n"), HIST, HOJE, CFG))[0]
+    out = bot.processar(e, _cb("222", "t|3|n"), HIST, HOJE, CFG)
+    assert "Depois de comprar" in _textos(out)[0] and "t|fim|n" in out[-1][1]["reply_markup"]
+    out = bot.processar(e, _cb("222", "t|fim|n"), HIST, HOJE, CFG)
+    assert "Passo 1 de 2" in _textos(out)[0]
     bot.processar(e, _cb("222", "cap|500"), HIST, HOJE, CFG)
     out = bot.processar(e, _cb("222", "pos|5"), HIST, HOJE, CFG)
     rui = e["utilizadores"]["222"]
     assert rui["caixa"] == 500 and rui["regras"]["max_posicoes"] == 5
-    assert any("COMPRA GMAB" in t and "2" in t for t in _textos(out))
+    assert any("COMPRAR GMAB" in t and "2" in t for t in _textos(out))
 
 
 def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
@@ -246,8 +252,8 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
     msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
     textos = [m[1] for m in msgs]
     assert "os 2 melhores" in textos[0] and "2 lugares livres" in textos[0]
-    assert "COMPRA FORTE" in textos[1] and "Confiança 92/100 (n.º 1 de 3)" in textos[1]
-    assert "COMPRA MEDIO" in textos[2]
+    assert "COMPRAR FORTE" in textos[1] and "Confiança 92/100 (n.º 1 de 3)" in textos[1]
+    assert "COMPRAR MEDIO" in textos[2]
     assert "Ficaram de fora 1" in textos[3] and "FRACO" in textos[3] and msgs[3][2] is None
     # Carteira cheia: só um aviso, sem sinais.
     bot.definir_posicoes(u, 1)
@@ -268,7 +274,49 @@ def test_sinais_em_aberto_ao_preco_de_agora(monkeypatch):
     u = e["utilizadores"][DONO]
     textos = [p["text"] for m, p in bot.sinais_abertos(DONO, u, hist)]
     assert "preço de agora" in textos[0]
-    assert len(textos) == 2 and "COMPRA BOM" in textos[1] and "51.00" in textos[1]  # só o BOM, ao preço atual
+    assert len(textos) == 2 and "COMPRAR BOM" in textos[1] and "51,00" in textos[1]  # só o BOM, ao preço atual
     # O botão Comprei regista ao preço mostrado (51), não ao do sinal (50).
     bot.processar(e, _cb(DONO, "c|BOM|2026-10-27"), hist, HOJE, CFG)
     assert u["posicoes"]["BOM"]["preco"] == 51.0 and u["posicoes"]["BOM"]["stop"] == 47.0
+
+
+def test_convite_por_link_entra_sem_aprovacao_e_so_serve_uma_vez():
+    e = _estado()
+    bot.USERNAME = "AnalistaBot"
+    try:
+        out = bot.processar(e, _txt(DONO, "🎟️ Convidar"), HIST, HOJE, CFG)
+    finally:
+        bot.USERNAME = None
+    link = _textos(out)[1].split("\n")[-1]
+    assert link.startswith("https://t.me/AnalistaBot?start=")
+    codigo = link.split("=")[1]
+    # Só o dono vê o botão e só o dono cria convites.
+    assert "Convidar" in out[0][1]["reply_markup"]
+    out = bot.processar(e, _txt("222", f"/start {codigo}", "Rui"), HIST, HOJE, CFG)
+    rui = e["utilizadores"]["222"]
+    assert rui["estado"] == "ativo" and rui["convidado"]
+    assert "Convidar" not in out[0][1]["reply_markup"]
+    assert any(p["chat_id"] == DONO and "entrou com o teu convite" in p["text"] for m, p in out if m == "sendMessage")
+    assert any("Como funciona" in t for t in _textos(out))
+    # O mesmo link já não serve a outra pessoa: fica à espera de aprovação.
+    out = bot.processar(e, _txt("333", f"/start {codigo}", "Ze"), HIST, HOJE, CFG)
+    assert e["utilizadores"]["333"]["estado"] == "pendente" and "já foi usado" in _textos(out)[0]
+    # Um convite caducado também não.
+    bot.processar(e, _txt(DONO, "🎟️ Convidar"), HIST, "2026-10-01", CFG)
+    velho = [c for c, v in e["convites"].items() if v["criado"] == "2026-10-01"][0]
+    bot.processar(e, _txt("444", f"/start {velho}", "Ana"), HIST, HOJE, CFG)
+    assert e["utilizadores"]["444"]["estado"] == "pendente"
+    # Quem não é dono não cria convites.
+    bot.processar(e, _txt("222", "🎟️ Convidar"), HIST, HOJE, CFG)
+    assert len(e["convites"]) == 2
+
+
+def test_ajuda_por_temas_e_porque_do_sinal():
+    e = _estado()
+    out = bot.processar(e, _txt(DONO, "❓ Ajuda"), HIST, HOJE, CFG)
+    assert "h|saidas" in out[0][1]["reply_markup"] and "t|1|a" in out[0][1]["reply_markup"]
+    assert "Stop" in _textos(bot.processar(e, _cb(DONO, "h|saidas"), HIST, HOJE, CFG))[0]
+    out = bot.processar(e, _cb(DONO, "t|3|a"), HIST, HOJE, CFG)
+    assert "t|fim|a" in out[-1][1]["reply_markup"]
+    texto = _textos(bot.processar(e, _cb(DONO, f"q|GMAB|{HOJE}"), HIST, HOJE, CFG))[0]
+    assert "Porquê GMAB" in texto and "Confiança 70/100" in texto

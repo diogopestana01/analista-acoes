@@ -56,6 +56,8 @@ def main(minutos: float) -> None:
     cfg = yaml.safe_load((RAIZ / "config_carteira.yaml").read_text())
     k = cofre.chave()
     bot.COTAR = precos.atuais  # sinais em aberto mostrados ao preço de agora
+    eu = telegram.api("getMe") or {}
+    bot.USERNAME = eu.get("username")  # para os links de convite
     if k is None:
         raise SystemExit("Falta TELEGRAM_TOKEN.")
     com_git = os.environ.get("CARTEIRA_GIT") == "1"

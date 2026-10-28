@@ -6,16 +6,20 @@ devolve a lista de chamadas à API a fazer, como (método, parâmetros). Assim t
 from __future__ import annotations
 
 import json
+import secrets
 
 import pandas as pd
 
 from . import carteira as cart
-from . import telegram
+from . import saidas, telegram
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
 COTAR = None
 FUGIU = 0.5   # já percorreu mais de metade do caminho até ao objetivo -> não sugerir
+USERNAME = None   # nome do bot no Telegram (para os links de convite); o bot_carteira.py preenche-o
+DONO = ""         # chat do dono, para lhe mostrar o botão 🎟️ Convidar no menu
+DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 
 AJUDA = """<b>Como usar</b>
 Usa o menu de botões em baixo:
@@ -28,20 +32,92 @@ Usa o menu de botões em baixo:
 🔄 Recomeçar: põe a carteira a zero e volta a perguntar o capital e as posições
 
 Os sinais e os avisos de venda trazem os seus próprios botões.
-Se o menu desaparecer, envia /start."""
+Se o menu desaparecer, envia /start.
+
+Tens dúvidas sobre um tema? Escolhe em baixo:"""
+
+TEMAS = {
+    "sinal": ("📈 O que é um sinal", """📈 <b>O que é um sinal</b>
+O bot analisa as ações dos EUA de 10 em 10 minutos. Quando uma ação mostra um padrão que no passado costumou dar ganho em poucos dias, envia-te um sinal.
+
+Um sinal diz: que ação comprar, a que preço, quanto investir (já à medida da tua carteira), onde vender com lucro, onde vender para travar a perda e em quanto tempo.
+
+A ⭐ Confiança (0 a 100) junta o histórico do padrão e da própria ação. Recebes só os sinais mais fortes que cabem nos teus lugares livres."""),
+    "saidas": ("🎯 Objetivo e stop", """🎯 <b>Objetivo e stop</b>
+🎯 <b>Objetivo</b>: o preço a que vendes com lucro.
+🛑 <b>Stop</b>: o preço a que vendes para a perda não crescer. Na XTB podes deixá-lo já marcado como ordem "stop loss".
+⏳ <b>Prazo</b>: se nenhum dos dois acontecer, vendes ao fim desses dias.
+
+Alguns sinais não têm objetivo fixo: vendes quando o bot avisar (ex. "quando fechar acima da média de 5 dias"). O bot avisa-te sempre que for hora de vender."""),
+    "carteira": ("💼 Carteira e simulada", """💼 <b>Carteira e carteira simulada</b>
+A tua <b>carteira</b> tem só o que registaste: o que compraste (✅ Comprei), o que vendeste e o dinheiro livre. É o teu registo; ninguém mais o vê.
+
+A <b>carteira simulada</b> faz de conta que entraste em todos os sinais desde o teu início, com as tuas regras. Comparar as duas mostra se as tuas escolhas estão a ajudar ou a atrapalhar."""),
+    "riscos": ("⚠️ Riscos", """⚠️ <b>Riscos</b>
+Nenhum sinal é garantia. Há semanas em que a maioria perde. O stop limita a perda, mas uma ação pode abrir abaixo do stop (por exemplo depois de resultados) e a perda ser maior.
+
+Investe só dinheiro que podes perder. O bot não mexe no teu dinheiro: decides e compras tu na tua corretora."""),
+}
+
+
+def botoes_ajuda() -> list:
+    temas = [(titulo, f"h|{k}") for k, (titulo, _) in TEMAS.items()]
+    return [temas[:2], temas[2:], [("📖 Visita guiada (1 min)", "t|1|a")]]
+
+
+# Visita guiada: 3 ecrãs curtos para quem chega (ou carrega na Ajuda).
+VISITA = [
+    """👋 <b>Como funciona</b> (1 de 3)
+O bot procura ações dos EUA com padrões que no passado deram ganho em 1 a 5 dias. Quando encontra uma, envia-te um sinal.
+
+Tu decides se compras, e compras tu na tua corretora (ex. XTB). O bot não mexe no teu dinheiro: regista o que fizeste e avisa-te quando for hora de vender.""",
+    """📈 <b>Um sinal</b> (2 de 3)
+Chega assim:
+
+🟢 <b>COMPRAR AAPL</b> a ~230,00
+💵 Quanto: 0,0869 ações (~20,00 USD)
+🎯 Vender com lucro a 236,00 (+2,6%)
+🛑 Vender para travar a perda a 226,00 (−1,7%)
+⏳ Prazo: até 5 dias úteis
+
+Se compraste, carrega ✅ <b>Comprei</b> (ou ✏️ <b>Outro preço</b> se pagaste outro valor). Se não, ❌ <b>Ignorar</b>.""",
+    """💼 <b>Depois de comprar</b> (3 de 3)
+Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
+
+Em 💼 <b>Carteira</b> vês as tuas posições, o dinheiro livre e o resultado. O menu em baixo tem tudo; ❓ <b>Ajuda</b> explica cada tema.
+
+⚠️ Nenhum sinal é garantia. Investe só dinheiro que podes perder.""",
+]
+
+
+def visita(chat: str, passo: int, origem: str) -> tuple[str, dict]:
+    """origem "n" = pessoa nova (no fim configura a carteira); "a" = veio da Ajuda."""
+    if passo < len(VISITA):
+        return _msg(chat, VISITA[passo - 1], [[("Seguinte ➡️", f"t|{passo + 1}|{origem}")]])
+    fim = ("Configurar a minha carteira ➡️", "t|fim|n") if origem == "n" else ("✅ Percebi", "t|fim|a")
+    return _msg(chat, VISITA[-1], [[fim]])
 
 MENU = [["💼 Carteira", "📜 Histórico"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
         ["⚙️ Regras", "↩️ Desfazer"], ["🔄 Recomeçar", "❓ Ajuda"]]
 MENU_ACOES = {t for linha in MENU for t in linha}
-TECLADO_MENU = json.dumps({"keyboard": [[{"text": t} for t in linha] for linha in MENU],
-                           "resize_keyboard": True, "is_persistent": True})
+CONVIDAR = "🎟️ Convidar"
+MENU_DONO = MENU + [[CONVIDAR]]
+
+
+def _teclado_menu(menu: list) -> str:
+    return json.dumps({"keyboard": [[{"text": t} for t in linha] for linha in menu],
+                       "resize_keyboard": True, "is_persistent": True})
+
+
+TECLADO_MENU, TECLADO_DONO = _teclado_menu(MENU), _teclado_menu(MENU_DONO)
 
 
 # ---------- botões ----------
 
 def botoes_sinal(ticker: str, data: str) -> list:
     return [[("✅ Comprei", f"c|{ticker}|{data}"), ("✏️ Outro preço", f"o|{ticker}|{data}"),
-             ("❌ Ignorar", f"i|{ticker}|{data}")]]
+             ("❌ Ignorar", f"i|{ticker}|{data}")],
+            [("ℹ️ Porquê este sinal?", f"q|{ticker}|{data}")]]
 
 
 def botoes_venda(ticker: str, preco: float) -> list:
@@ -54,7 +130,7 @@ def _msg(chat, texto: str, botoes: list | None = None, menu: bool = False) -> tu
     if botoes:
         p["reply_markup"] = telegram.teclado(botoes)
     elif menu:
-        p["reply_markup"] = TECLADO_MENU
+        p["reply_markup"] = TECLADO_DONO if DONO and str(chat) == DONO else TECLADO_MENU
     return "sendMessage", p
 
 
@@ -120,15 +196,46 @@ def garantir_dono(estado: dict, regras: dict, hoje: str, nome: str = "dono") -> 
         estado["utilizadores"][dono] = cart.novo_utilizador(nome, regras, "ativo", hoje)
 
 
-def _start(estado, chat, nome, cfg, hoje) -> list:
+def criar_convite(estado: dict, hoje: str) -> str:
+    """Novo código de convite (serve uma vez). Devolve o link para o dono reencaminhar."""
+    convites = estado.setdefault("convites", {})
+    codigo = secrets.token_urlsafe(9)
+    convites[codigo] = {"criado": hoje, "usado_por": None}
+    return f"https://t.me/{USERNAME}?start={codigo}" if USERNAME else f"/start {codigo}"
+
+
+def _convite_valido(estado: dict, codigo: str, hoje: str) -> bool:
+    c = (estado.get("convites") or {}).get(codigo)
+    if not c or c["usado_por"]:
+        return False
+    return (pd.Timestamp(hoje) - pd.Timestamp(c["criado"])).days <= DIAS_CONVITE
+
+
+def _boas_vindas(chat: str, nome: str, aviso: str) -> list:
+    return [_msg(chat, f"✅ Bem-vindo, {nome}! Tens a tua própria carteira, só tua.\n<i>{aviso}</i>", menu=True),
+            visita(chat, 1, "n")]
+
+
+def _start(estado, chat, nome, cfg, hoje, codigo: str = "") -> list:
     u = estado["utilizadores"].get(chat)
     aviso = cfg.get("aviso", "")
     if chat == estado.get("dono"):
         garantir_dono(estado, cfg["regras_base"], hoje, nome)
         estado["utilizadores"][chat]["nome"] = nome
-        return [_msg(chat, f"Olá {nome}! A tua carteira está ativa.\n{aviso}\n\n{AJUDA}", menu=True)]
+        return [_msg(chat, f"Olá {nome}! A tua carteira está ativa.\n{aviso}\n\n{AJUDA}", botoes_ajuda()),
+                _msg(chat, "O menu está em baixo.", menu=True)]
     if u and u["estado"] == "ativo":
-        return [_msg(chat, AJUDA, menu=True)]
+        return [_msg(chat, AJUDA, botoes_ajuda()), _msg(chat, "O menu está em baixo.", menu=True)]
+    if codigo and _convite_valido(estado, codigo, hoje):
+        estado["convites"][codigo]["usado_por"] = chat
+        novo = cart.novo_utilizador(nome, cfg["regras_base"], "ativo", hoje)
+        novo["convidado"] = True  # entrou por convite do dono (gratuito)
+        estado["utilizadores"][chat] = novo
+        return _boas_vindas(chat, nome, aviso) + [
+            _msg(estado["dono"], f"🎟️ <b>{nome}</b> entrou com o teu convite.")]
+    if codigo:
+        aviso = ("Este convite já foi usado ou caducou. Pede um novo a quem te convidou; "
+                 "entretanto, pedi acesso por ti.\n" + aviso)
     if u and u["estado"] == "pendente":
         return [_msg(chat, "O teu pedido ainda está à espera de aprovação.")]
     if u and u["estado"] == "recusado":
@@ -162,6 +269,8 @@ def _sinal(hist: pd.DataFrame, ticker: str, data: str | None = None) -> dict | N
 # ---------- processar uma atualização ----------
 
 def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict) -> list:
+    global DONO
+    DONO = str(estado.get("dono") or "")
     if "callback_query" in upd:
         return _callback(estado, upd["callback_query"], hist, hoje, cfg)
     msg = upd.get("message") or {}
@@ -173,11 +282,19 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
     partes = texto.split()
     cmd = partes[0].split("@")[0].lower()
     if cmd == "/start":
-        return _start(estado, chat, nome, cfg, hoje)
+        return _start(estado, chat, nome, cfg, hoje, partes[1] if len(partes) > 1 else "")
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
         return []
     try:
+        if texto == CONVIDAR and chat == estado.get("dono"):
+            u["aguarda"] = None
+            link = criar_convite(estado, hoje)
+            return [_msg(chat, f"🎟️ <b>Convite pronto.</b> Reencaminha a mensagem seguinte à pessoa que queres "
+                               f"convidar. O link serve uma vez e caduca em {DIAS_CONVITE} dias. Quem entrar por ele "
+                               f"fica logo aceite, sem teres de aprovar.", menu=True),
+                    _msg(chat, f"Olá! Convido-te a experimentar o meu bot de sinais de ações. Abre este link e "
+                               f"carrega em Iniciar:\n{link}")]
         if texto in MENU_ACOES:
             u["aguarda"] = None
             return [_menu(chat, u, texto, hist, hoje)]
@@ -210,7 +327,7 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     if botao == "↩️ Desfazer":
         return _msg(chat, cart.desfazer(u), menu=True)
     if botao == "❓ Ajuda":
-        return _msg(chat, AJUDA, menu=True)
+        return _msg(chat, AJUDA, botoes_ajuda())
     if botao == "🟢 Comprei":
         u["aguarda"] = {"tipo": "ticker"}
         return _msg(chat, "🟢 Que ação compraste? Escreve o ticker (ex. <code>NVDA</code>).")
@@ -319,13 +436,22 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         alvo["desde"] = hoje
         out += [_tirar_botoes(cq), _msg(chat, f"{alvo['nome']}: {'aceite' if acao == 'a' else 'recusado'}.")]
         if acao == "a":
-            out.append(_msg(partes[1], f"✅ Foste aceite!\n\n{AJUDA}", menu=True))
-            out.append(pergunta_capital(partes[1], alvo, "Vamos configurar a tua carteira.\n"))
+            out += _boas_vindas(partes[1], alvo["nome"], cfg.get("aviso", ""))
         return out
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
         return out
     ticker = partes[1] if len(partes) > 1 else ""
+    if acao == "h":
+        return out + [_msg(chat, TEMAS.get(ticker, TEMAS["sinal"])[1], botoes_ajuda())]
+    if acao == "t":
+        if ticker != "fim":
+            return out + [_tirar_botoes(cq), visita(chat, int(ticker), partes[2])]
+        if partes[2] == "n":
+            return out + [_tirar_botoes(cq), pergunta_capital(chat, u, "Vamos configurar a tua carteira.\n")]
+        return out + [_tirar_botoes(cq), _msg(chat, "👍 Qualquer dúvida, carrega em ❓ Ajuda.", menu=True)]
+    if acao == "q":
+        return out + [_msg(chat, porque(hist, ticker, partes[2]))]
     if acao in ("p", "x"):
         n = cart.numero(ticker)
         if acao == "p":
@@ -446,6 +572,39 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str) -> list:
     return out
 
 
+def _num(x) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return None if pd.isna(v) else v
+
+
+def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
+    """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
+    moeda, e = u["regras"]["moeda"], s["entrada"]
+    obj, stop = _num(s.get("objetivo")), _num(s.get("stop"))
+    linhas = [f"🟢 <b>COMPRAR {s['ticker']}</b> a ~{cart.fmt(e)}"]
+    if t["motivo"]:
+        linhas.append(f"💵 {cart.MOTIVOS[t['motivo']].format(mercados=', '.join(m.upper() for m in u['regras']['mercados']), max=u['regras']['max_posicoes'])}")
+    else:
+        linhas.append(f"💵 Quanto: <b>{cart.fmt_qtd(t['qtd'])}</b> ações (~{cart.fmt(t['valor'])} {moeda}). "
+                      f"Ficas com {cart.fmt(livre)} {moeda} livres.")
+    regra = saidas.REGRAS.get(s.get("saida") or "")
+    if obj:
+        linhas.append(f"🎯 Vender com lucro a <b>{cart.fmt(obj)}</b> ({cart.sinal_fmt((obj / e - 1) * 100, 1)}%)")
+    elif regra and regra.sair_se:
+        linhas.append(f"🎯 Vender: {regra.texto_alerta()} (eu aviso-te)")
+    if stop:
+        linhas.append(f"🛑 Vender para travar a perda a <b>{cart.fmt(stop)}</b> ({cart.sinal_fmt((stop / e - 1) * 100, 1)}%)")
+    dias = int(round(_num(s.get("max_dias")) or _num(s.get("dias_estimados")) or 5))
+    linhas.append(f"⏳ Prazo: até {dias} dia{'s' if dias != 1 else ''} út{'eis' if dias != 1 else 'il'}")
+    if s.get("risco_evento"):
+        linhas.append("⚠️ A empresa apresenta resultados em breve: o preço pode dar um salto, para cima ou para baixo.")
+    linhas.append(rank)
+    return "\n".join(linhas)
+
+
 def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
     """Texto e botões de cada sinal para este utilizador; o dinheiro vai sendo reservado pela ordem."""
     out, reservado, ocupadas = [], 0.0, 0
@@ -453,11 +612,40 @@ def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
         t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
         if not t["motivo"]:
             reservado, ocupadas = reservado + t["valor"], ocupadas + 1
-        rank = f"⭐ Confiança {_confianca(s):.0f}/100 (n.º {k} de {total or len(sinais)})\n"
-        texto = rank + telegram.formatar_sinal(s) + "\n" + cart.linha_tamanho(u, t, u["caixa"] - reservado)
+        rank = f"⭐ Confiança {_confianca(s):.0f}/100 (n.º {k} de {total or len(sinais)})"
+        texto = sinal_simples(u, s, t, u["caixa"] - reservado, rank)
         b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
         out.append((texto, b))
     return out
+
+
+PORQUE = {
+    "rompimento": "A ação fechou acima do preço mais alto das últimas 4 semanas, com muito mais volume que o normal, "
+                  "e está numa tendência de subida. Quando isto acontece, muitas vezes a subida continua mais uns dias.",
+    "pullback": "A ação está numa tendência de subida há meses, mas caiu forte nos últimos 1 ou 2 dias. Nestes casos "
+                "costuma recuperar parte da queda em poucos dias. Foi o padrão com melhores resultados até agora.",
+    "gap_volume": "A ação abriu com um salto forte e volume muito acima do normal (por exemplo depois de resultados) "
+                  "e fechou em alta. Estes saltos às vezes continuam nos dias seguintes.",
+    "gap_continuacao": "No dia anterior a ação deu um salto forte com volume e aguentou-o. Isso mostra procura firme.",
+}
+
+
+def porque(hist: pd.DataFrame, ticker: str, data: str) -> str:
+    """Explicação simples de um sinal (botão ℹ️ Porquê este sinal?)."""
+    h = hist[(hist["ticker"] == ticker) & (hist["data_sinal"].astype(str) == data)]
+    if h.empty:
+        return f"Ainda não tenho os detalhes de {ticker}. Tenta daqui a 1 minuto."
+    s = h.iloc[-1]
+    explic = PORQUE.get(s["setup"], telegram.SETUPS_PT.get(s["setup"], s["setup"]))
+    regra = saidas.REGRAS.get(s.get("saida") or "")
+    linhas = [f"ℹ️ <b>Porquê {ticker}?</b> (sinal de {data})", explic]
+    if _num(s.get("pontuacao")) is not None:
+        linhas.append(f"\n⭐ Confiança {_num(s['pontuacao']):.0f}/100: junta os resultados passados deste padrão "
+                      f"e desta ação. Quanto mais alta, melhor correram sinais parecidos.")
+    if regra and regra.sair_se:
+        linhas.append(f"🚪 Regra de saída: {regra.texto_alerta()}.")
+    linhas.append("\nNenhum sinal é garantia; o stop existe para a perda ficar pequena quando corre mal.")
+    return "\n".join(linhas)
 
 
 def atualizar_precos(sinais: list[dict]) -> list[dict]:
