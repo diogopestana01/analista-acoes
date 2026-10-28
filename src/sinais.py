@@ -190,8 +190,24 @@ def passa_filtros(s: pd.Series, filtros: dict) -> bool:
     return True
 
 
-def pontuar(sinais: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    """Pontuação técnica 0-100: histórico do setup, volume e força relativa."""
+def base_ajustada(cfg: dict, reais: dict | None = None) -> dict[str, float]:
+    """Retorno base de cada setup (fração): média do backtest puxada pelos resultados reais em papel.
+    Com `peso_backtest_casos` reais (30 por defeito) os dois valem o mesmo; a média real é limitada
+    a ±2% para uma semana de sorte ou azar não mandar em tudo."""
+    qualidade = cfg.get("qualidade", {})
+    k = cfg.get("peso_backtest_casos", 30)
+    out = {}
+    for setup, q in qualidade.items():
+        base = q.get("retorno_base_pct", 0.0) / 100
+        n, media = (reais or {}).get(setup, (0, 0.0))
+        media = float(np.clip(media, -0.02, 0.02))
+        out[setup] = (base * k + media * n) / (k + n)
+    return out
+
+
+def pontuar(sinais: pd.DataFrame, cfg: dict, reais: dict | None = None) -> pd.DataFrame:
+    """Pontuação técnica 0-100: histórico do setup, volume e força relativa.
+    reais: {setup: (n, retorno médio)} do registo em papel, para o peso de cada setup se ajustar sozinho."""
     if sinais.empty:
         return sinais
     s = sinais.copy()
@@ -211,7 +227,8 @@ def pontuar(sinais: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     # Retorno esperado: média histórica desta ação neste setup, puxada para a média
     # do setup em todo o mercado (backtest) quando há poucos casos; menos custos XTB.
     qualidade = cfg.get("qualidade", {})
-    base = s["setup"].map(lambda x: qualidade.get(x, {}).get("retorno_base_pct", 0.0) / 100)
+    bases = base_ajustada(cfg, reais)
+    base = s["setup"].map(lambda x: bases.get(x, 0.0))
     k = cfg.get("peso_base_casos", 10)
     hist = s.get("retorno_medio_hist", pd.Series(np.nan, index=s.index)).fillna(0.0)
     s["retorno_esperado"] = (hist * n + base * k) / (n + k)

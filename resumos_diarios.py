@@ -52,7 +52,10 @@ def main(tipo: str, forcar: bool = False) -> None:
     except Exception:
         logging.exception("Não consegui atualizar os preços; uso os guardados")
     precos = pd.read_parquet(DADOS / "precos.parquet")
-    carteira = acompanhamento.resumo(acompanhamento.carregar(DADOS / "historico_sinais.csv"))
+    hist = acompanhamento.carregar(DADOS / "historico_sinais.csv")
+    carteira = acompanhamento.resumo(hist)
+    if agora.tz_convert(ZoneInfo("America/New_York")).dayofweek == 4 or forcar:   # sexta: placar da semana
+        carteira += "\n\n" + acompanhamento.placar(hist, f"{agora:%Y-%m-%d}")
     telegram.enviar(resumos.resumo_fecho(agora, precos, filtrado, carteira, cfg))
 
 

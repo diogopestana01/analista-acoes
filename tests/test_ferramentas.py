@@ -213,3 +213,22 @@ def test_resultados_dentro_do_prazo_dao_aviso_com_data():
                                  "stop": 9.5, "dias_estimados": 3, "setup": "pullback",
                                  "resultados_em": "2026-11-02", "risco_evento": True})
     assert "Resultados a 02/11" in m
+
+
+def test_peso_do_setup_ajusta_aos_resultados_reais():
+    cfg = {"qualidade": {"pullback": {"retorno_base_pct": 0.4}, "rompimento": {"retorno_base_pct": 0.4}},
+           "peso_backtest_casos": 30}
+    b = sinais.base_ajustada(cfg, {"pullback": (30, 0.10), "rompimento": (30, -0.004)})
+    assert abs(b["pullback"] - 0.012) < 1e-9          # média real limitada a +2%: (0,4% + 2%) / 2
+    assert abs(b["rompimento"] - 0.0) < 1e-9          # (0,4% - 0,4%) / 2
+    assert sinais.base_ajustada(cfg)["pullback"] == 0.004   # sem registo fica o backtest
+
+
+def test_placar_por_estrategia():
+    from src import acompanhamento
+    h = pd.DataFrame({"data_sinal": "2026-10-20", "ticker": ["A", "B", "C"], "setup": ["pullback", "pullback", "rompimento"],
+                      "direcao": "compra", "entrada": 10.0, "preco_fecho": [11.0, 9.5, 10.2],
+                      "estado": "fechado", "data_fecho": ["2026-10-27", "2026-10-10", "2026-10-28"]})
+    p = acompanhamento.placar(h, "2026-10-28")
+    assert "Correção em tendência: 1 fechados, 100% a ganhar, +10.0% | 2 fechados, 50% a ganhar" in p
+    assert "Rompimento: 1 fechados" in p

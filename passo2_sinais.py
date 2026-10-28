@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import investigador, noticias, precos, resultados, sentimento, sinais
+from src import acompanhamento, investigador, noticias, precos, resultados, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -86,7 +86,11 @@ def main() -> Path:
     ultimo_dia = hist["data"].max()
     hist = hist[hist.groupby("ticker")["data"].transform("max") == ultimo_dia]  # só ações com dados de hoje
 
-    tecnico = sinais.pontuar(sinais.sinais_hoje(hist, cfg, cfg["setups"]), cfg)
+    # O peso de cada setup ajusta-se sozinho aos resultados reais em papel (sinais.base_ajustada).
+    reais = acompanhamento.resultados_reais(acompanhamento.carregar(DADOS / "historico_sinais.csv"))
+    logging.info("Base por setup (backtest + papel): %s",
+                 {k: f"{v*100:+.2f}%" for k, v in sinais.base_ajustada(cfg, reais).items()})
+    tecnico = sinais.pontuar(sinais.sinais_hoje(hist, cfg, cfg["setups"]), cfg, reais)
     saida = DADOS / f"sinais_{pd.Timestamp(ultimo_dia):%Y-%m-%d}.csv"
     if tecnico.empty:
         logging.info("Sem sinais técnicos hoje")

@@ -95,6 +95,39 @@ def resumo(hist: pd.DataFrame) -> str:
             f"retorno médio {ret.mean() * 100:+.2f}% por sinal, {f['dias'].mean():.1f} dias em média.")
 
 
+def _fechados_compra(hist: pd.DataFrame) -> pd.DataFrame:
+    f = hist[(hist["estado"] != "aberto") & (hist["direcao"] == "compra")].copy()
+    f["ret"] = pd.to_numeric(f["preco_fecho"], errors="coerce") / pd.to_numeric(f["entrada"], errors="coerce") - 1
+    return f.dropna(subset=["ret"])
+
+
+def resultados_reais(hist: pd.DataFrame) -> dict[str, tuple[int, float]]:
+    """{setup: (n fechados, retorno médio)} do registo em papel, só compras."""
+    f = _fechados_compra(hist)
+    return {s: (len(g), float(g["ret"].mean())) for s, g in f.groupby("setup")}
+
+
+SETUPS_PT = {"rompimento": "Rompimento", "pullback": "Correção em tendência", "semana_forte": "Semana forte",
+             "gap_volume": "Salto com volume", "gap_continuacao": "Continuação de salto"}
+
+
+def placar(hist: pd.DataFrame, hoje: str, dias_uteis: int = 5) -> str:
+    """Placar por estratégia: últimos `dias_uteis` dias úteis e desde o início (texto simples)."""
+    f = _fechados_compra(hist)
+    if f.empty:
+        return "Placar semanal: ainda sem sinais fechados."
+    limite = (pd.Timestamp(hoje) - pd.offsets.BDay(dias_uteis)).strftime("%Y-%m-%d")
+    semana = f[f["data_fecho"].astype(str) > limite]
+    linhas = ["🏆 Placar por estratégia (esta semana | desde o início)"]
+    for setup, g in f.groupby("setup"):
+        w = semana[semana["setup"] == setup]
+        sem = (f"{len(w)} fechados, {(w['ret'] > 0).mean()*100:.0f}% a ganhar, {w['ret'].mean()*100:+.1f}%"
+               if len(w) else "nenhum fechado")
+        linhas.append(f"• {SETUPS_PT.get(setup, setup)}: {sem} | {len(g)} fechados, "
+                      f"{(g['ret'] > 0).mean()*100:.0f}% a ganhar, {g['ret'].mean()*100:+.1f}% em média")
+    return "\n".join(linhas)
+
+
 def em_pausa(hist: pd.DataFrame, hoje: str, dias_uteis: int) -> set[str]:
     """Ações fechadas há menos de `dias_uteis` dias úteis: não voltam a dar sinal logo a seguir."""
     if not dias_uteis or hist.empty:
