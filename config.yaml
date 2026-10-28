@@ -43,6 +43,7 @@ sinais:
     gap_continuacao: {retorno_base_pct: 0.04, filtros: {}}   # backtest 2024-26: +0,04% (738 trades), desligado
   filtro_queda_com_noticia: false   # true = retira pullbacks cuja queda tem notícia concreta (fica registado no CSV)
   evitar_resultados_dias: 2     # não envia sinais (EUA) de empresas com resultados até 2 dias úteis à frente
+  avisar_resultados_dias: 5     # de 3 a 5 dias úteis (dentro do prazo do trade) o sinal sai com a data e um aviso
   pausa_apos_fecho_dias: 3      # uma ação fechada (objetivo, stop ou saída) não dá novo sinal durante 3 dias úteis
   max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
   peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias

@@ -60,7 +60,10 @@ def formatar_sinal(s: dict) -> str:
         icone = {"rejeitar": "🚩", "duvidoso": "⚠️", "manter": "✔️"}.get(s.get("veredicto_inv"), "🕵️")
         linhas.append(f"{icone} Advogado do diabo ({html.escape(str(s.get('veredicto_inv')))}): "
                       f"{html.escape(s['argumento_inv'])}")
-    if s.get("risco_evento"):
+    if isinstance(s.get("resultados_em"), str):
+        d = s["resultados_em"]
+        linhas.append(f"📅 Resultados a {d[8:10]}/{d[5:7]}, dentro do prazo do trade: considera vender antes.")
+    elif s.get("risco_evento"):
         linhas.append("⚠️ Evento próximo (ex. resultados): risco de gap.")
     return "\n".join(linhas)
 

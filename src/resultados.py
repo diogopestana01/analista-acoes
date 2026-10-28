@@ -58,14 +58,19 @@ def calendario(dia: pd.Timestamp) -> list[dict]:
         return []
 
 
-def proximos(hoje: pd.Timestamp, dias_uteis: int = 2) -> set[str]:
-    """Tickers com resultados de hoje até daqui a `dias_uteis` dias úteis."""
-    datas = pd.bdate_range(hoje.normalize().tz_localize(None), periods=dias_uteis + 1)
-    out: set[str] = set()
-    for d in datas:
+def datas(hoje: pd.Timestamp, dias_uteis: int = 2) -> dict[str, str]:
+    """{ticker: data dos resultados (AAAA-MM-DD)} de hoje até daqui a `dias_uteis` dias úteis."""
+    out: dict[str, str] = {}
+    for d in pd.bdate_range(hoje.normalize().tz_localize(None), periods=dias_uteis + 1):
         try:
-            out |= tickers_do_dia(_pedir(d))
+            for t in tickers_do_dia(_pedir(d)):
+                out.setdefault(t, f"{d:%Y-%m-%d}")
         except Exception as e:  # sem calendário o modelo continua, só sem este filtro
             log.warning("Calendário de resultados indisponível para %s: %s", f"{d:%Y-%m-%d}", e)
     log.info("Empresas com resultados nos próximos %d dias úteis: %d", dias_uteis, len(out))
     return out
+
+
+def proximos(hoje: pd.Timestamp, dias_uteis: int = 2) -> set[str]:
+    """Tickers com resultados de hoje até daqui a `dias_uteis` dias úteis."""
+    return set(datas(hoje, dias_uteis))

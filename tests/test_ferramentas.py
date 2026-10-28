@@ -202,3 +202,14 @@ def test_nasdaq_so_fica_com_artigos_da_empresa(monkeypatch):
     monkeypatch.setattr(requests, "get", lambda *a, **k: type("R", (), {"text": rss})())
     out = noticias.noticias_nasdaq("ROKU", "Roku, Inc. Class A Common Stock")
     assert [i["titulo"] for i in out] == ["Roku (ROKU) Q3 Earnings Preview"]
+
+
+def test_resultados_dentro_do_prazo_dao_aviso_com_data():
+    from src import telegram
+    s = pd.DataFrame({"ticker": ["ROKU", "A"], "pontuacao": [70.0, 70.0], "risco_evento": [False, False]})
+    out = passo2_sinais.avisar_resultados(s, {"ROKU": "2026-11-02"})
+    assert list(out["pontuacao"]) == [60.0, 70.0] and list(out["risco_evento"]) == [True, False]
+    m = telegram.formatar_sinal({"ticker": "ROKU", "direcao": "compra", "entrada": 10.0, "objetivo": 11.0,
+                                 "stop": 9.5, "dias_estimados": 3, "setup": "pullback",
+                                 "resultados_em": "2026-11-02", "risco_evento": True})
+    assert "Resultados a 02/11" in m

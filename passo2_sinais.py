@@ -36,6 +36,18 @@ def combinar(tecnico: pd.DataFrame, avaliacoes: dict, cfg: dict) -> pd.DataFrame
     return s.sort_values(["noticia_forte", "retorno_esperado_liquido"], ascending=False).reset_index(drop=True)
 
 
+def avisar_resultados(s: pd.DataFrame, datas_res: dict) -> pd.DataFrame:
+    """Sinais com resultados dentro do prazo do trade: data no alerta, risco de evento e -10 pontos."""
+    if s.empty:
+        return s
+    s = s.copy()
+    s["resultados_em"] = s["ticker"].map(datas_res)
+    tem = s["resultados_em"].notna()
+    s.loc[tem & ~s["risco_evento"].astype(bool), "pontuacao"] -= 10   # quem já tinha aviso já perdeu os 10
+    s["risco_evento"] = s["risco_evento"].astype(bool) | tem
+    return s
+
+
 def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news: pd.DataFrame | None,
                   cfg_inv: dict) -> pd.DataFrame:
     """Investigador advogado do diabo: uma vez por dia e sinal (cache), só nos sinais finais."""
@@ -88,8 +100,13 @@ def main() -> Path:
     tecnico = tecnico.drop_duplicates("ticker")   # vários setups na mesma ação: fica o de maior retorno esperado
     logging.info("Sinais fortes (antes das notícias): %d", len(tecnico))
     # Radar de resultados: fora os sinais técnicos de empresas que apresentam contas nos próximos dias.
+    # Até `evitar_resultados_dias` sai o sinal; até `avisar_resultados_dias` (o prazo do trade) fica com aviso.
+    datas_res = {}
     if cfg.get("evitar_resultados_dias", 0) and not tecnico.empty:
-        com_resultados = resultados.proximos(pd.Timestamp.now(tz="UTC"), cfg["evitar_resultados_dias"])
+        agora = pd.Timestamp.now(tz="UTC")
+        datas_res = resultados.datas(agora, max(cfg["evitar_resultados_dias"], cfg.get("avisar_resultados_dias", 0)))
+        limite = f"{pd.bdate_range(agora.normalize().tz_localize(None), periods=cfg['evitar_resultados_dias'] + 1)[-1]:%Y-%m-%d}"
+        com_resultados = {t for t, d in datas_res.items() if d <= limite}
         antes = len(tecnico)
         tecnico = tecnico[~(tecnico["ticker"].isin(com_resultados) & (tecnico["setup"] != "gap_continuacao"))]
         logging.info("Retirados por resultados próximos: %d", antes - len(tecnico))
@@ -116,7 +133,7 @@ def main() -> Path:
     avaliacoes = {s["ticker"]: sentimento.Avaliacao(**cache[chave(s)]) for s in candidatos.to_dict("records")}
     logging.info("Notícias analisadas agora: %d (resto vem da cache)", len(falta))
 
-    final = combinar(candidatos, avaliacoes, cfg).head(cfg["max_alertas"])
+    final = avisar_resultados(combinar(candidatos, avaliacoes, cfg), datas_res).head(cfg["max_alertas"])
     final = contraditorio(final, cache, dia, nomes, news, config.get("investigador", {}))
     cache_path.write_text(json.dumps(cache))
     final.to_csv(saida, index=False)

@@ -61,7 +61,9 @@ def _pedido(s: dict, noticias: pd.DataFrame, riscos: pd.DataFrame | None = None)
             f"retorno esperado {fmt('retorno_esperado_liquido')}\n"
             f"Leitura do analista sobre as notícias: {s.get('impacto_noticias', 'neutro')} — "
             f"{s.get('resumo_noticias', '')}\n"
-            f"Evento próximo assinalado: {'sim' if s.get('risco_evento') else 'não'}\n\n"
+            f"Evento próximo assinalado: {'sim' if s.get('risco_evento') else 'não'}"
+            + (f" (resultados a {s['resultados_em']}, calendário da Nasdaq)" if isinstance(s.get("resultados_em"), str)
+               else "") + "\n\n"
             f"Manchetes do analista:\n{_linhas(noticias, 15)}\n\n"
             f"A TUA pesquisa de risco (últimos 14 dias):\n{_linhas(riscos, 10)}")
 
