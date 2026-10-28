@@ -107,7 +107,7 @@ def linha_tamanho(u: dict, t: dict) -> str:
                                           max=r["max_posicoes"])
         return f"💼 Carteira: {txt}."
     return (f"💼 Carteira: compra <b>{fmt_qtd(t['qtd'])}</b> ações (~{fmt(t['valor'])} {r['moeda']}, "
-            f"{r['pct']:g}%). Livre: {fmt(u['caixa'])} {r['moeda']}.")
+            f"{fmt(r['pct'], 0)}%). Livre: {fmt(u['caixa'])} {r['moeda']}.")
 
 
 def posicao_mais_fraca(u: dict, hoje: str) -> str | None:
