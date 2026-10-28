@@ -1,8 +1,16 @@
 name: Backtest intradiário
 
-# Só à mão: compara o momento de entrada nos rompimentos com preços de hora a hora.
+# Só à mão. Estudos extra dos rompimentos:
+#   intradia     momento de entrada com preços de hora a hora (passo3b_intradia.py)
+#   rompimentos  filtros de vários tempos gráficos e setups novos (passo3c_rompimentos.py)
 on:
   workflow_dispatch:
+    inputs:
+      estudo:
+        description: "Que estudo correr"
+        type: choice
+        options: [rompimentos, intradia]
+        default: rompimentos
 
 permissions:
   contents: read
@@ -30,7 +38,12 @@ jobs:
           key: dados-nenhum
           restore-keys: dados-
       - run: python passo3b_intradia.py
+        if: inputs.estudo == 'intradia'
+      - run: python passo3c_rompimentos.py
+        if: inputs.estudo == 'rompimentos'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
-          path: data/backtest_intradia.csv
+          path: |
+            data/backtest_intradia.csv
+            data/estudo_rompimentos.csv
