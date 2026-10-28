@@ -45,6 +45,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}   # vazio = claude-haiku-5-5
+          CARTEIRA_CHAVE: ${{ secrets.CARTEIRA_CHAVE }} # só leitura da carteira (tamanho por sinal)
         run: python diario.py
       - name: Guardar histórico de sinais
         run: |

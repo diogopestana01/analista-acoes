@@ -22,6 +22,15 @@ As ordens são executadas manualmente na XTB.
 De hora a hora só recebes mensagens quando há novidades; às 20h UTC chega um resumo do dia.
 O volume do dia em curso é projetado para o dia inteiro, para os sinais intradiários serem comparáveis.
 
+## Carteira (bot do Telegram)
+Módulo à parte (`bot_carteira.py`, workflow "Carteira"). Cada sinal chega com botões
+**Comprei / Outro preço / Ignorar** e a quantidade sugerida (por defeito 20% de uma carteira de 100 USD,
+máximo 5 posições, só ações dos EUA). Os avisos de venda chegam com **Vendi / Outro preço ou parte / Mantenho**.
+Ao lado da tua carteira há uma **simulada**, que entra em todos os sinais, para comparar.
+Comandos: `/carteira`, `/comprei`, `/vendi`, `/capital`, `/deposito`, `/levantamento`, `/regras`,
+`/desfazer`, `/historico`, `/ajuda`. Outras pessoas entram com `/start` e o dono aprova.
+O estado fica cifrado em `data/carteira.enc`. Para ligar: Actions > Carteira > Run workflow.
+
 ### Segredos no GitHub (Settings > Secrets and variables > Actions)
 - `TELEGRAM_TOKEN`: token do bot criado no @BotFather
 - `TELEGRAM_CHAT_ID`: o teu chat id (envia uma mensagem ao bot e abre

@@ -5,6 +5,7 @@ sinais novos ou fechos; os resumos de abertura e fecho estão à parte (resumos_
 de cada dia reconstrói o universo; as restantes só atualizam os últimos preços.
 """
 import logging
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -12,12 +13,22 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import acompanhamento, telegram
+from src import acompanhamento, bot, cofre, telegram
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
 DADOS = RAIZ / "data"
 HIST = DADOS / "historico_sinais.csv"
+CARTEIRA = DADOS / "carteira.enc"
+
+
+def ler_carteira() -> dict | None:
+    """Estado da Carteira, só para leitura (quem escreve é o bot). Se falhar, os sinais seguem sem ela."""
+    try:
+        return cofre.carregar(CARTEIRA, cofre.chave()) if CARTEIRA.exists() else None
+    except Exception as e:  # noqa: BLE001
+        logging.warning("Carteira indisponível: %s", e)
+        return None
 
 
 def main() -> None:
@@ -28,8 +39,9 @@ def main() -> None:
     precos = pd.read_parquet(DADOS / "precos.parquet")
     hist = acompanhamento.carregar(HIST)
     hist, fechos = acompanhamento.atualizar(hist, precos)
-    for f in fechos:
-        telegram.enviar(telegram.formatar_fecho(f))
+    estado, dono = ler_carteira(), os.environ.get("TELEGRAM_CHAT_ID")
+    for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono):
+        telegram.enviar(texto, chat, botoes)
 
     try:
         sinais = pd.read_csv(saida)
@@ -42,10 +54,11 @@ def main() -> None:
     novos = sinais[~sinais["ticker"].isin(abertos | pausa)] if not sinais.empty else sinais
 
     if not novos.empty:
-        telegram.enviar(f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"
-                        f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
-        for s in novos.to_dict("records"):
-            telegram.enviar(telegram.formatar_sinal(s))
+        cabecalho = (f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"
+                     f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
+        registos = [{**s, "data_sinal": data} for s in novos.to_dict("records")]
+        for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono):
+            telegram.enviar(texto, chat, botoes)
 
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"])
     hist.to_csv(HIST, index=False)

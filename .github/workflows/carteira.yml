@@ -1,0 +1,55 @@
+name: Carteira
+
+# Bot da Carteira: fica ligado a ouvir o Telegram (botões e comandos) e responde em segundos.
+# Um job só pode durar 6 h, por isso ao fim de ~5h40 relança-se a si próprio (como o Relógio).
+# Desliga-se desativando o workflow "Carteira" no separador Actions.
+# O cron abaixo só serve para o reacender se a cadeia alguma vez parar.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 */4 * * *"
+
+permissions:
+  contents: write   # guardar data/carteira.enc (cifrado)
+  actions: write    # relançar-se
+
+concurrency:
+  group: carteira
+  cancel-in-progress: false
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ouvir o Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CARTEIRA_CHAVE: ${{ secrets.CARTEIRA_CHAVE }}   # opcional; vazio = derivada do TELEGRAM_TOKEN
+          CARTEIRA_GIT: "1"
+        run: |
+          git config user.name "analista-bot"
+          git config user.email "analista-bot@users.noreply.github.com"
+          python bot_carteira.py --minutos 335
+      - name: Passar o testemunho ao próximo
+        if: ${{ success() }}   # se falhar ou for cancelado, para; o cron reacende-o daqui a umas horas
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run carteira.yml -R "${{ github.repository }}" --ref main
+      - name: Avisar no Telegram se falhar
+        if: failure()
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=⚠️ O bot da Carteira parou: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
