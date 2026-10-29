@@ -1560,6 +1560,11 @@ def _dia(s: dict) -> str:
     return f"dia {s['dias_usados'] + 1} de {s['max_dias']}"
 
 
+def _esperado(s: dict) -> str:
+    """Retorno esperado do sinal; nos antigos sem ele, o que ainda costuma render."""
+    return f"esperado <b>{_txt_ret(s)}</b>" if _retorno(s) is not None else _ainda(s["forca"])
+
+
 def _ainda(x: float | None) -> str:
     return f"ainda dá <b>{_pct(x)}</b>" if x is not None else "sem dados para medir"
 
@@ -1590,7 +1595,7 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     for s in comprar[:livres]:
         k += 1
         lim = f" · compra até {cart.fmt(s['limite'])}" if s["limite"] else ""
-        linhas.append(f"{k}. 🟢 <b>{s['ticker']}</b> esperado <b>{_txt_ret(s)}</b>{lim} (agora {cart.fmt(s['preco'])})")
+        linhas.append(f"{k}. 🟢 <b>{s['ticker']}</b> {_esperado(s)}{lim} (agora {cart.fmt(s['preco'])})")
     while k < n:
         k += 1
         linhas.append(f"{k}. ➖ livre")
@@ -1611,7 +1616,7 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         for s in resto[:6]:
             lim = f" · compra até {cart.fmt(s['limite'])}" if s["limite"] else ""
             quando = "entra à abertura" if _a_espera_da_abertura(s) else _dia(s)
-            linhas.append(f"• <b>{s['ticker']}</b> esperado {_txt_ret(s)}{lim} (agora {cart.fmt(s['preco'])}) · {quando}")
+            linhas.append(f"• <b>{s['ticker']}</b> {_esperado(s)}{lim} (agora {cart.fmt(s['preco'])}) · {quando}")
         if len(resto) > 6:
             linhas.append(f"• e mais {len(resto) - 6}")
     if andamento:
