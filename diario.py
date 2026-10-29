@@ -75,21 +75,26 @@ def _ativos(estado: dict | None) -> list:
     return [u for u in (estado or {}).get("utilizadores", {}).values() if u.get("estado") == "ativo"]
 
 
-def avisar_saidas(estado: dict | None, dados: dict) -> None:
-    """Quem tem uma posição que tocou no stop ou no objetivo recebe o aviso (uma vez)."""
+def _ler_cache() -> dict:
     import json
-    caminho = DADOS / "avaliacoes_cache.json"
     try:
-        cache = json.loads(caminho.read_text()) if caminho.exists() else {}
-    except ValueError:
-        cache = {}
-    avisados = set(cache.get("saidas_avisadas", []))
+        return json.loads((DADOS / "avaliacoes_cache.json").read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def _guardar_avisados(avisados: set) -> None:
+    import json
+    cache = _ler_cache()
+    cache["saidas_avisadas"] = sorted(avisados)[-500:]
+    (DADOS / "avaliacoes_cache.json").write_text(json.dumps(cache))
+
+
+def avisar_saidas(estado: dict | None, dados: dict, avisados: set) -> None:
+    """Quem tem uma posição que tocou no stop ou no objetivo recebe o aviso (uma vez)."""
     msgs = bot.mensagens_saidas(estado, dados, avisados)
     for chat, texto, botoes in msgs:
         telegram.enviar(texto, chat, botoes)
-    if msgs:
-        cache["saidas_avisadas"] = sorted(avisados)[-500:]
-        caminho.write_text(json.dumps(cache))
     logging.info("Avisos de stop/objetivo: %d", len(msgs))
 
 
@@ -168,11 +173,15 @@ def main() -> None:
     # cada posição é comparada com o seu stop e objetivo a cada corrida.
     dados = guardar_cotacoes(precos, hist, estado)
     bot.COTAR = lambda ts: cotacoes.precos_agora(dados, ts)
-    avisar_saidas(estado, dados)
-    avisar_resultados(estado)
+    # Stop/objetivo: pela posição de cada pessoa e pelo fecho do sinal no registo; a mesma lista de avisos
+    # já enviados serve aos dois, para ninguém ficar sem aviso nem recebê-lo duas vezes.
+    avisados = set(_ler_cache().get("saidas_avisadas", []))
+    avisar_saidas(estado, dados, avisados)
     hist, fechos = acompanhamento.atualizar(hist, precos)
-    for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono):
+    for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono, avisados):
         telegram.enviar(texto, chat, botoes)
+    _guardar_avisados(avisados)
+    avisar_resultados(estado)
 
     try:
         sinais = pd.read_csv(saida)

@@ -67,7 +67,8 @@ def test_botao_comprei_abre_talao_e_regista_ao_confirmar():
     u = e["utilizadores"][DONO]
     assert not u["posicoes"]  # ainda só o talão
     talao = _textos(out)[0]
-    assert "Compra de <b>GMAB</b>" in talao and "Preço: <b>50,00</b>" in talao and "Quantidade: <b>0,4</b>" in talao
+    assert "Compra de <b>GMAB</b>" in talao and "Preço: <b>50,00</b>" in talao and "Valor: <b>20,00 USD</b>" in talao
+    assert "Quantidade: 0,4" in talao and "b|v|1" in out[1][1]["reply_markup"]
     assert "b|p|1" in out[1][1]["reply_markup"] and "b|ok" in out[1][1]["reply_markup"]
     out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(0.4) and u["caixa"] == pytest.approx(80.0)
@@ -77,25 +78,26 @@ def test_botao_comprei_abre_talao_e_regista_ao_confirmar():
     assert u["caixa"] == pytest.approx(80.0)
 
 
-def test_talao_ajusta_preco_e_quantidade_com_setas_e_a_escrever():
+def test_talao_ajusta_preco_e_valor_pago_com_setas_e_a_escrever():
     e = _estado()
     u = e["utilizadores"][DONO]
     bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
     out = bot.processar(e, _cb(DONO, "b|p|2"), HIST, HOJE, CFG)  # +0,50
-    assert "Preço: <b>50,50</b>" in _edicoes(out)[0]
+    # Mudar o preço mantém o valor pago (20 USD) e acerta a quantidade.
+    assert "Preço: <b>50,50</b>" in _edicoes(out)[0] and "Valor: <b>20,00 USD</b>" in _edicoes(out)[0]
     bot.processar(e, _cb(DONO, "b|p|-1"), HIST, HOJE, CFG)  # -0,05
-    out = bot.processar(e, _cb(DONO, "b|q|-2"), HIST, HOJE, CFG)  # -0,01
-    # O valor acompanha cada seta: 50,45 x 0,39 = 19,68.
-    assert "Valor: <b>19,68 USD</b>" in _edicoes(out)[0] and "Pagas: <b>19,68 USD</b>" in _edicoes(out)[0]
-    assert u["talao"]["preco"] == pytest.approx(50.45) and u["talao"]["qtd"] == pytest.approx(0.39)
+    out = bot.processar(e, _cb(DONO, "b|v|-2"), HIST, HOJE, CFG)  # -1 USD
+    assert "Valor: <b>19,00 USD</b>" in _edicoes(out)[0] and "Pagas: <b>19,00 USD</b>" in _edicoes(out)[0]
+    assert u["talao"]["preco"] == pytest.approx(50.45) and u["talao"]["qtd"] == pytest.approx(19 / 50.45, abs=1e-6)
     # Escrever à mão também serve.
     bot.processar(e, _cb(DONO, "b|e|p"), HIST, HOJE, CFG)
     out = bot.processar(e, _txt(DONO, "54"), HIST, HOJE, CFG)
     assert out[0][0] == "editMessageReplyMarkup" and "Preço: <b>54,00</b>" in _textos(out)[0]
-    bot.processar(e, _cb(DONO, "b|e|q"), HIST, HOJE, CFG)
-    bot.processar(e, _txt(DONO, "0,3"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "b|e|v"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "16,20"), HIST, HOJE, CFG)
     out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
-    assert u["posicoes"]["GMAB"]["preco"] == 54.0 and u["posicoes"]["GMAB"]["qtd"] == 0.3
+    assert u["posicoes"]["GMAB"]["preco"] == 54.0 and u["posicoes"]["GMAB"]["qtd"] == pytest.approx(0.3)
+    assert u["caixa"] == pytest.approx(100 - 16.2)
     assert "acima do preço do sinal" in _edicoes(out)[0] and u["aguarda"] is None and u["talao"] is None
     # Cancelar não regista nada.
     bot.processar(e, _cb(DONO, "v|GMAB|55.0000"), HIST, HOJE, CFG)
@@ -468,7 +470,44 @@ def test_aviso_de_stop_e_objetivo_a_cada_corrida_uma_vez_so():
     # O fecho do sinal no histórico já não manda outro aviso a quem tem a posição.
     fecho = {"ticker": "PDS", "direcao": "compra", "data_sinal": "2026-10-26", "entrada": 20.0,
              "resultado": "objetivo", "preco_atual": 22.1, "preco_saida": 22.0, "variacao_pct": 10.0}
-    assert bot.mensagens_fechos(e, [fecho], DONO) == []
+    assert bot.mensagens_fechos(e, [fecho], DONO, avisados) == []
+
+
+def test_stop_do_sinal_avisa_quem_comprou_no_proprio_dia():
+    """Comprou hoje: o aviso pela posição só olha para o fecho, mas o sinal fechou no stop durante o dia.
+    Quem tem a ação tem de ser avisado na mesma, e só uma vez."""
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "GTE", 2, 11.8, HOJE, {"chave": "GTE|2026-10-23", "stop": 11.2, "objetivo": 13.3, "entrada": 11.9})
+    dados = {"acoes": {"GTE": {"preco": 11.3, "velas": [[HOJE, 11.9, 11.1, 11.3]]}}}
+    avisados = set()
+    assert bot.mensagens_saidas(e, dados, avisados) == []
+    fecho = {"ticker": "GTE", "direcao": "compra", "data_sinal": "2026-10-23", "entrada": 11.9,
+             "resultado": "stop", "preco_atual": 11.3, "preco_saida": 11.2, "variacao_pct": -5.9}
+    msgs = bot.mensagens_fechos(e, [fecho], DONO, avisados)
+    assert len(msgs) == 1 and msgs[0][0] == DONO and "Tens 2 compradas a 11,80" in msgs[0][1]
+    assert msgs[0][2][0][0][1] == "v|GTE|11.2000"
+    # Na corrida seguinte, ao fecho, a posição também tocaria no stop: não repete.
+    dados["acoes"]["GTE"]["velas"] = [[HOJE, 11.9, 11.1, 11.15]]
+    assert bot.mensagens_saidas(e, dados, avisados) == []
+
+
+def test_talao_de_venda_com_valor_arredondado_vende_tudo():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "GMAB", 0.3333, 60.0, HOJE)
+    bot.processar(e, _cb(DONO, "v|GMAB|61.0000"), HIST, HOJE, CFG)
+    assert "tudo o que tens" in texto_talao_atual(u)
+    bot.processar(e, _cb(DONO, "b|p|1"), HIST, HOJE, CFG)  # mudar o preço mantém "tudo"
+    assert u["talao"]["qtd"] == pytest.approx(0.3333)
+    bot.processar(e, _cb(DONO, "b|e|v"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "20,35"), HIST, HOJE, CFG)  # o que a XTB mostra, arredondado
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
+    assert "GMAB" not in u["posicoes"]
+
+
+def texto_talao_atual(u):
+    return bot.texto_talao(u)
 
 
 def test_alerta_de_noticia_vai_para_quem_tem_a_acao(monkeypatch):
@@ -607,7 +646,8 @@ def test_sinal_leva_grafico_e_botoes_para_copiar(monkeypatch):
     botoes = msgs[1][2]
     assert bot.ticker_do_sinal(botoes) == "AAA" and bot.ticker_do_sinal(msgs[0][2]) is None
     teclado = _json.loads(telegram.teclado(botoes))["inline_keyboard"]
-    assert teclado[-1][0]["copy_text"]["text"] == "1" and teclado[-1][1]["copy_text"]["text"] == "19"
+    assert teclado[-1][0]["text"] == "📋 Valor 20,00" and teclado[-1][0]["copy_text"]["text"] == "20"
+    assert teclado[-1][1]["copy_text"]["text"] == "19"
     assert teclado[-1][2]["text"] == "📋 Obj. 22,00" and "callback_data" in teclado[0][0]
     # O gráfico é feito uma vez e reutilizado (file_id) para a pessoa seguinte.
     c = 20 + np.cumsum(np.ones(40) * 0.01)

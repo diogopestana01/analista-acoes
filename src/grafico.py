@@ -1,4 +1,4 @@
-"""Gráfico de um sinal: velas dos últimos meses com a entrada, o objetivo e o stop marcados.
+"""Gráfico de um sinal: velas do último mês com a entrada, o objetivo e o stop marcados.
 
 Vai como imagem no próprio sinal do Telegram (a mesma imagem serve para todas as pessoas).
 """
@@ -15,7 +15,7 @@ def _fmt(x: float) -> str:
     return f"{x:,.2f}".replace(",", " ").replace(".", ",")
 
 
-def grafico_sinal(precos: pd.DataFrame, s: dict, sessoes: int = 60) -> bytes | None:
+def grafico_sinal(precos: pd.DataFrame, s: dict, sessoes: int = 22) -> bytes | None:
     """PNG com as últimas `sessoes` velas diárias de `precos` (colunas data, open, high, low, close) e as
     linhas do sinal `s` (entrada, objetivo, stop). None se não houver dados suficientes."""
     import matplotlib
@@ -66,7 +66,7 @@ def grafico_sinal(precos: pd.DataFrame, s: dict, sessoes: int = 60) -> bytes | N
     for lado in ("left", "bottom"):
         ax.spines[lado].set_color("#d1d5db")
     ax.grid(axis="y", color="#f3f4f6", linewidth=0.8)
-    ax.set_title(f"{s['ticker']} · últimos {len(d)} dias", loc="left", fontsize=11, fontweight="bold", color="#111827")
+    ax.set_title(f"{s['ticker']} · último mês", loc="left", fontsize=11, fontweight="bold", color="#111827")
     fig.subplots_adjust(left=0.07, right=0.84, top=0.9, bottom=0.1)
     buf = io.BytesIO()
     fig.savefig(buf, format="png")
