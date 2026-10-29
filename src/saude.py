@@ -49,28 +49,35 @@ def avisar(lista: list[tuple[str, str]], cache: dict, dia: str, enviar=None) -> 
     return n
 
 
-STOOQ = "https://stooq.com/q/d/l/?s={t}.us&i=d"
+NASDAQ = "https://api.nasdaq.com/api/quote/{t}/historical"
 REFERENCIA = ["AAPL", "MSFT", "AMZN", "JPM", "XOM"]
 
 
-def stooq_fecho(ticker: str) -> tuple[str, float] | None:
-    """(data, fecho) do último dia no Stooq (fonte gratuita, só para conferir). None se falhar."""
-    import io
-
+def nasdaq_fecho(ticker: str) -> tuple[str, float] | None:
+    """(data, fecho) do último dia completo na Nasdaq (fonte gratuita, só para conferir). None se falhar.
+    O Stooq foi tentado primeiro mas bloqueia os servidores do GitHub com um desafio de JavaScript."""
     import requests
+
+    from .resultados import CABECALHOS
     try:
-        r = requests.get(STOOQ.format(t=ticker.lower()), timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+        de = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=10)).strftime("%Y-%m-%d")
+        r = requests.get(NASDAQ.format(t=ticker), params={"assetclass": "stocks", "fromdate": de, "limit": 10},
+                         headers=CABECALHOS, timeout=20)
         r.raise_for_status()
-        d = pd.read_csv(io.StringIO(r.text)).dropna(subset=["Close"])
-        return str(d["Date"].iat[-1]), float(d["Close"].iat[-1])
+        linhas = ((r.json().get("data") or {}).get("tradesTable") or {}).get("rows") or []
+        hoje = pd.Timestamp.now(tz="America/New_York").strftime("%Y-%m-%d")
+        for l in linhas:   # mais recente primeiro; a de hoje pode estar incompleta
+            dia = pd.to_datetime(l["date"], format="%m/%d/%Y").strftime("%Y-%m-%d")
+            if dia < hoje:
+                return dia, float(str(l["close"]).replace("$", "").replace(",", ""))
     except Exception as e:  # noqa: BLE001
-        log.info("Stooq %s falhou: %s", ticker, e)
-        return None
+        log.info("Nasdaq (conferência) %s falhou: %s", ticker, e)
+    return None
 
 
-def conferir_precos(precos: pd.DataFrame, buscar=stooq_fecho, limite: float = 0.02) -> list[tuple[str, str]]:
-    """Compara o fecho de ações de referência no Yahoo (o que guardámos) com o Stooq, no mesmo dia.
-    Diferença acima de `limite` = problema. Se o Stooq não responder, não há problema a reportar."""
+def conferir_precos(precos: pd.DataFrame, buscar=nasdaq_fecho, limite: float = 0.02) -> list[tuple[str, str]]:
+    """Compara o fecho de ações de referência no Yahoo (o que guardámos) com a Nasdaq, no mesmo dia.
+    Diferença acima de `limite` = problema. Se a segunda fonte não responder, não há problema a reportar."""
     difs, vistos = [], 0
     for t in REFERENCIA:
         ref = buscar(t)
@@ -84,8 +91,8 @@ def conferir_precos(precos: pd.DataFrame, buscar=stooq_fecho, limite: float = 0.
         d = abs(float(nossa["close"].iat[-1]) / fecho - 1)
         if d > limite:
             difs.append(f"{t} {d*100:.1f}%")
-    log.info("Conferência de preços com o Stooq: %d ações comparadas, %d diferentes", vistos, len(difs))
+    log.info("Conferência de preços com a Nasdaq: %d ações comparadas, %d diferentes", vistos, len(difs))
     if difs:
-        return [("precos_diferentes", "Os preços do Yahoo não batem com uma segunda fonte (Stooq): "
+        return [("precos_diferentes", "Os preços do Yahoo não batem com uma segunda fonte (Nasdaq): "
                                       + ", ".join(difs) + ". Confirma os preços na XTB antes de entrar.")]
     return []
