@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import cotacoes, saidas, telegram, trocas
+from . import acompanhamento, cotacoes, saidas, telegram, trocas
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -34,7 +34,7 @@ CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (se
 AJUDA = """<b>Como usar</b>
 Usa o menu de botões em baixo:
 💼 Carteira: posições ao preço de agora e dinheiro livre
-📜 Histórico: últimas vendas e resultado
+📊 Resultados: quanto ganhaste, % de vendas a ganhar e as últimas vendas
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
 ⚙️ Regras: capital e número de posições
@@ -90,7 +90,7 @@ Chega assim:
 🛑 Vender para travar a perda a 226,00 (−1,7%)
 ⏳ Prazo: até 5 dias úteis
 
-Se compraste, carrega ✅ <b>Comprei</b> (ou ✏️ <b>Outro preço</b> se pagaste outro valor). Se não, ❌ <b>Ignorar</b>.""",
+Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde acertas, com setas, o preço e a quantidade que a corretora te deu. Se não, ❌ <b>Ignorar</b>.""",
     """💼 <b>Depois de comprar</b> (3 de 3)
 Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
 
@@ -107,9 +107,9 @@ def visita(chat: str, passo: int, origem: str) -> tuple[str, dict]:
     fim = ("Configurar a minha carteira ➡️", "t|fim|n") if origem == "n" else ("✅ Percebi", "t|fim|a")
     return _msg(chat, VISITA[-1], [[fim]])
 
-MENU = [["💼 Carteira", "📜 Histórico"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
+MENU = [["💼 Carteira", "📊 Resultados"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
         ["⚙️ Regras", "↩️ Desfazer"], ["🔄 Recomeçar", "❓ Ajuda"]]
-MENU_ACOES = {t for linha in MENU for t in linha}
+MENU_ACOES = {t for linha in MENU for t in linha} | {"📜 Histórico"}  # teclados antigos
 CONVIDAR, PESSOAS = "🎟️ Convidar", "👥 Pessoas"
 MENU_DONO = MENU + [[CONVIDAR, PESSOAS]]
 
@@ -385,8 +385,8 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     moeda = u["regras"]["moeda"]
     if botao == "💼 Carteira":
         return _msg(chat, carteira_agora(u, hist, hoje), menu=True)
-    if botao == "📜 Histórico":
-        return _msg(chat, cart.formatar_historico(u), menu=True)
+    if botao in ("📊 Resultados", "📜 Histórico"):
+        return _msg(chat, resultados(u, hist), menu=True)
     if botao == "🔄 Recomeçar":
         return _msg(chat, f"🔄 Recomeçar a carteira do zero? Apaga posições e operações e volta a "
                           f"{cart.fmt(u['regras']['capital_inicial'])} {moeda}. As regras ficam iguais.",
@@ -455,8 +455,8 @@ def _comando(estado, chat: str, u: dict, cmd: str, args: list, hist, hoje: str) 
         return "Cancelado."
     if cmd == "/carteira":
         return carteira_agora(u, hist, hoje)
-    if cmd == "/historico":
-        return cart.formatar_historico(u)
+    if cmd in ("/historico", "/resultados"):
+        return resultados(u, hist)
     if cmd == "/desfazer":
         return cart.desfazer(u)
     if cmd == "/comprei":
@@ -1135,6 +1135,32 @@ def mensagens_vigia(estado: dict | None, alertas: list[dict], dono: str | None, 
     return out
 
 
+def sinais_no_periodo(hist: pd.DataFrame | None, desde: str) -> dict:
+    """Sinais de compra fechados desde `desde` (registo em papel): n, quantos ganharam e retorno médio."""
+    if hist is None or hist.empty:
+        return {}
+    f = acompanhamento._fechados_compra(hist)
+    f = f[f["data_sinal"].astype(str) >= (desde or "")]
+    return {"n": len(f), "ganhos": int((f["ret"] > 0).sum()), "media": float(f["ret"].mean())} if len(f) else {}
+
+
+def resultados(u: dict, hist: pd.DataFrame | None) -> str:
+    return cart.formatar_resultados(u, _cotacoes(list(u["posicoes"])), sinais_no_periodo(hist, u.get("desde", "")))
+
+
+def resumos_semanais(estado: dict, hoje: str) -> list:
+    """Sexta ao fecho: a semana de cada pessoa (só a quem teve movimento ou tem posições)."""
+    segunda = (pd.Timestamp(hoje) - pd.Timedelta(days=pd.Timestamp(hoje).dayofweek)).strftime("%Y-%m-%d")
+    ativos = cart.ativos(estado)
+    cot = _cotacoes(sorted({t for u in ativos.values() for t in u["posicoes"]}))
+    out = []
+    for chat, u in ativos.items():
+        texto = cart.formatar_semana(u, segunda, cot)
+        if texto:
+            out.append(("sendMessage", _msg(chat, texto, menu=True)[1]))
+    return out
+
+
 def lembretes(estado: dict, hist: pd.DataFrame, hoje: str) -> list:
     """Ao fim do dia: sinais de hoje sem resposta, com botões para cada um."""
     out = []
@@ -1145,7 +1171,7 @@ def lembretes(estado: dict, hist: pd.DataFrame, hoje: str) -> list:
                  and cart.chave_sinal(t, hoje) not in u["decisoes"] and t not in u["posicoes"]]
         if not falta:
             continue
-        botoes = [[(f"✅ {t}", f"c|{t}|{hoje}"), (f"✏️ {t}", f"o|{t}|{hoje}"), (f"❌ {t}", f"i|{t}|{hoje}")]
+        botoes = [[(f"✅ Comprei {t}", f"c|{t}|{hoje}"), (f"❌ Não {t}", f"i|{t}|{hoje}")]
                   for t in falta[:10]]
         out.append(("sendMessage", _msg(chat, f"⏰ Ficaram sem resposta hoje: {', '.join(falta)}. Compraste algum?",
                                         botoes)[1]))

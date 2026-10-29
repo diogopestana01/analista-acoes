@@ -333,6 +333,79 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
     return "\n".join(out)
 
 
+def _dm(d: str) -> str:
+    return f"{d[8:10]}/{d[5:7]}" if d and len(d) >= 10 else d
+
+
+def formatar_resultados(u: dict, cot: dict | None = None, sinais: dict | None = None, n: int = 8) -> str:
+    """📊 Placar pessoal: trades fechados (ganho, % ganhos, média, melhor e pior), o que está em aberto ao
+    preço de agora e, ao lado, o que os sinais deram no mesmo período (`sinais` = {n, ganhos, media})."""
+    r, moeda, cot = u["regras"], u["regras"]["moeda"], cot or {}
+    vendas = [o for o in u["operacoes"] if o["tipo"] == "venda"]
+    desde = u.get("desde") or (u["operacoes"][0]["data"] if u["operacoes"] else "")
+    out = [f"📊 <b>Os teus resultados</b>" + (f" (desde {_dm(desde)})" if desde else "")]
+    if vendas:
+        lucro = sum(o["lucro"] for o in vendas)
+        pcts = [(o["preco"] / o["preco_compra"] - 1) * 100 for o in vendas]
+        ganhas = sum(o["lucro"] > 0 for o in vendas)
+        i_max, i_min = max(range(len(pcts)), key=pcts.__getitem__), min(range(len(pcts)), key=pcts.__getitem__)
+        out.append(f"{'🟢' if lucro >= 0 else '🔴'} Fechadas: <b>{sinal_fmt(lucro)} {moeda}</b> em {len(vendas)} "
+                   f"vendas · {ganhas} ganhas ({ganhas / len(vendas) * 100:.0f}%)")
+        out.append(f"Média por venda {sinal_fmt(sum(pcts) / len(pcts), 1)}% · melhor {vendas[i_max]['ticker']} "
+                   f"{sinal_fmt(pcts[i_max], 1)}% · pior {vendas[i_min]['ticker']} {sinal_fmt(pcts[i_min], 1)}%")
+    else:
+        out.append("Ainda não fechaste nenhuma posição.")
+    if u["posicoes"]:
+        aberto = sum(p["qtd"] * ((cot.get(t) or p["preco"]) - p["preco"]) for t, p in u["posicoes"].items())
+        out.append(f"Em aberto: {sinal_fmt(aberto)} {moeda} em {len(u['posicoes'])} posições")
+    total = u["caixa"] + sum(p["qtd"] * (cot.get(t) or p["preco"]) for t, p in u["posicoes"].items())
+    ganho = total - r["capital_inicial"]
+    pct = ganho / r["capital_inicial"] * 100 if r["capital_inicial"] else 0
+    out.append(f"💼 Carteira: <b>{fmt(total)} {moeda}</b> ({sinal_fmt(pct, 1)}% desde o início)")
+    if sinais and sinais.get("n"):
+        out.append(f"\n📈 <b>Os sinais no mesmo período</b>: {sinais['n']} fechados, "
+                   f"{sinais['ganhos'] / sinais['n'] * 100:.0f}% a ganhar, {sinal_fmt(sinais['media'] * 100, 1)}% "
+                   f"em média.\n<i>Se as tuas vendas ganham mais do que isto, estás a escolher bem.</i>")
+    if vendas:
+        out.append("\n📜 <b>Últimas vendas</b>")
+        for o in reversed(vendas[-n:]):
+            p = (o["preco"] / o["preco_compra"] - 1) * 100
+            out.append(f"{'🟢' if o['lucro'] >= 0 else '🔴'} {_dm(o['data'])} <b>{o['ticker']}</b> "
+                       f"{sinal_fmt(o['lucro'])} {moeda} ({sinal_fmt(p, 1)}%)")
+    return "\n".join(out)
+
+
+def formatar_semana(u: dict, segunda: str, cot: dict | None = None) -> str | None:
+    """Resumo da semana (sexta ao fecho): o que comprou, o que vendeu e o resultado. None se nada mexeu."""
+    moeda, cot = u["regras"]["moeda"], cot or {}
+    ops = [o for o in u["operacoes"] if o.get("data", "") >= segunda and o["tipo"] in ("compra", "venda")]
+    if not ops and not u["posicoes"]:
+        return None
+    vendas = [o for o in ops if o["tipo"] == "venda"]
+    compras = sorted({o["ticker"] for o in ops if o["tipo"] == "compra"})
+    out = [f"🗓️ <b>A tua semana</b> ({_dm(segunda)} a hoje)"]
+    if compras:
+        out.append(f"🟢 Compraste: {', '.join(compras)}")
+    if vendas:
+        lucro = sum(o["lucro"] for o in vendas)
+        ganhas = sum(o["lucro"] > 0 for o in vendas)
+        out.append(f"🔴 Vendeste: {', '.join(o['ticker'] for o in vendas)} → <b>{sinal_fmt(lucro)} {moeda}</b> "
+                   f"({ganhas} de {len(vendas)} a ganhar)")
+    if not compras and not vendas:
+        out.append("Sem compras nem vendas esta semana.")
+    if u["posicoes"]:
+        linhas = []
+        for t, p in u["posicoes"].items():
+            px = cot.get(t) or p["preco"]
+            linhas.append(f"{t} {sinal_fmt((px / p['preco'] - 1) * 100, 1)}%")
+        out.append(f"💼 Em aberto: {' · '.join(linhas)}")
+    total = u["caixa"] + sum(p["qtd"] * (cot.get(t) or p["preco"]) for t, p in u["posicoes"].items())
+    cap = u["regras"]["capital_inicial"]
+    out.append(f"Carteira: <b>{fmt(total)} {moeda}</b> ({sinal_fmt((total / cap - 1) * 100 if cap else 0, 1)}% desde o início)"
+               "\nBom fim de semana! Os detalhes estão em 📊 Resultados.")
+    return "\n".join(out)
+
+
 def formatar_historico(u: dict, n: int = 10) -> str:
     vendas = [o for o in u["operacoes"] if o["tipo"] == "venda"][-n:]
     if not vendas:

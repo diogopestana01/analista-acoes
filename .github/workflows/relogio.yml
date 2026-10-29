@@ -25,11 +25,14 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}     # só para avisar o dono quando relança o bot da Carteira
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
       - name: Lançar o analista de 10 em 10 minutos
         run: |
           fim=$(( $(date +%s) + 340*60 ))
           ultimo=""
+          ultimo_vigia=""
           while [ "$(date +%s)" -lt "$fim" ]; do
             dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
             slot="$(date -u +%Y%m%d%H)-$m"
@@ -46,6 +49,23 @@ jobs:
               fi
               if { [ "$h" -eq 20 ] || [ "$h" -eq 21 ]; } && [ "$m" -eq 35 ]; then
                 gh workflow run resumos.yml -R "$REPO" --ref main -f tipo=fecho || echo "falhou o resumo do fecho"
+              fi
+            fi
+            # Vigia: de 10 em 10 min, a qualquer hora, confirma que o bot da Carteira está ligado.
+            # O cron do GitHub não dispara neste repositório: se o bot cair, só isto o volta a ligar.
+            # Desativar o workflow "Carteira" desliga-o de vez (não é relançado).
+            if [ $(( m % 10 )) -eq 0 ] && [ "$slot" != "$ultimo_vigia" ]; then
+              ultimo_vigia=$slot
+              ativo=$(gh api "repos/$REPO/actions/workflows/carteira.yml" -q .state 2>/dev/null || echo "?")
+              vivos=$(gh run list -w carteira.yml -R "$REPO" -L 10 --json status \
+                        -q '[.[] | select(.status != "completed")] | length' 2>/dev/null || echo "?")
+              if [ "$ativo" = "active" ] && [ "$vivos" = "0" ]; then
+                echo "$(date -u) bot da Carteira parado: a relançar"
+                if gh workflow run carteira.yml -R "$REPO" --ref main; then
+                  curl -s "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+                    --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+                    --data-urlencode "text=🔧 O bot da Carteira tinha parado; voltei a ligá-lo. Mensagens enviadas entretanto são respondidas agora." > /dev/null || true
+                fi
               fi
             fi
             sleep 20

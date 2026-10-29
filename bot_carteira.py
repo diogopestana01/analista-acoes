@@ -60,6 +60,31 @@ def _chat(upd: dict) -> str:
     return str((m.get("chat") or {}).get("id", ""))
 
 
+def _gh(*args: str) -> str | None:
+    r = subprocess.run(["gh", *args], capture_output=True, text=True, timeout=60)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def vigiar_relogio(dono: str | None) -> None:
+    """O Relógio lança os sinais e vigia este bot; este bot vigia o Relógio. Se o Relógio estiver ativo
+    mas sem nenhuma corrida, relança-o e avisa o dono. Desativado no Actions = desligado de propósito."""
+    repo = os.environ.get("REPO")
+    if not repo or not os.environ.get("GH_TOKEN"):
+        return
+    try:
+        if _gh("api", f"repos/{repo}/actions/workflows/relogio.yml", "-q", ".state") != "active":
+            return
+        vivos = _gh("run", "list", "-w", "relogio.yml", "-R", repo, "-L", "10", "--json", "status",
+                    "-q", '[.[] | select(.status != "completed")] | length')
+        if vivos == "0" and _gh("workflow", "run", "relogio.yml", "-R", repo, "--ref", "main") is not None:
+            log.warning("Relógio parado: relançado")
+            if dono:
+                telegram.api("sendMessage", chat_id=dono,
+                             text="🔧 O relógio dos sinais tinha parado; voltei a ligá-lo.")
+    except Exception as e:  # noqa: BLE001  a vigia nunca pode parar o bot
+        log.warning("Vigia do Relógio falhou: %s", e)
+
+
 def executar(chamadas: list) -> None:
     for metodo, params in chamadas:
         telegram.api(metodo, **params)
@@ -83,7 +108,7 @@ def main(minutos: float) -> None:
         {"command": "start", "description": "Mostrar o menu de botões"},
         {"command": "carteira", "description": "Ver a carteira"},
         {"command": "ajuda", "description": "Como usar"}]))
-    hist, ultimo_pull = acompanhamento.carregar(HIST), 0.0
+    hist, ultimo_pull, ultima_vigia = acompanhamento.carregar(HIST), 0.0, 0.0
     fim = time.time() + minutos * 60
     while time.time() < fim:
         upds = telegram.api("getUpdates", espera=60, timeout=40, offset=estado["offset"],
@@ -110,8 +135,16 @@ def main(minutos: float) -> None:
             estado["lembrete"] = hoje
             executar(bot.lembretes(estado, hist, hoje))
             mudou = True
+        if (agora.day_of_week == 4 and agora.strftime("%H:%M") >= cfg.get("resumo_semanal_utc", "21:10")
+                and estado.get("resumo_semanal") != hoje):
+            estado["resumo_semanal"] = hoje
+            executar(bot.resumos_semanais(estado, hoje))
+            mudou = True
         if mudou:
             guardar_e_enviar(estado, k, com_git)
+        if com_git and time.time() - ultima_vigia > 600:
+            ultima_vigia = time.time()
+            vigiar_relogio(os.environ.get("TELEGRAM_CHAT_ID"))
         if upds is None:
             time.sleep(5)  # Telegram em baixo ou sem rede: não martelar
 

@@ -35,6 +35,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CARTEIRA_CHAVE: ${{ secrets.CARTEIRA_CHAVE }}   # opcional; vazio = derivada do TELEGRAM_TOKEN
           CARTEIRA_GIT: "1"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}           # vigia do Relógio: relança-o se parar
+          REPO: ${{ github.repository }}
         run: |
           git config user.name "analista-bot"
           git config user.email "analista-bot@users.noreply.github.com"
