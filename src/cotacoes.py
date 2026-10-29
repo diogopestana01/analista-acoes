@@ -65,3 +65,18 @@ def saida_atingida(p: dict, velas: list) -> dict | None:
         if obj is not None and alto >= obj:
             return {"tipo": "objetivo", "nivel": obj, "data": d, "preco": fecho}
     return None
+
+
+def juntar_agora(dados: dict, vivos: dict, hoje: str, hora: str) -> dict:
+    """Junta preços de agora (`vivos` = {ticker: preço}, ex. da Nasdaq) às velas guardadas pelos sinais:
+    a vela de hoje passa a incluir o preço de agora (máximo, mínimo e fecho). Devolve um dict novo."""
+    acoes = {t: {"preco": a["preco"], "velas": [list(v) for v in a["velas"]]} for t, a in dados.get("acoes", {}).items()}
+    for t, px in vivos.items():
+        a = acoes.setdefault(t, {"preco": px, "velas": []})
+        a["preco"] = px
+        v = a["velas"]
+        if v and v[-1][0] == hoje:
+            v[-1] = [hoje, max(v[-1][1], px), min(v[-1][2], px), px]
+        else:
+            v.append([hoje, px, px, px])
+    return {"hora": hora or dados.get("hora", ""), "acoes": acoes}

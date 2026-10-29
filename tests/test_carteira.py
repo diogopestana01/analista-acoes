@@ -634,6 +634,7 @@ def test_aviso_de_resultados_para_quem_tem_a_acao(monkeypatch):
 
 
 def test_sinal_leva_grafico_e_botoes_para_copiar(monkeypatch):
+    pytest.importorskip("matplotlib")  # sem ele o sinal segue só com texto (e o teste não se aplica)
     import json as _json
     import numpy as np
     import diario
@@ -681,3 +682,36 @@ def test_aviso_de_sinais_parados_so_em_horas_de_mercado():
     assert not bot_carteira.sinais_parados(T("2026-10-29 22:30"), T("2026-10-29 14:00"))  # fora de horas
     assert not bot_carteira.sinais_parados(T("2026-10-31 15:00"), None)  # sábado
     assert bot_carteira.sinais_parados(T("2026-10-29 09:00"), None)
+
+
+def test_preco_de_agora_entra_na_vela_de_hoje():
+    from src import cotacoes
+    dados = {"hora": "x", "acoes": {"PDS": {"preco": 20.5, "velas": [["2026-10-28", 21, 20, 20.5],
+                                                                     ["2026-10-29", 20.8, 20.2, 20.5]]}}}
+    novo = cotacoes.juntar_agora(dados, {"PDS": 18.9, "NOVA": 5.0}, "2026-10-29", "2026-10-29T14:02Z")
+    assert novo["acoes"]["PDS"]["velas"][-1] == ["2026-10-29", 20.8, 18.9, 18.9]
+    assert novo["acoes"]["NOVA"] == {"preco": 5.0, "velas": [["2026-10-29", 5.0, 5.0, 5.0]]}
+    assert dados["acoes"]["PDS"]["velas"][-1][2] == 20.2  # o original fica igual
+    novo = cotacoes.juntar_agora(dados, {"PDS": 21.0}, "2026-10-30", "")
+    assert novo["acoes"]["PDS"]["velas"][-1] == ["2026-10-30", 21.0, 21.0, 21.0] and novo["hora"] == "x"
+
+
+def test_bot_vigia_stops_de_2_em_2_minutos(monkeypatch, tmp_path):
+    import bot_carteira as bc
+    from src import precos_agora, telegram
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "PDS", 1, 20.0, "2026-10-27", {"chave": "PDS|2026-10-27", "stop": 19.0, "objetivo": 22.0,
+                                                    "entrada": 20.0})
+    cam = tmp_path / "cotacoes.json"
+    cam.write_text(json.dumps({"hora": "", "acoes": {"PDS": {"preco": 19.6, "velas": [["2026-10-29", 20, 19.5, 19.6]]}}}))
+    monkeypatch.setattr(bc, "COTACOES", cam)
+    monkeypatch.setattr(precos_agora, "agora", lambda ts: {"PDS": {"preco": 18.95, "fonte": "nasdaq"}})
+    enviados = []
+    monkeypatch.setattr(telegram, "enviar", lambda txt, chat, b=None, silencioso=False: enviados.append((chat, txt)))
+    agora = pd.Timestamp("2026-10-29 14:02", tz="UTC")
+    assert bc.bolsa_eua_aberta(agora) and not bc.bolsa_eua_aberta(pd.Timestamp("2026-10-31 15:00", tz="UTC"))
+    assert bc.vigiar_posicoes(e, agora) is True
+    assert len(enviados) == 1 and enviados[0][0] == DONO and "tocou no stop (19,00)" in enviados[0][1]
+    assert e["saidas_avisadas"] and bc.vigiar_posicoes(e, agora) is False  # não repete
+    assert bc.cotar(["PDS"]) == {"PDS": 18.95}  # botões usam o preço da vigia

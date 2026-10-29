@@ -175,7 +175,8 @@ def main() -> None:
     bot.COTAR = lambda ts: cotacoes.precos_agora(dados, ts)
     # Stop/objetivo: pela posição de cada pessoa e pelo fecho do sinal no registo; a mesma lista de avisos
     # já enviados serve aos dois, para ninguém ficar sem aviso nem recebê-lo duas vezes.
-    avisados = set(_ler_cache().get("saidas_avisadas", []))
+    # inclui os avisos que o bot da Carteira já deu na vigia de 2 em 2 min
+    avisados = set(_ler_cache().get("saidas_avisadas", [])) | set((estado or {}).get("saidas_avisadas", []))
     avisar_saidas(estado, dados, avisados)
     hist, fechos = acompanhamento.atualizar(hist, precos)
     for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono, avisados):
