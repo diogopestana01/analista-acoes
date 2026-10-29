@@ -13,13 +13,14 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import acompanhamento, bot, cofre, telegram, vigia
+from src import acompanhamento, bot, cofre, cotacoes, precos as precos_mod, telegram, vigia
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
 DADOS = RAIZ / "data"
 HIST = DADOS / "historico_sinais.csv"
 CARTEIRA = DADOS / "carteira.enc"
+COTACOES = DADOS / "cotacoes.json"
 
 
 def ler_carteira() -> dict | None:
@@ -55,18 +56,57 @@ def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dic
         telegram.enviar(texto, chat, botoes)
 
 
+def guardar_cotacoes(precos: pd.DataFrame, hist: pd.DataFrame, estado: dict | None) -> dict:
+    em_carteira = {t for u in (_ativos(estado)) for t in u["posicoes"]}
+    quero = em_carteira | set(hist.loc[hist["estado"] == "aberto", "ticker"])
+    falta = sorted(t for t in em_carteira if t not in set(precos["ticker"]))
+    if falta:  # compradas à mão fora do universo
+        try:
+            precos = pd.concat([precos, precos_mod.descarregar(falta, "1mo")], ignore_index=True)
+        except Exception as e:  # noqa: BLE001
+            logging.warning("Sem preços para %d ações fora do universo: %s", len(falta), e)
+    dados = cotacoes.construir(precos, quero, pd.Timestamp.now(tz="UTC"))
+    cotacoes.guardar(COTACOES, dados)
+    logging.info("Cotações guardadas: %d ações", len(dados["acoes"]))
+    return dados
+
+
+def _ativos(estado: dict | None) -> list:
+    return [u for u in (estado or {}).get("utilizadores", {}).values() if u.get("estado") == "ativo"]
+
+
+def avisar_saidas(estado: dict | None, dados: dict) -> None:
+    """Quem tem uma posição que tocou no stop ou no objetivo recebe o aviso (uma vez)."""
+    import json
+    caminho = DADOS / "avaliacoes_cache.json"
+    try:
+        cache = json.loads(caminho.read_text()) if caminho.exists() else {}
+    except ValueError:
+        cache = {}
+    avisados = set(cache.get("saidas_avisadas", []))
+    msgs = bot.mensagens_saidas(estado, dados, avisados)
+    for chat, texto, botoes in msgs:
+        telegram.enviar(texto, chat, botoes)
+    if msgs:
+        cache["saidas_avisadas"] = sorted(avisados)[-500:]
+        caminho.write_text(json.dumps(cache))
+    logging.info("Avisos de stop/objetivo: %d", len(msgs))
+
+
 def main() -> None:
     config = yaml.safe_load((RAIZ / "config.yaml").read_text())
     passo1_universo.main()
     saida = passo2_sinais.main()
 
     precos = pd.read_parquet(DADOS / "precos.parquet")
-    # último preço guardado de cada ação: avalia as posições abertas (troca pela mais fraca, vigia)
-    ultimo = precos.sort_values("data").groupby("ticker")["close"].last()
-    bot.COTAR = lambda ts: {t: float(ultimo[t]) for t in ts if t in ultimo.index}
     hist = acompanhamento.carregar(HIST)
-    hist, fechos = acompanhamento.atualizar(hist, precos)
     estado, dono = ler_carteira(), os.environ.get("TELEGRAM_CHAT_ID")
+    # Preço de agora das ações em carteira e com sinal aberto: o bot mostra a carteira com ele e
+    # cada posição é comparada com o seu stop e objetivo a cada corrida.
+    dados = guardar_cotacoes(precos, hist, estado)
+    bot.COTAR = lambda ts: cotacoes.precos_agora(dados, ts)
+    avisar_saidas(estado, dados)
+    hist, fechos = acompanhamento.atualizar(hist, precos)
     for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono):
         telegram.enviar(texto, chat, botoes)
 
