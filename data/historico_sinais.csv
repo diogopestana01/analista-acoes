@@ -80,7 +80,7 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-28,CVS,pullback,compra,90.19000244140625,,85.90525822855307,2.0,5,47.6,aberto,,,,sma5,duvidoso,4.0,apoia,0.15
 2026-10-28,CI,pullback,compra,295.04998779296875,,279.9613682850825,3.5,5,62.0,aberto,,,,sma5,manter,2.0,neutro,0.3
 2026-10-28,PSO,pullback,compra,17.299999237060547,,16.63310898644946,3.0,5,66.7,aberto,,,,sma5,manter,2.0,apoia,0.3
-2026-10-28,DIS,pullback,compra,109.16000366210938,,105.28088888896265,2.0,5,41.4,aberto,,,,sma5,duvidoso,4.0,neutro,0.15
+2026-10-28,DIS,pullback,compra,109.16000366210938,,105.28088888896265,2.0,5,41.4,regra,2026-10-29,110.55999755859375,1.0,sma5,duvidoso,4.0,neutro,0.15
 2026-10-28,TRU,pullback,compra,74.125,,67.07190196541573,1.0,5,61.0,aberto,,,,sma5,manter,3.0,apoia,0.4
 2026-10-28,RNST,pullback,compra,40.06999969482422,,38.346581329206174,2.0,5,70.5,aberto,,,,sma5,manter,3.0,apoia,0.3
 2026-10-28,HRTG,pullback,compra,34.72999954223633,,32.60634182540628,2.0,5,61.8,regra,2026-10-29,36.369998931884766,1.0,sma5,manter,2.0,apoia,0.6
