@@ -130,6 +130,30 @@ def botoes_sinal(ticker: str, data: str) -> list:
             [("ℹ️ Porquê este sinal?", f"q|{ticker}|{data}")]]
 
 
+def ticker_do_sinal(botoes: list | None) -> str | None:
+    """A ação de uma mensagem de sinal (a que tem o botão ✅ Comprei), ou None."""
+    try:
+        d = botoes[0][0][1]
+    except (TypeError, IndexError):
+        return None
+    return d.split("|")[1] if d.startswith("c|") else None
+
+
+def _copia(x: float) -> str:
+    """Número para colar na corretora: ponto decimal, sem zeros a mais."""
+    return f"{x:.4f}".rstrip("0").rstrip(".")
+
+
+def botoes_copiar(qtd: float, s: dict) -> list:
+    """Uma linha de botões que copiam a quantidade, o stop e o objetivo, para colar na XTB."""
+    linha = [(f"📋 Qtd {cart.fmt_qtd(qtd)}", telegram.COPIAR + _copia(qtd))]
+    for nome, k in (("Stop", "stop"), ("Obj.", "objetivo")):
+        v = _num(s.get(k))
+        if v:
+            linha.append((f"📋 {nome} {cart.fmt(v)}", telegram.COPIAR + _copia(round(v, 2))))
+    return linha
+
+
 def botoes_venda(ticker: str, preco: float) -> list:
     return [[(f"✅ Vendi (~{cart.fmt(preco)})", f"v|{ticker}|{preco:.4f}"), ("🔒 Mantenho", f"m|{ticker}")]]
 
@@ -1039,6 +1063,8 @@ def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
         rank = f"⭐ Confiança {_confianca(s):.0f}/100 (n.º {k} de {total or len(sinais)})"
         texto = sinal_simples(u, s, t, u["caixa"] - reservado, rank)
         b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
+        if b and not t["motivo"]:
+            b = b + [botoes_copiar(t["qtd"], s)]
         out.append((texto, b))
     return out
 
@@ -1141,6 +1167,33 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) 
             donos_avisados |= chat == dono
         if dono and not donos_avisados:
             out.append((dono, base, None))
+    return out
+
+
+def mensagens_resultados(estado: dict | None, agenda: dict, avisados: set, hoje: str) -> list:
+    """Quem tem uma ação que apresenta resultados hoje ou no próximo dia útil recebe um aviso (uma vez).
+    Um trade de poucos dias não costuma valer o risco de um salto de preço com as contas."""
+    out = []
+    px = _cotacoes(sorted(agenda)) if agenda else {}
+    for chat, u in (cart.ativos(estado).items() if estado else []):
+        for t, p in u["posicoes"].items():
+            a = agenda.get(t)
+            if not a:
+                continue
+            chave = f"res|{chat}|{t}|{a['data']}"
+            if chave in avisados:
+                continue
+            avisados.add(chave)
+            quando = "hoje" if a["data"] == hoje else f"a {cart._dm(a['data'])}"
+            agora = px.get(t)
+            linha = (f"agora {cart.fmt(agora)} ({cart.sinal_fmt((agora / p['preco'] - 1) * 100, 1)}%)" if agora
+                     else f"compradas a {cart.fmt(p['preco'])}")
+            texto = (f"📅 <b>{t}</b> apresenta resultados {quando} ({a['quando']}).\n"
+                     f"💼 Tens {cart.fmt_qtd(p['qtd'])}, {linha}.\n"
+                     "Com as contas o preço pode saltar muito, para cima ou para baixo, e passar o stop. "
+                     "Num trade de poucos dias, o mais prudente costuma ser vender antes.")
+            botoes = botoes_venda(t, agora) if agora else [[("✏️ Vendi", f"w|{t}"), ("🔒 Mantenho", f"m|{t}")]]
+            out.append((chat, texto, botoes))
     return out
 
 

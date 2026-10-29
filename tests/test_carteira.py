@@ -574,3 +574,45 @@ def test_sugestao_chega_ao_dono_e_painel_mostra_o_uso():
     texto = _textos(bot.processar(e, _txt(DONO, "👥 Pessoas"), HIST, HOJE, CFG))[0]
     assert "<b>Rui</b>" in texto and "1 vendas (+2,00 USD, 1 a ganhar) · seguiu 2 de 3 sinais" in texto
     assert "última vez 28/10" in texto
+
+
+def test_aviso_de_resultados_para_quem_tem_a_acao(monkeypatch):
+    e = _estado()
+    cart.comprar(e["utilizadores"][DONO], "NVDA", 0.1, 180.0, "2026-10-27")
+    e["utilizadores"]["222"] = cart.novo_utilizador("Rui", CFG["regras_base"], "ativo", HOJE)
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"NVDA": 189.0})
+    agenda = {"NVDA": {"data": "2026-10-29", "quando": "depois do fecho"}, "AAPL": {"data": HOJE, "quando": "x"}}
+    avisados = set()
+    msgs = bot.mensagens_resultados(e, agenda, avisados, HOJE)
+    assert len(msgs) == 1 and msgs[0][0] == DONO
+    assert "NVDA</b> apresenta resultados a 29/10 (depois do fecho)" in msgs[0][1] and "agora 189,00 (+5,0%)" in msgs[0][1]
+    assert msgs[0][2][0][0][1] == "v|NVDA|189.0000"
+    assert bot.mensagens_resultados(e, agenda, avisados, HOJE) == []  # uma vez só
+
+
+def test_sinal_leva_grafico_e_botoes_para_copiar(monkeypatch):
+    import json as _json
+    import numpy as np
+    import diario
+    from src import telegram
+    e = _estado()
+    base = {"data_sinal": HOJE, "setup": "rompimento", "direcao": "compra", "objetivo": 22.0, "stop": 19.0,
+            "dias_estimados": 3, "saida": "atr_3_15", "entrada": 20.0, "pontuacao": 80.0, "max_dias": 5}
+    regs = [{**base, "ticker": "AAA"}]
+    msgs = bot.mensagens_sinais(e, regs, "cab", DONO)
+    botoes = msgs[1][2]
+    assert bot.ticker_do_sinal(botoes) == "AAA" and bot.ticker_do_sinal(msgs[0][2]) is None
+    teclado = _json.loads(telegram.teclado(botoes))["inline_keyboard"]
+    assert teclado[-1][0]["copy_text"]["text"] == "1" and teclado[-1][1]["copy_text"]["text"] == "19"
+    assert teclado[-1][2]["text"] == "📋 Obj. 22,00" and "callback_data" in teclado[0][0]
+    # O gráfico é feito uma vez e reutilizado (file_id) para a pessoa seguinte.
+    c = 20 + np.cumsum(np.ones(40) * 0.01)
+    precos = pd.DataFrame({"data": pd.bdate_range("2026-08-01", periods=40), "ticker": "AAA", "open": c,
+                           "high": c + 0.1, "low": c - 0.1, "close": c, "volume": 1})
+    fotos, textos = [], []
+    monkeypatch.setattr(telegram, "enviar_foto", lambda img, leg, chat, b, mudo: fotos.append((img, leg)) or "FID")
+    monkeypatch.setattr(telegram, "enviar", lambda txt, chat, b=None, silencioso=False: textos.append(txt))
+    diario.enviar_sinais(msgs + [("222", msgs[1][1], botoes)], regs, precos, e)
+    assert len(textos) == 1 and textos[0].startswith("cab") and len(fotos) == 2
+    assert isinstance(fotos[0][0], bytes) and fotos[0][0][:4] == b"\x89PNG" and fotos[1][0] == "FID"
+    assert "COMPRAR AAA" in fotos[0][1]
