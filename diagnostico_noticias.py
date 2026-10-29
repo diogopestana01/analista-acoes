@@ -15,6 +15,39 @@ logging.basicConfig(level=logging.WARNING)
 DADOS = Path(__file__).parent / "data"
 
 
+def comparar_tempo_real(tickers: list[str]) -> None:
+    """Preço de agora: Yahoo (velas de 1 min) contra Nasdaq (último negócio), com a hora de cada um."""
+    import requests
+    import yfinance as yf
+
+    from src.resultados import CABECALHOS
+    agora = pd.Timestamp.now(tz="UTC")
+    try:
+        y = yf.download(tickers, period="1d", interval="1m", group_by="ticker", progress=False, prepost=True)
+    except Exception as e:  # noqa: BLE001
+        y = None
+        print(f"[yahoo 1m] ERRO {e}")
+    for t in tickers:
+        linha = f"[tempo real {t}] agora {agora:%H:%M:%S} UTC"
+        try:
+            s = y[t]["Close"].dropna()
+            linha += f" | Yahoo {s.iat[-1]:.2f} às {s.index[-1].tz_convert('UTC'):%H:%M}"
+        except Exception as e:  # noqa: BLE001
+            linha += f" | Yahoo ERRO {e}"
+        try:
+            r = requests.get(f"https://api.nasdaq.com/api/quote/{t}/info", params={"assetclass": "stocks"},
+                             headers=CABECALHOS, timeout=20)
+            d = r.json()["data"]
+            for k in ("primaryData", "secondaryData"):
+                p = d.get(k) or {}
+                linha += (f" | Nasdaq {k}: {p.get('lastSalePrice')} {p.get('lastTradeTimestamp')} "
+                          f"real={p.get('isRealTime')}")
+            linha += f" | estado {d.get('marketStatus')}"
+        except Exception as e:  # noqa: BLE001
+            linha += f" | Nasdaq ERRO {e}"
+        print(linha)
+
+
 def main(data: str | None = None) -> None:
     ficheiro = DADOS / f"sinais_{data}.csv" if data else sorted(DADOS.glob("sinais_*.csv"))[-1]
     sinais = pd.read_csv(ficheiro)
@@ -48,6 +81,7 @@ def main(data: str | None = None) -> None:
             print(f"[{nome_url}] ERRO {e}")
     from src import saude
     print(f"[nasdaq preços, para conferir o Yahoo] AAPL último fecho: {saude.nasdaq_fecho('AAPL')}")
+    comparar_tempo_real(["AAPL", "MSFT", "OTEX", "KIDS", "ZETA"])
     if "--so-fontes" in sys.argv:
         return
     for s in sinais.drop_duplicates("ticker").to_dict("records"):
