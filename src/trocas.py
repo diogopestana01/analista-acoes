@@ -57,9 +57,12 @@ def valor_que_falta(setup: str, dias_usados: int, ganho: float, atr: float | Non
     return modelo["tabela"].get(f"{setup}|{min(dias_usados, 5)}|{b}", media)
 
 
-def vale_trocar(setup_novo: str, falta_fraca: float | None, modelo: dict) -> tuple[bool, float | None]:
-    """(trocar?, vantagem do sinal novo depois de custos). Sem dados, não troca."""
-    novo = modelo["media"].get(setup_novo)
+def vale_trocar(setup_novo: str, falta_fraca: float | None, modelo: dict,
+                novo: float | None = None) -> tuple[bool, float | None]:
+    """(trocar?, vantagem do sinal novo depois de custos). Sem dados, não troca.
+    `novo`: o que o sinal ainda rende (src/lista_sinais.py, para sinais de dias anteriores); por omissão
+    a média do setup, que é o valor de um sinal no dia em que aparece."""
+    novo = novo if novo is not None else modelo["media"].get(setup_novo)
     if novo is None or falta_fraca is None:
         return False, None
     vantagem = novo - falta_fraca - modelo["custo"]

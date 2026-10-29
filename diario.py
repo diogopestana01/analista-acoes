@@ -91,6 +91,13 @@ def _guardar_avisados(avisados: set) -> None:
     (DADOS / "avaliacoes_cache.json").write_text(json.dumps(cache))
 
 
+def _guardar_trocas(avisadas: set) -> None:
+    import json
+    cache = _ler_cache()
+    cache["trocas_avisadas"] = sorted(avisadas, key=lambda k: k.rsplit("|", 1)[-1])[-300:]
+    (DADOS / "avaliacoes_cache.json").write_text(json.dumps(cache))
+
+
 def avisar_saidas(estado: dict | None, dados: dict, avisados: set) -> None:
     """Quem tem uma posição que tocou no stop ou no objetivo recebe o aviso (uma vez)."""
     msgs = bot.mensagens_saidas(estado, dados, avisados)
@@ -180,7 +187,7 @@ def guardar_pendentes(sinais: pd.DataFrame) -> None:
 
 
 def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | None, dono: str | None,
-                     precos: pd.DataFrame) -> None:
+                     precos: pd.DataFrame, trocas_avisadas: set | None = None) -> None:
     """Na primeira corrida com a bolsa aberta e a entrada já à abertura no registo, envia os sinais da
     noite numa ronda só, com o preço de abertura, stop e objetivo atualizados."""
     try:
@@ -206,7 +213,8 @@ def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | Non
         hoje = f"{agora:%Y-%m-%d}"
         cabecalho = (f"🌅 <b>Sinais formados com a bolsa fechada</b> ({len(prontos)})\n"
                      "Entrada ao preço de abertura de hoje; confirma na XTB antes de entrar.")
-        enviar_sinais(bot.mensagens_sinais(estado, prontos, cabecalho, dono, hist, hoje), prontos, precos, estado)
+        enviar_sinais(bot.mensagens_sinais(estado, prontos, cabecalho, dono, hist, hoje, trocas_avisadas),
+                      prontos, precos, estado)
 
 
 def main() -> None:
@@ -249,12 +257,20 @@ def main() -> None:
     agora_ja, para_depois = (novos[aberta], novos[~aberta]) if not novos.empty else (novos, novos)
     guardar_pendentes(para_depois)
 
+    trocas_avisadas = set(_ler_cache().get("trocas_avisadas", []))
     if not agora_ja.empty:
         cabecalho = (f"📊 <b>Novos sinais ({agora:%d/%m %H:%M} UTC)</b> ({len(agora_ja)})\n"
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
         registos = [{**s, "data_sinal": data} for s in agora_ja.to_dict("records")]
-        enviar_sinais(bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data), registos, precos, estado)
-    enviar_pendentes(hist, agora, estado, dono, precos)
+        enviar_sinais(bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data, trocas_avisadas),
+                      registos, precos, estado)
+    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas)
+    # Os sinais de dias anteriores são reavaliados a cada corrida: se uma posição já deu o que tinha a dar
+    # e um sinal que ainda dá para comprar rende mais, propõe a troca (uma vez, só com a bolsa de NY aberta).
+    if acompanhamento.bolsa_aberta("SPY", agora):
+        for chat, texto, botoes in bot.mensagens_trocas(estado, hist, f"{agora:%Y-%m-%d}", trocas_avisadas):
+            telegram.enviar(texto, chat, botoes)
+    _guardar_trocas(trocas_avisadas)
 
     vigiar_posicoes(hist, data, dono, config)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"], agora)
