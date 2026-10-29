@@ -175,6 +175,7 @@ def main(minutos: float) -> None:
     bot.COTAR = cotar  # carteira e sinais em aberto ao preço de agora
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
     bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
+    bot.TALAO_URL = cfg.get("talao_url", "")
     eu = telegram.api("getMe") or {}
     bot.USERNAME = eu.get("username")  # para os links de convite
     if k is None:

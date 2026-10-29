@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Talão</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --txt: var(--tg-theme-text-color, #111827);
+    --dica: var(--tg-theme-hint-color, #6b7280);
+    --caixa: var(--tg-theme-secondary-bg-color, #f3f4f6);
+    --botao: var(--tg-theme-button-color, #2563eb);
+    --botao-txt: var(--tg-theme-button-text-color, #ffffff);
+    --verde: #16a34a; --vermelho: #dc2626;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--txt);
+         font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--dica); font-size: 14px; margin-bottom: 18px; }
+  label { display: block; font-size: 14px; color: var(--dica); margin: 14px 0 6px; }
+  .campo { display: flex; gap: 8px; align-items: stretch; }
+  .campo button { width: 56px; border: 0; border-radius: 12px; background: var(--caixa); color: var(--txt);
+                  font-size: 26px; font-weight: 600; touch-action: manipulation; user-select: none; }
+  .campo button:active { opacity: .6; }
+  .campo input { flex: 1; min-width: 0; text-align: center; font-size: 26px; font-weight: 700; padding: 12px 6px;
+                 border: 2px solid transparent; border-radius: 12px; background: var(--caixa); color: var(--txt); }
+  .campo input:focus { outline: none; border-color: var(--botao); }
+  .resumo { margin-top: 22px; background: var(--caixa); border-radius: 12px; padding: 12px 14px; }
+  .linha { display: flex; justify-content: space-between; padding: 4px 0; }
+  .linha b { font-weight: 700; }
+  .aviso { color: var(--vermelho); font-size: 14px; margin-top: 10px; min-height: 18px; }
+  .pos { color: var(--verde); } .neg { color: var(--vermelho); }
+  #confirmar { display: none; width: 100%; margin-top: 18px; padding: 14px; border: 0; border-radius: 12px;
+               background: var(--botao); color: var(--botao-txt); font-size: 17px; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1 id="titulo">Talão</h1>
+<div class="sub" id="sub"></div>
+<div id="campos"></div>
+<div class="resumo" id="resumo"></div>
+<div class="aviso" id="aviso"></div>
+<button id="confirmar">✅ Confirmar</button>
+<script>
+const tg = window.Telegram && window.Telegram.WebApp;
+const q = new URLSearchParams(location.search);
+const n = (k, d = 0) => { const v = parseFloat(q.get(k)); return isFinite(v) ? v : d; };
+const tipo = q.get("tipo") === "venda" ? "venda" : "compra";
+const t = (q.get("t") || "").toUpperCase(), moeda = q.get("m") || "USD", pct = n("pct") / 100;
+const fmt = (x, c = 2) => x.toLocaleString("pt-PT", { minimumFractionDigits: c, maximumFractionDigits: c });
+const ler = s => { s = String(s).trim().replace(/\s/g, ""); if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "");
+                   const v = parseFloat(s.replace(",", ".")); return isFinite(v) ? v : NaN; };
+const casas = x => (x < 1 ? 4 : 2);
+
+// Campos: preço e valor (compra) ou lucro (venda). O passo é o mais pequeno que a ação permite.
+const campos = tipo === "compra"
+  ? [{ k: "p", nome: "💲 Preço por ação", v: n("p"), passo: n("p") < 1 ? 0.0001 : 0.01, min: 0.0001 },
+     { k: "v", nome: `💵 Valor pago (${moeda})`, v: n("v"), passo: 0.01, min: 0.01 }]
+  : [{ k: "l", nome: `💰 Lucro (${moeda}), negativo se perdeste`, v: n("l"), passo: 0.01, min: -1e9 }];
+
+document.getElementById("titulo").textContent = (tipo === "compra" ? "🟢 Compra de " : "🔴 Venda de ") + t;
+document.getElementById("sub").textContent = tipo === "compra"
+  ? "Põe o preço e o valor que a XTB mostra." : `Tens ${q.get("q")} ações compradas a ${fmt(n("pc"), casas(n("pc")))}. Põe o lucro que a XTB te deu.`;
+
+const caixa = document.getElementById("campos");
+for (const c of campos) {
+  const casa = c.passo < 0.01 ? 4 : 2;
+  caixa.insertAdjacentHTML("beforeend", `<label for="${c.k}">${c.nome}</label>
+    <div class="campo"><button data-k="${c.k}" data-s="-1">−</button>
+    <input id="${c.k}" inputmode="${c.k === "l" ? "text" : "decimal"}" value="${fmt(c.v, casa).replace(/\s/g, "")}">
+    <button data-k="${c.k}" data-s="1">+</button></div>`);
+  c.casa = casa;
+}
+const campo = k => campos.find(c => c.k === k);
+const valor = k => ler(document.getElementById(k).value);
+
+function mexer(k, s) {
+  const c = campo(k), atual = valor(k);
+  const novo = Math.max(c.min, Math.round(((isFinite(atual) ? atual : 0) + s * c.passo) / c.passo) * c.passo);
+  document.getElementById(k).value = fmt(novo, c.casa).replace(/\s/g, "");
+  atualizar();
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+}
+// Carregar e manter: repete, cada vez mais depressa.
+let temp;
+caixa.addEventListener("pointerdown", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  e.preventDefault();
+  const k = b.dataset.k, s = +b.dataset.s; let espera = 400;
+  mexer(k, s);
+  const repetir = () => { temp = setTimeout(() => { mexer(k, s); espera = Math.max(50, espera * 0.8); repetir(); }, espera); };
+  repetir();
+});
+["pointerup", "pointerleave", "pointercancel"].forEach(ev => caixa.addEventListener(ev, () => clearTimeout(temp)));
+caixa.addEventListener("input", atualizar);
+
+let dados = null;
+function atualizar() {
+  const resumo = document.getElementById("resumo"), aviso = document.getElementById("aviso");
+  aviso.textContent = ""; dados = null;
+  if (tipo === "compra") {
+    const p = valor("p"), v = valor("v");
+    if (!(p > 0) || !(v > 0)) { resumo.innerHTML = ""; aviso.textContent = "Preço e valor têm de ser maiores que zero."; return pronto(); }
+    const qtd = v / p, livre = n("livre") - v * (1 + pct);
+    resumo.innerHTML = `<div class="linha"><span>📦 Quantidade</span><b>${fmt(qtd, 4)}</b></div>
+      <div class="linha"><span>🏦 Taxas</span><b>${fmt(v * pct)} ${moeda}</b></div>
+      <div class="linha"><span>Livre depois</span><b class="${livre < 0 ? "neg" : ""}">${fmt(livre)} ${moeda}</b></div>`;
+    if (livre < -0.005) aviso.textContent = "Fica mais do que tens livre no bot (usa 💵 Depositar se puseste mais dinheiro).";
+    dados = { id: q.get("id"), t, p, v };
+  } else {
+    const l = valor("l"), qt = n("q"), pc = n("pc");
+    if (!isFinite(l) || !(qt > 0)) { resumo.innerHTML = ""; aviso.textContent = "Escreve o lucro (ex. 0,21 ou -1,30)."; return pronto(); }
+    const preco = (l / qt + pc) / (1 - pct);
+    if (!(preco > 0)) { aviso.textContent = "Esse prejuízo é maior do que o que pagaste."; return pronto(); }
+    resumo.innerHTML = `<div class="linha"><span>💲 Preço de venda</span><b>${fmt(preco, casas(preco))}</b></div>
+      <div class="linha"><span>Recebes</span><b>${fmt(qt * preco * (1 - pct))} ${moeda}</b></div>
+      <div class="linha"><span>Resultado</span><b class="${l >= 0 ? "pos" : "neg"}">${l >= 0 ? "+" : ""}${fmt(l)} ${moeda} (${l >= 0 ? "+" : ""}${fmt((preco / pc - 1) * 100, 1)}%)</b></div>`;
+    dados = { id: q.get("id"), t, l };
+  }
+  pronto();
+}
+function pronto() {
+  const texto = tipo === "compra" ? "✅ Confirmar compra" : "✅ Confirmar venda";
+  if (tg && tg.MainButton) {
+    tg.MainButton.setText(texto);
+    dados ? tg.MainButton.show() : tg.MainButton.hide();
+  } else {
+    const b = document.getElementById("confirmar"); b.textContent = texto; b.style.display = dados ? "block" : "none";
+  }
+}
+function enviar() { if (dados && tg) tg.sendData(JSON.stringify(dados)); }
+if (tg) { tg.ready(); tg.expand(); tg.MainButton.onClick(enviar); }
+document.getElementById("confirmar").addEventListener("click", enviar);
+atualizar();
+</script>
+</body>
+</html>
