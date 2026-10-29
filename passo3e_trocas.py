@@ -12,11 +12,15 @@
                   + custo da troca (spread) + margem (valor_setup: com a média do setup)
    Os sinais candidatos imitam os alertas: um por ação e dia, retorno esperado >= fasquia,
    calculado só com trades da mesma ação já fechados antes (sem olhar para o futuro).
-Uso:  python passo3e_trocas.py   (depois de passo1_universo.py)
+3. Imprime a tabela do valor que falta com todos os trades (VALOR_INICIO/VALOR_FIM), que é a
+   que vai para data/valor_restante.json e é usada por src/trocas.py. Com --guardar escreve-a.
+Uso:  python passo3e_trocas.py [--guardar]   (depois de passo1_universo.py)
 """
 from __future__ import annotations
 
+import json
 import logging
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -180,6 +184,16 @@ def main() -> None:
                 r = simular(por_dia, datas, lugares, pol, valor, media, ganha)
                 print(f"  {lugares:2d} lugares | {pol:12s} | total {r['total']*100:+6.1f}% | {r['trades']} trades, "
                       f"{r['trocas']} trocas | {r['medio']*100:+.2f}%/trade | ganha {r['ganha']*100:.0f}%")
+    # Tabela final (com todos os trades) para o bot usar em src/trocas.py.
+    valor, media, _ = tabelas(trades)
+    modelo = {"limites": BALDES[1:-1], "custo": CUSTO, "margem": MARGEM,
+              "media": {k: round(v, 5) for k, v in media.items()},
+              "tabela": {f"{s}|{k}|{b}": round(v, 5) for (s, k, b), v in valor.items()},
+              "treinado_em": f"{pd.Timestamp.now():%Y-%m-%d}", "trades": len(trades)}
+    texto = json.dumps(modelo, ensure_ascii=False)
+    print("VALOR_INICIO\n" + texto + "\nVALOR_FIM")
+    if "--guardar" in sys.argv:
+        (DADOS / "valor_restante.json").write_text(texto)
 
 
 if __name__ == "__main__":

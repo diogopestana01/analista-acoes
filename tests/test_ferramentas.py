@@ -272,3 +272,31 @@ def test_tendencias_no_alerta_e_resumo(monkeypatch):
                                  "stop": 9.5, "dias_estimados": 3, "setup": "pullback", **s})
     assert "📣 Redes" in m
     assert tendencias.em_alta({"AAA", "BBB"}) == ["AAA (120 menções, 4.0x)", "BBB (25 menções, 1.0x)"]
+
+
+def test_trocas_valor_que_falta_e_decisao():
+    from src import trocas
+    modelo = {"limites": [-1.0, -0.25, 0.25, 1.0, 2.0], "custo": 0.003, "margem": 0.002,
+              "media": {"pullback": 0.004, "rompimento": 0.007},
+              "tabela": {"rompimento|1|2": 0.005, "pullback|2|0": 0.006}}
+    # Comprada hoje: não se troca.
+    assert trocas.valor_que_falta("rompimento", 0, 0.0, 0.02, modelo) is None
+    # Dia 1, ganho ~0 ATR -> balde 2.
+    assert trocas.valor_que_falta("rompimento", 1, 0.001, 0.02, modelo) == 0.005
+    # A perder mais de 1 ATR no dia 2.
+    assert trocas.valor_que_falta("pullback", 2, -0.05, 0.02, modelo) == 0.006
+    # Sem célula na tabela -> média do setup; dias acima de 5 contam como 5.
+    assert trocas.valor_que_falta("pullback", 9, 0.0, 0.02, modelo) == 0.004
+    assert trocas.valor_que_falta("pullback", 1, 0.0, None, modelo) == 0.004
+    # 0,7% - 0,1% - 0,3% = 0,3% > 0,2% -> troca; contra 0,3% que falta já não.
+    assert trocas.vale_trocar("rompimento", 0.001, modelo)[0] is True
+    assert trocas.vale_trocar("rompimento", 0.003, modelo)[0] is False
+    assert trocas.vale_trocar("desconhecido", 0.0, modelo) == (False, None)
+
+
+def test_trocas_atr_do_stop():
+    from src import trocas
+    cfg = {"qualidade": {"rompimento": {"saida": "atr_3_15"}}}
+    # stop = entrada - 1,5 x ATR  ->  ATR = 3 / 1,5 = 2 em 100 = 2%.
+    assert abs(trocas.atr_pct("rompimento", 100, 97, cfg) - 0.02) < 1e-9
+    assert trocas.atr_pct("rompimento", 100, None, cfg) is None
