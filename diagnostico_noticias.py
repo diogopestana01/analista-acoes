@@ -39,16 +39,15 @@ def main(data: str | None = None) -> None:
                                 noticias.NAVEGADOR),
                                ("reddit wsb", "https://www.reddit.com/r/wallstreetbets/hot.json?limit=5",
                                 {"User-Agent": "analista-acoes/1.0"}),
-                               ("google trends rss", "https://trends.google.com/trending/rss?geo=US", noticias.NAVEGADOR),
-                               ("nasdaq preços AAPL (conferir Yahoo)",
-                                "https://api.nasdaq.com/api/quote/AAPL/historical?assetclass=stocks&limit=3",
-                                __import__("src.resultados", fromlist=["x"]).CABECALHOS)):
+                               ("google trends rss", "https://trends.google.com/trending/rss?geo=US", noticias.NAVEGADOR)):
         try:
             r = requests.get(url, timeout=20, headers=cab)
             print(f"[{nome_url}] HTTP {r.status_code} {r.headers.get('content-type')} | {r.text[:300]!r}"
-                  + (f" ... {r.text[-200:]!r}" if "conferir" in nome_url else ""))
+                  + "")
         except Exception as e:
             print(f"[{nome_url}] ERRO {e}")
+    from src import saude
+    print(f"[nasdaq preços, para conferir o Yahoo] AAPL último fecho: {saude.nasdaq_fecho('AAPL')}")
     if "--so-fontes" in sys.argv:
         return
     for s in sinais.drop_duplicates("ticker").to_dict("records"):
