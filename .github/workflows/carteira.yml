@@ -35,6 +35,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CARTEIRA_CHAVE: ${{ secrets.CARTEIRA_CHAVE }}   # opcional; vazio = derivada do TELEGRAM_TOKEN
           CARTEIRA_GIT: "1"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}  # ler prints da XTB (o código confere os números)
+          MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}          # vazio = claude-haiku-5-5
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}           # vigia do Relógio: relança-o se parar
           REPO: ${{ github.repository }}
         run: |
