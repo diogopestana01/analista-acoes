@@ -63,8 +63,9 @@ jobs:
             slot="$(date -u +%Y%m%d%H)-$m"
             if [ "$dia" -le 5 ] && [ $(( m % 10 )) -eq 5 ] && [ "$slot" != "$ultimo" ]; then
               ultimo=$slot
-              # Sinais: 07:05 a 21:55 UTC, de 10 em 10 min
-              if [ "$h" -ge 7 ] && [ "$h" -le 21 ]; then
+              # Sinais: 07:05 a 21:55 UTC, de 10 em 10 min; fora disso de hora a hora (:05), para irem
+              # formando a lista; os sinais com a bolsa fechada só são enviados na abertura seguinte.
+              if { [ "$h" -ge 7 ] && [ "$h" -le 21 ]; } || [ "$m" -eq 5 ]; then
                 echo "$(date -u) a lançar diario.yml"
                 gh workflow run diario.yml -R "$REPO" --ref main || echo "falhou o lançamento dos sinais"
               fi

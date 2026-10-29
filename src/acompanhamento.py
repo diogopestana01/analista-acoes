@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "stop",
            "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
            "veredicto_inv", "risco_inv", "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
-           "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv"]
+           "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv", "entrada_na_abertura"]
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
@@ -25,12 +25,36 @@ def carregar(caminho: Path) -> pd.DataFrame:
     if caminho.exists():
         h = pd.read_csv(caminho, dtype={"data_sinal": str, "estado": str, "data_fecho": object, "saida": object,
                                        "veredicto_inv": object, "impacto_noticias": object,
-                                       "verif_noticias": object, "verif_inv": object})
+                                       "verif_noticias": object, "verif_inv": object,
+                                       "entrada_na_abertura": object})
         return h.reindex(columns=COLUNAS)
     return pd.DataFrame(columns=COLUNAS)
 
 
-def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int) -> pd.DataFrame:
+def bolsa_aberta(ticker: str, agora: pd.Timestamp) -> bool:
+    """Horário normal da bolsa da ação (UTC aproximado, dias úteis). Fora dele não se compra nem vende."""
+    from .precos import _horario
+    agora = pd.Timestamp(agora).tz_convert("UTC") if pd.Timestamp(agora).tzinfo else pd.Timestamp(agora)
+    ini, fim = _horario(ticker)
+    h = agora.hour + agora.minute / 60
+    return agora.weekday() < 5 and ini <= h < fim
+
+
+def proxima_sessao(ticker: str, agora: pd.Timestamp) -> str:
+    """Dia da próxima sessão em que se pode comprar (fins de semana saltados; feriados não)."""
+    from .precos import _horario
+    agora = pd.Timestamp(agora).tz_convert("UTC")
+    dia = agora.normalize().tz_localize(None)
+    if agora.weekday() >= 5 or agora.hour + agora.minute / 60 >= _horario(ticker)[1]:
+        dia = dia + pd.offsets.BDay(1)
+    return f"{dia:%Y-%m-%d}"
+
+
+def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int,
+             agora: pd.Timestamp | None = None) -> pd.DataFrame:
+    """Com `agora`, os sinais criados com a bolsa da ação fechada ficam com entrada_na_abertura e com
+    data_sinal = dia da próxima sessão: a entrada passa a ser o preço de abertura dessa sessão, que é
+    quando se consegue comprar (ver `atualizar`). Sem `agora` regista como se a bolsa estivesse aberta."""
     if novos.empty:
         return hist
     n = novos.reindex(columns=["ticker", "setup", "direcao", "entrada", "objetivo", "stop", "dias_estimados",
@@ -41,10 +65,22 @@ def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int) 
     n.insert(0, "data_sinal", data)
     n["max_dias"] = n["max_dias"].fillna(max_dias)
     n["estado"] = "aberto"
+    fechada = [agora is not None and not bolsa_aberta(t, agora) for t in n["ticker"]]
+    n["entrada_na_abertura"] = fechada
+    n.loc[fechada, "data_sinal"] = [proxima_sessao(t, agora) for t, f in zip(n["ticker"], fechada) if f]
     novos_abertos = hist[(hist["estado"] == "aberto")][["ticker", "direcao"]]
     chave = set(map(tuple, novos_abertos.to_numpy()))
     n = n[[(t, d) not in chave for t, d in zip(n["ticker"], n["direcao"])]]  # não repete posição aberta
     return pd.concat([hist, n], ignore_index=True)[COLUNAS]
+
+
+def _verdade(v) -> bool:
+    return str(v).strip().lower() in ("true", "1", "1.0")
+
+
+def _verdade_abertura_resolvida(s: pd.Series) -> bool:
+    """Já entrou à abertura (entrada_na_abertura passou de True a False): a sessão da compra conta."""
+    return str(s.get("entrada_na_abertura")).strip().lower() in ("false", "0", "0.0")
 
 
 def fator_desdobramento(s: pd.Series, precos: pd.DataFrame) -> float:
@@ -96,9 +132,23 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame,
             s = hist.loc[i]
             log.warning("%s: desdobramento detetado (fator %.3f); entrada, stop e objetivo ajustados",
                         s["ticker"], fator)
-        p = precos[(precos["ticker"] == s["ticker"]) & (precos["data"] > s["data_sinal"])].sort_values("data")
+        na_abertura = _verdade(s.get("entrada_na_abertura"))
+        # Entrada à abertura: o próprio dia da sessão conta (comprou-se de manhã); senão começa no dia seguinte.
+        desde = precos["data"] >= s["data_sinal"] if na_abertura or _verdade_abertura_resolvida(s) \
+            else precos["data"] > s["data_sinal"]
+        p = precos[(precos["ticker"] == s["ticker"]) & desde].sort_values("data")
         if p.empty:
             continue
+        if na_abertura:
+            # Sinal criado com a bolsa fechada: entra à abertura da sessão seguinte; stop e objetivo
+            # mantêm a mesma distância à entrada.
+            abertura = p["open"].iat[0] if "open" in p and pd.notna(p["open"].iat[0]) else None
+            if abertura is None or abertura <= 0:
+                continue
+            delta = abertura - s["entrada"]
+            cols = [c for c in ("stop", "objetivo") if pd.notna(s[c])]
+            hist.loc[i, ["entrada", "entrada_na_abertura"] + cols] = [abertura, False] + [s[c] + delta for c in cols]
+            s = hist.loc[i]
         compra = s["direcao"] == "compra"
         regra = saidas.REGRAS.get(s["saida"]) if isinstance(s["saida"], str) else None
         resultado, linha = None, None

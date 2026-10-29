@@ -4,6 +4,7 @@ O GitHub Actions corre isto de 30 em 30 minutos nos dias úteis. Só fala quando
 sinais novos ou fechos; os resumos de abertura e fecho estão à parte (resumos_diarios.py). A primeira execução
 de cada dia reconstrói o universo; as restantes só atualizam os últimos preços.
 """
+import json
 import logging
 import os
 from pathlib import Path
@@ -161,6 +162,53 @@ def enviar_sinais(msgs: list, registos: list[dict], precos: pd.DataFrame, estado
             imagens[t] = fid
 
 
+PENDENTES = DADOS / "sinais_pendentes.json"
+
+
+def guardar_pendentes(sinais: pd.DataFrame) -> None:
+    """Sinais criados com a bolsa fechada: guardados (com as notícias e o resto) para a abertura."""
+    if sinais.empty:
+        return
+    try:
+        atual = json.loads(PENDENTES.read_text()) if PENDENTES.exists() else {}
+        for r in json.loads(sinais.to_json(orient="records", date_format="iso")):
+            atual.setdefault(r["ticker"], r)
+        PENDENTES.write_text(json.dumps(atual, ensure_ascii=False))
+        logging.info("Sinais com a bolsa fechada, guardados para a abertura: %s", sorted(atual))
+    except Exception as e:  # noqa: BLE001
+        logging.warning("Sinais pendentes não guardados: %s", e)
+
+
+def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | None, dono: str | None,
+                     precos: pd.DataFrame) -> None:
+    """Na primeira corrida com a bolsa aberta e a entrada já à abertura no registo, envia os sinais da
+    noite numa ronda só, com o preço de abertura, stop e objetivo atualizados."""
+    try:
+        pend = json.loads(PENDENTES.read_text()) if PENDENTES.exists() else {}
+    except (ValueError, OSError):
+        pend = {}
+    if not pend:
+        return
+    prontos, restam = [], {}
+    abertos = hist[hist["estado"] == "aberto"].set_index("ticker")
+    for t, r in pend.items():
+        if t not in abertos.index:          # já fechou (ex.: abriu abaixo do stop) ou saiu do registo
+            continue
+        h = abertos.loc[[t]].iloc[-1]
+        resolvido = str(h.get("entrada_na_abertura")).strip().lower() in ("false", "0", "0.0")
+        if not acompanhamento.bolsa_aberta(t, agora) or not resolvido:
+            restam[t] = r
+            continue
+        prontos.append({**r, "entrada": h["entrada"], "stop": h["stop"], "objetivo": h["objetivo"],
+                        "data_sinal": h["data_sinal"]})
+    PENDENTES.write_text(json.dumps(restam, ensure_ascii=False))
+    if prontos:
+        hoje = f"{agora:%Y-%m-%d}"
+        cabecalho = (f"🌅 <b>Sinais formados com a bolsa fechada</b> ({len(prontos)})\n"
+                     "Entrada ao preço de abertura de hoje; confirma na XTB antes de entrar.")
+        enviar_sinais(bot.mensagens_sinais(estado, prontos, cabecalho, dono, hist, hoje), prontos, precos, estado)
+
+
 def main() -> None:
     config = yaml.safe_load((RAIZ / "config.yaml").read_text())
     passo1_universo.main()
@@ -193,15 +241,23 @@ def main() -> None:
     # Pausa depois de fechar: evita voltar a comprar logo a seguir a um objetivo ou stop.
     pausa = acompanhamento.em_pausa(hist, data, config["sinais"].get("pausa_apos_fecho_dias", 0))
     novos = sinais[~sinais["ticker"].isin(abertos | pausa)] if not sinais.empty else sinais
+    agora = pd.Timestamp.now(tz="UTC")
+    # Com a bolsa da ação fechada não se pode comprar: o sinal fica registado para a abertura seguinte
+    # (entrada = preço de abertura) e só é enviado nessa altura, numa ronda só.
+    aberta = novos["ticker"].map(lambda t: acompanhamento.bolsa_aberta(t, agora)) if not novos.empty \
+        else pd.Series(dtype=bool)
+    agora_ja, para_depois = (novos[aberta], novos[~aberta]) if not novos.empty else (novos, novos)
+    guardar_pendentes(para_depois)
 
-    if not novos.empty:
-        cabecalho = (f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"
+    if not agora_ja.empty:
+        cabecalho = (f"📊 <b>Novos sinais ({agora:%d/%m %H:%M} UTC)</b> ({len(agora_ja)})\n"
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
-        registos = [{**s, "data_sinal": data} for s in novos.to_dict("records")]
+        registos = [{**s, "data_sinal": data} for s in agora_ja.to_dict("records")]
         enviar_sinais(bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data), registos, precos, estado)
+    enviar_pendentes(hist, agora, estado, dono, precos)
 
     vigiar_posicoes(hist, data, dono, config)
-    hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"])
+    hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"], agora)
     hist.to_csv(HIST, index=False)
 
 

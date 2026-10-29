@@ -108,3 +108,29 @@ def test_desdobramento_nao_dispara_o_stop():
     linha = h.iloc[-1]
     assert linha["estado"] == "aberto" and not f
     assert abs(linha["entrada"] - 50.5) < 1e-9 and abs(linha["stop"] - 95.0 * 0.505) < 1e-9
+
+
+def test_sinal_com_bolsa_fechada_entra_na_abertura_seguinte():
+    import pandas as pd
+    from pathlib import Path
+    from src import acompanhamento
+    novos = pd.DataFrame([{"ticker": "AAA", "setup": "pullback", "direcao": "compra", "entrada": 100.0,
+                           "objetivo": None, "stop": 96.0, "saida": "sma5", "max_dias": 5}])
+    vazio = acompanhamento.carregar(Path("/nao/existe"))
+    noite = acompanhamento.registar(vazio, novos, "2026-10-28", 5, pd.Timestamp("2026-10-28 21:00", tz="UTC"))
+    dia = acompanhamento.registar(vazio, novos, "2026-10-28", 5, pd.Timestamp("2026-10-28 15:00", tz="UTC"))
+    assert bool(noite["entrada_na_abertura"].iat[0]) and not bool(dia["entrada_na_abertura"].iat[0])
+    assert noite["data_sinal"].iat[0] == "2026-10-29" and dia["data_sinal"].iat[0] == "2026-10-28"
+    sexta = acompanhamento.registar(vazio, novos, "2026-10-30", 5, pd.Timestamp("2026-10-30 22:00", tz="UTC"))
+    assert sexta["data_sinal"].iat[0] == "2026-11-02"   # sexta à noite: compra-se na segunda
+    precos = pd.DataFrame({"ticker": "AAA", "data": pd.to_datetime(["2026-10-28", "2026-10-29"]),
+                           "open": [99.0, 102.0], "high": [101.0, 103.0], "low": [98.5, 101.5],
+                           "close": [100.0, 102.5]})
+    h, f = acompanhamento.atualizar(noite, precos, pd.Timestamp("2026-10-29 15:00", tz="UTC"))
+    linha = h.iloc[-1]
+    assert linha["entrada"] == 102.0 and linha["stop"] == 98.0 and not bool(linha["entrada_na_abertura"])
+    assert linha["estado"] == "aberto" and not f
+    # Antes da sessão seguinte não há abertura: fica à espera, sem fechar.
+    h2, _ = acompanhamento.atualizar(noite, precos[precos["data"] == "2026-10-28"],
+                                     pd.Timestamp("2026-10-28 23:00", tz="UTC"))
+    assert bool(h2["entrada_na_abertura"].iat[-1]) and h2["entrada"].iat[-1] == 100.0
