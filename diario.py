@@ -125,7 +125,7 @@ def main() -> None:
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
         registos = [{**s, "data_sinal": data} for s in novos.to_dict("records")]
         for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data):
-            telegram.enviar(texto, chat, botoes)
+            telegram.enviar(texto, chat, botoes, silencioso=bot.sem_som(estado, chat))
 
     vigiar_posicoes(hist, data, dono, config)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"])
