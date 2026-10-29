@@ -47,3 +47,45 @@ def avisar(lista: list[tuple[str, str]], cache: dict, dia: str, enviar=None) -> 
         except Exception as e:  # noqa: BLE001 — o aviso nunca pode parar os sinais
             log.warning("Aviso de saúde não enviado: %s", e)
     return n
+
+
+STOOQ = "https://stooq.com/q/d/l/?s={t}.us&i=d"
+REFERENCIA = ["AAPL", "MSFT", "AMZN", "JPM", "XOM"]
+
+
+def stooq_fecho(ticker: str) -> tuple[str, float] | None:
+    """(data, fecho) do último dia no Stooq (fonte gratuita, só para conferir). None se falhar."""
+    import io
+
+    import requests
+    try:
+        r = requests.get(STOOQ.format(t=ticker.lower()), timeout=20, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        d = pd.read_csv(io.StringIO(r.text)).dropna(subset=["Close"])
+        return str(d["Date"].iat[-1]), float(d["Close"].iat[-1])
+    except Exception as e:  # noqa: BLE001
+        log.info("Stooq %s falhou: %s", ticker, e)
+        return None
+
+
+def conferir_precos(precos: pd.DataFrame, buscar=stooq_fecho, limite: float = 0.02) -> list[tuple[str, str]]:
+    """Compara o fecho de ações de referência no Yahoo (o que guardámos) com o Stooq, no mesmo dia.
+    Diferença acima de `limite` = problema. Se o Stooq não responder, não há problema a reportar."""
+    difs, vistos = [], 0
+    for t in REFERENCIA:
+        ref = buscar(t)
+        if ref is None:
+            continue
+        dia, fecho = ref
+        nossa = precos[(precos["ticker"] == t) & (pd.to_datetime(precos["data"]).dt.strftime("%Y-%m-%d") == dia)]
+        if nossa.empty:
+            continue
+        vistos += 1
+        d = abs(float(nossa["close"].iat[-1]) / fecho - 1)
+        if d > limite:
+            difs.append(f"{t} {d*100:.1f}%")
+    log.info("Conferência de preços com o Stooq: %d ações comparadas, %d diferentes", vistos, len(difs))
+    if difs:
+        return [("precos_diferentes", "Os preços do Yahoo não batem com uma segunda fonte (Stooq): "
+                                      + ", ".join(difs) + ". Confirma os preços na XTB antes de entrar.")]
+    return []

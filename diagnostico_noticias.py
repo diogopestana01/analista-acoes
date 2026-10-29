@@ -39,10 +39,13 @@ def main(data: str | None = None) -> None:
                                 noticias.NAVEGADOR),
                                ("reddit wsb", "https://www.reddit.com/r/wallstreetbets/hot.json?limit=5",
                                 {"User-Agent": "analista-acoes/1.0"}),
-                               ("google trends rss", "https://trends.google.com/trending/rss?geo=US", noticias.NAVEGADOR)):
+                               ("google trends rss", "https://trends.google.com/trending/rss?geo=US", noticias.NAVEGADOR),
+                               ("stooq AAPL (conferir preços)", "https://stooq.com/q/d/l/?s=aapl.us&i=d",
+                                {"User-Agent": "Mozilla/5.0"})):
         try:
             r = requests.get(url, timeout=20, headers=cab)
-            print(f"[{nome_url}] HTTP {r.status_code} {r.headers.get('content-type')} | {r.text[:300]!r}")
+            print(f"[{nome_url}] HTTP {r.status_code} {r.headers.get('content-type')} | {r.text[:300]!r}"
+                  + (f" ... {r.text[-120:]!r}" if nome_url.startswith("stooq") else ""))
         except Exception as e:
             print(f"[{nome_url}] ERRO {e}")
     if "--so-fontes" in sys.argv:

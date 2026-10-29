@@ -115,11 +115,14 @@ def test_regras_de_saida():
     assert saidas.simular(d, 33, saidas.REGRAS["fecho_5d"]) is None   # ainda não terminou
 
 
-def test_investigador_avisa_e_bloqueia_so_se_configurado(monkeypatch):
+def test_investigador_avisa_e_bloqueia_so_se_configurado(monkeypatch, tmp_path):
     from src import investigador
+    monkeypatch.setattr(passo2_sinais, "DADOS", tmp_path)
     chamadas = []
 
-    def falso(s, news, riscos=None, cliente=None):
+    def falso(s, news, riscos=None, cliente=None, registo=None):
+        if registo is not None:
+            registo["pedido"] = "manchetes"
         chamadas.append(s["ticker"])
         assert list(riscos["titulo"]) == ["Downgrade"]
         return investigador.Contraditorio(veredicto="rejeitar" if s["ticker"] == "A" else "manter",
@@ -133,6 +136,9 @@ def test_investigador_avisa_e_bloqueia_so_se_configurado(monkeypatch):
     assert list(out["veredicto_inv"]) == ["rejeitar", "manter"] and len(out) == 2
     out = passo2_sinais.contraditorio(final, cache, "2026-10-28", {}, news, {"ativo": True, "bloquear": True})
     assert list(out["ticker"]) == ["B"] and chamadas == ["A", "B"]   # segunda vez vem da cache
+    import json
+    auditoria = json.loads((tmp_path / "auditoria" / "2026-10-28.json").read_text())
+    assert auditoria["A|pullback"]["advogado"]["pedido"] == "manchetes"
     from src import telegram
     m = telegram.formatar_sinal({"ticker": "A", "direcao": "compra", "entrada": 10.0, "objetivo": 11.0,
                                  "stop": 9.5, "dias_estimados": 3, "setup": "pullback",

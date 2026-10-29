@@ -32,7 +32,8 @@ sinais:
   max_dias: 5            # horizonte máximo (dias úteis)
   retorno_minimo_pct: 1.0       # fasquia: retorno médio esperado após custos (%) para um sinal ser enviado
   peso_base_casos: 10           # quantos casos "vale" a média do setup face ao histórico da própria ação
-  peso_backtest_casos: 30       # quantos sinais reais em papel "vale" o backtest na média de cada setup (ajuste automático)
+  peso_backtest_casos: 150      # quantos sinais reais em papel "vale" o backtest na média de cada setup (ajuste automático).
+                                # Era 30: uma semana boa de pullbacks punha a base em +1,22% (backtest +0,42%). Revisão 29/10.
   qualidade:                    # média do backtest por setup (bruta, %), regra de saída (src/saidas.py) e filtros [mín, máx]
     pullback: {retorno_base_pct: 0.42, saida: sma5, filtros: {}}          # backtest 22/10: sma5 +0,42% vs atual +0,37%, ganha 64%
     # Rompimento e semana forte: só se o gráfico SEMANAL não estiver esticado (RSI semanal < 70).

@@ -69,9 +69,9 @@ def verificar(leitura: _Leitura, noticias: pd.DataFrame, pedido: str, agora=None
                         "verificacao": "ok" if inteiro else "numeros_cortados"})
 
 
-def avaliar(sinal: dict, noticias: pd.DataFrame, cliente=None, agora=None) -> Avaliacao:
+def avaliar(sinal: dict, noticias: pd.DataFrame, cliente=None, agora=None, registo: dict | None = None) -> Avaliacao:
     """Leitura verificada das notícias. Se o Claude não estiver disponível ou falhar, fica neutra:
-    uma falha nunca muda o sinal."""
+    uma falha nunca muda o sinal. `registo` (opcional) recebe o pedido, a resposta bruta e a verificada."""
     if noticias.empty:
         return neutra("Sem notícias recentes.", "ok")
     if cliente is None and not os.environ.get("ANTHROPIC_API_KEY"):
@@ -98,7 +98,12 @@ def avaliar(sinal: dict, noticias: pd.DataFrame, cliente=None, agora=None) -> Av
         )
         if resp.stop_reason == "refusal" or resp.parsed_output is None:
             raise RuntimeError(f"sem resposta utilizável ({resp.stop_reason})")
-        return verificar(resp.parsed_output, noticias, pedido, agora)
+        final = verificar(resp.parsed_output, noticias, pedido, agora)
+        if registo is not None:
+            registo.update(pedido=pedido, bruto=resp.parsed_output.model_dump(), verificado=final.model_dump())
+        return final
     except Exception as e:
         log.warning("Claude falhou para %s (%s); segue sem leitura de notícias", sinal["ticker"], e)
+        if registo is not None:
+            registo.update(pedido=pedido, erro=str(e)[:300])
         return neutra("", "falhou")

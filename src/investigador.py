@@ -114,7 +114,7 @@ def pesquisar_riscos(ticker: str, nome: str = "") -> pd.DataFrame:
 
 
 def contestar(s: dict, noticias: pd.DataFrame, riscos: pd.DataFrame | None = None,
-              cliente=None, agora=None) -> Contraditorio | None:
+              cliente=None, agora=None, registo: dict | None = None) -> Contraditorio | None:
     """None quando não há chave da Anthropic ou o pedido falha (o sinal segue sem contraditório)."""
     if cliente is None and not os.environ.get("ANTHROPIC_API_KEY"):
         return None
@@ -132,9 +132,14 @@ def contestar(s: dict, noticias: pd.DataFrame, riscos: pd.DataFrame | None = Non
         if resp.parsed_output is None:
             return None
         citavel = verificador.tabela_citavel((noticias, N_ANALISTA), (riscos, N_RISCO))
-        return verificar(resp.parsed_output, s, citavel, pedido, agora)
+        final = verificar(resp.parsed_output, s, citavel, pedido, agora)
+        if registo is not None:
+            registo.update(pedido=pedido, bruto=resp.parsed_output.model_dump(), verificado=final.model_dump())
+        return final
     except Exception as e:
         log.warning("Investigador falhou para %s: %s", s.get("ticker"), e)
+        if registo is not None:
+            registo.update(erro=str(e)[:300])
         return None
 
 

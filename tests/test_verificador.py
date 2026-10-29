@@ -106,3 +106,13 @@ def test_saude_avisa_uma_vez_por_dia():
     enviados, cache = [], {}
     assert saude.avisar(p, cache, "2026-10-29", enviados.append) == 2
     assert saude.avisar(p, cache, "2026-10-29", enviados.append) == 0 and len(enviados) == 2
+
+
+def test_conferencia_de_precos_com_segunda_fonte():
+    from src import saude
+    precos = pd.DataFrame({"ticker": ["AAPL", "MSFT"], "data": pd.to_datetime(["2026-10-28", "2026-10-28"]),
+                           "close": [200.0, 400.0]})
+    fonte = {"AAPL": ("2026-10-28", 200.5), "MSFT": ("2026-10-28", 360.0)}
+    p = saude.conferir_precos(precos, lambda t: fonte.get(t))
+    assert len(p) == 1 and "MSFT 11.1%" in p[0][1] and "AAPL" not in p[0][1]
+    assert saude.conferir_precos(precos, lambda t: None) == []   # segunda fonte em baixo: sem alarme

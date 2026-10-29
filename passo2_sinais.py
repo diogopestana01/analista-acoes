@@ -85,8 +85,10 @@ def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news:
         news = extra if news is None else pd.concat([news, extra], ignore_index=True)
     for s in falta:
         riscos = investigador.pesquisar_riscos(s["ticker"], nomes.get(s["ticker"], ""))
+        reg = {}
         c = investigador.contestar(s, news[news["ticker"] == s["ticker"]] if news is not None else pd.DataFrame(),
-                                   riscos)
+                                   riscos, registo=reg)
+        auditar(dia, {f"{s['ticker']}|{s['setup']}": {"advogado": reg}})
         cache[chave(s)] = c.model_dump() if c else {"veredicto": "", "argumento": "", "risco": None,
                                                       "verificacao": "falhou"}
     f = final.copy()
@@ -101,15 +103,39 @@ def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news:
     return f
 
 
-def _saude_precos(ultimo_dia) -> None:
-    """Preços velhos com a bolsa aberta: avisa o dono (uma vez por dia)."""
+def auditar(dia: str, novos: dict) -> None:
+    """Guarda, por dia e ação, o que cada etapa do Claude recebeu e devolveu (antes e depois do
+    verificador), para se poder confirmar mais tarde de onde veio cada frase de um alerta."""
+    if not novos:
+        return
+    caminho = DADOS / "auditoria" / f"{dia}.json"
+    try:
+        caminho.parent.mkdir(exist_ok=True)
+        tudo = json.loads(caminho.read_text()) if caminho.exists() else {}
+        for chave, valor in novos.items():
+            tudo.setdefault(chave, {}).update(valor)
+        caminho.write_text(json.dumps(tudo, ensure_ascii=False, default=str))
+    except Exception as e:  # noqa: BLE001 — a auditoria nunca pode parar os sinais
+        logging.warning("Auditoria não guardada: %s", e)
+
+
+def _saude_precos(ultimo_dia, precos_df: pd.DataFrame | None = None) -> None:
+    """Preços velhos com a bolsa aberta, ou diferentes de uma segunda fonte (1 vez por dia, à 1.ª
+    corrida depois das 08:00 UTC): avisa o dono, no máximo uma vez por dia e problema."""
     caminho = DADOS / "avaliacoes_cache.json"
     try:
         cache = json.loads(caminho.read_text())
     except (FileNotFoundError, ValueError):
         cache = {}
     agora = pd.Timestamp.now(tz="UTC")
-    if saude.avisar(saude.problemas(ultimo_dia, [], agora), cache, f"{agora:%Y-%m-%d}"):
+    dia = f"{agora:%Y-%m-%d}"
+    lista = saude.problemas(ultimo_dia, [], agora)
+    mudou = False
+    if precos_df is not None and agora.hour >= 8 and f"conferencia|{dia}" not in cache:
+        cache[f"conferencia|{dia}"] = True
+        mudou = True
+        lista += saude.conferir_precos(precos_df)
+    if saude.avisar(lista, cache, dia) or mudou:
         caminho.write_text(json.dumps(cache))
 
 
@@ -122,8 +148,9 @@ def main() -> Path:
 
     hist = precos.projetar_volume_hoje(hist, pd.Timestamp.now(tz="UTC"))
     ultimo_dia = hist["data"].max()
+    _saude_precos(hist[~hist["ticker"].str.contains(".", regex=False)]["data"].max(),   # último dia dos EUA
+                  hist[hist["ticker"].isin(saude.REFERENCIA)])
     hist = hist[hist.groupby("ticker")["data"].transform("max") == ultimo_dia]  # só ações com dados de hoje
-    _saude_precos(ultimo_dia)
 
     # O peso de cada setup ajusta-se sozinho aos resultados reais em papel (sinais.base_ajustada).
     reais = acompanhamento.resultados_reais(acompanhamento.carregar(DADOS / "historico_sinais.csv"))
@@ -170,9 +197,12 @@ def main() -> Path:
     falta = [s for s in candidatos.to_dict("records") if chave(s) not in cache]
     nomes = filtrado.set_index("ticker")["nome"].fillna("").to_dict()
     news = noticias.recolher({s["ticker"]: nomes.get(s["ticker"], "") for s in falta}) if falta else None
+    registos = {}
     for sinal in falta:
-        av = sentimento.avaliar(sinal, news[news["ticker"] == sinal["ticker"]])
+        reg = registos.setdefault(f"{sinal['ticker']}|{sinal['setup']}", {}).setdefault("analista", {})
+        av = sentimento.avaliar(sinal, news[news["ticker"] == sinal["ticker"]], registo=reg)
         cache[chave(sinal)] = av.model_dump()
+    auditar(dia, registos)
     cache_path.write_text(json.dumps(cache))
     avaliacoes = {s["ticker"]: sentimento.Avaliacao(**cache[chave(s)]) for s in candidatos.to_dict("records")}
     agora = pd.Timestamp.now(tz="UTC")

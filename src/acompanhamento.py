@@ -5,11 +5,14 @@ também serve de registo do desempenho real do modelo (passo 3, em papel).
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
 
 from . import indicadores, saidas
+
+log = logging.getLogger(__name__)
 
 COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "stop",
            "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
@@ -44,6 +47,18 @@ def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int) 
     return pd.concat([hist, n], ignore_index=True)[COLUNAS]
 
 
+def fator_desdobramento(s: pd.Series, precos: pd.DataFrame) -> float:
+    """Os preços do Yahoo vêm ajustados a desdobramentos (splits): depois de um 2 para 1 o fecho do dia
+    do sinal aparece a metade. Se o fecho desse dia estiver a mais de 30% da entrada guardada, devolve
+    o fator para pôr o registo na mesma escala; senão 1 (diferenças pequenas são dividendos ou o
+    preço intradiário da entrada)."""
+    dia = precos[(precos["ticker"] == s["ticker"]) & (precos["data"] == s["data_sinal"])]
+    if dia.empty or not pd.notna(s["entrada"]) or not s["entrada"]:
+        return 1.0
+    f = float(dia["close"].iat[-1]) / float(s["entrada"])
+    return f if f < 0.7 or f > 1 / 0.7 else 1.0
+
+
 def sessao_fechada(ticker: str, dia: str, agora: pd.Timestamp) -> bool:
     """A vela deste dia já é a final? (a de hoje só depois do fecho da bolsa, com 10 min de folga)."""
     from .precos import _horario
@@ -74,6 +89,13 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame,
                             for _, g in precos.groupby("ticker")], ignore_index=True)
     precos = precos.assign(data=pd.to_datetime(precos["data"]).dt.strftime("%Y-%m-%d"))
     for i, s in abertos.iterrows():
+        fator = fator_desdobramento(s, precos)
+        if fator != 1.0:   # os preços vêm ajustados: o registo passa para a mesma escala
+            cols = [c for c in ("entrada", "stop", "objetivo") if pd.notna(s[c])]
+            hist.loc[i, cols] = [s[c] * fator for c in cols]
+            s = hist.loc[i]
+            log.warning("%s: desdobramento detetado (fator %.3f); entrada, stop e objetivo ajustados",
+                        s["ticker"], fator)
         p = precos[(precos["ticker"] == s["ticker"]) & (precos["data"] > s["data_sinal"])].sort_values("data")
         if p.empty:
             continue

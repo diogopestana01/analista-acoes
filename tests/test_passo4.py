@@ -91,3 +91,20 @@ def test_saida_ao_fecho_espera_pelo_fecho_da_bolsa():
     assert h.iloc[-1]["estado"] == "aberto" and not f
     h, f = acompanhamento.atualizar(hist, precos, pd.Timestamp("2026-10-29 20:15", tz="UTC"))
     assert h.iloc[-1]["estado"] == "regra" and len(f) == 1
+
+
+def test_desdobramento_nao_dispara_o_stop():
+    """Split 2 para 1 depois do sinal: os preços ajustados caem para metade, o registo acompanha."""
+    import pandas as pd
+    from pathlib import Path
+    from src import acompanhamento
+    hist = acompanhamento.carregar(Path("/nao/existe"))
+    hist = pd.concat([hist, pd.DataFrame([{"data_sinal": "2026-10-26", "ticker": "AAA", "setup": "rompimento",
+                                           "direcao": "compra", "entrada": 100.0, "objetivo": 110.0, "stop": 95.0,
+                                           "max_dias": 5, "estado": "aberto", "saida": "atr_3_15"}])], ignore_index=True)
+    dias = pd.bdate_range("2026-10-20", "2026-10-28")
+    precos = pd.DataFrame({"ticker": "AAA", "data": dias, "open": 50.0, "high": 51.0, "low": 49.5, "close": 50.5})
+    h, f = acompanhamento.atualizar(hist, precos, pd.Timestamp("2026-10-28 21:00", tz="UTC"))
+    linha = h.iloc[-1]
+    assert linha["estado"] == "aberto" and not f
+    assert abs(linha["entrada"] - 50.5) < 1e-9 and abs(linha["stop"] - 95.0 * 0.505) < 1e-9
