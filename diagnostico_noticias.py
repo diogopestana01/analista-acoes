@@ -30,7 +30,16 @@ def main(data: str | None = None) -> None:
                                 {**noticias.SEC_UA, "Accept-Encoding": "gzip, deflate"}),
                                ("sec api", "https://data.sec.gov/submissions/CIK0000320193.json",
                                 {**noticias.SEC_UA, "Accept-Encoding": "gzip, deflate"}),
-                               ("nasdaq rss", "https://www.nasdaq.com/feed/rssoutbound?symbol=AAPL", noticias.NAVEGADOR)):
+                               ("nasdaq rss", "https://www.nasdaq.com/feed/rssoutbound?symbol=AAPL", noticias.NAVEGADOR),
+                               ("stocktwits trending", "https://api.stocktwits.com/api/2/trending/symbols.json",
+                                noticias.NAVEGADOR),
+                               ("stocktwits AAPL", "https://api.stocktwits.com/api/2/streams/symbol/AAPL.json",
+                                noticias.NAVEGADOR),
+                               ("apewisdom reddit", "https://apewisdom.io/api/v1.0/filter/all-stocks/page/1",
+                                noticias.NAVEGADOR),
+                               ("reddit wsb", "https://www.reddit.com/r/wallstreetbets/hot.json?limit=5",
+                                {"User-Agent": "analista-acoes/1.0"}),
+                               ("google trends rss", "https://trends.google.com/trending/rss?geo=US", noticias.NAVEGADOR)):
         try:
             r = requests.get(url, timeout=20, headers=cab)
             print(f"[{nome_url}] HTTP {r.status_code} {r.headers.get('content-type')} | {r.text[:300]!r}")
