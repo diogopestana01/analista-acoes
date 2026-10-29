@@ -109,3 +109,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-29,MBIN,rompimento,compra,54.29499816894531,59.334283978388974,51.77535526422348,5.0,5,79.5,aberto,,,,atr_3_15,duvidoso,4.0,apoia,0.6,,,,,,
 2026-10-29,IT,pullback,compra,216.10000610351562,,199.6180306447311,2.0,5,55.0,aberto,,,,sma5,duvidoso,4.0,neutro,0.1,11.0,0.65,0.8571428571428571,0.015894377728149688,ok,ok
 2026-10-29,UNH,pullback,compra,405.92999267578125,,384.0842882945598,1.5,5,63.3,aberto,,,,sma5,duvidoso,4.0,apoia,0.5,1.0,1.0,0.75,0.014714908848601925,ok,ok
+2026-10-29,ARHS,semana_forte,compra,12.489999771118164,14.00175647323176,11.734121420061365,5.0,5,71.7,aberto,,,,atr_3_15,duvidoso,5.0,apoia,0.4,,,1.0,0.01520830585303185,ok,ok
