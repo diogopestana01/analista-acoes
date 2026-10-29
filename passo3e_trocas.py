@@ -6,10 +6,10 @@
 2. Simula uma carteira de N lugares no período de teste (últimos 40%), com as tabelas aprendidas
    nos primeiros 60%, e compara três políticas:
      sem_trocas   carteira cheia = o sinal novo fica de fora
-     regra_bot    a regra atual do bot: troca se confiança nova >= força da mais fraca + 15,
-                  com força = confiança x (dias que faltam / prazo)
+     regra_bot_M  a regra atual do bot: troca se confiança nova >= força da mais fraca + M
+                  (o bot usa M=15), com força = confiança x (dias que faltam / prazo)
      valor        troca se o retorno esperado do sinal novo > valor que falta à mais fraca
-                  + custo da troca (spread) + margem
+                  + custo da troca (spread) + margem (valor_setup: com a média do setup)
    Os sinais candidatos imitam os alertas: um por ação e dia, retorno esperado >= fasquia,
    calculado só com trades da mesma ação já fechados antes (sem olhar para o futuro).
 Uso:  python passo3e_trocas.py   (depois de passo1_universo.py)
@@ -126,15 +126,19 @@ def simular(por_dia: dict, datas: list, lugares: int, politica: str, valor: dict
             vivas = [p for p in abertas.values() if d in p["caminho"] and p["entrada_data"] < d]
             if not vivas:
                 break
-            if politica == "regra_bot":
+            if politica.startswith("regra_bot"):
+                margem = int(politica.rsplit("_", 1)[1])
                 def forca(p):
                     k = sum(1 for x in p["caminho"] if x <= d) - 1
                     return 100 * ganha[p["setup"]] * max(p["max_dias"] - k, 0) / p["max_dias"]
                 fraca = min(vivas, key=forca)
-                trocar = 100 * ganha[c["setup"]] >= forca(fraca) + 15
+                trocar = 100 * ganha[c["setup"]] >= forca(fraca) + margem
             else:
+                # valor: retorno esperado do alerta (com o histórico da ação);
+                # valor_setup: só a média do setup, que não exagera ações com poucos casos.
+                novo = c["esperado"] if politica == "valor" else media[c["setup"]]
                 fraca = min(vivas, key=lambda p: falta(p, d)[0])
-                trocar = c["esperado"] - falta(fraca, d)[0] > CUSTO + MARGEM
+                trocar = novo - falta(fraca, d)[0] > CUSTO + MARGEM
             if not trocar:
                 break   # os candidatos estão por ordem: se o melhor não troca, os outros também não
             fechados.append(fraca["caminho"][d] / fraca["entrada"] - 1 - CUSTO)
@@ -172,9 +176,9 @@ def main() -> None:
         n = sum(len(v) for v in por_dia.values())
         print(f"\nFasquia {fasquia*100:.1f}%: {n} sinais candidatos em {len(por_dia)} dias")
         for lugares in (5, 10):
-            for pol in ("sem_trocas", "regra_bot", "valor"):
+            for pol in ("sem_trocas", "regra_bot_15", "regra_bot_30", "regra_bot_45", "valor", "valor_setup"):
                 r = simular(por_dia, datas, lugares, pol, valor, media, ganha)
-                print(f"  {lugares:2d} lugares | {pol:10s} | total {r['total']*100:+6.1f}% | {r['trades']} trades, "
+                print(f"  {lugares:2d} lugares | {pol:12s} | total {r['total']*100:+6.1f}% | {r['trades']} trades, "
                       f"{r['trocas']} trocas | {r['medio']*100:+.2f}%/trade | ganha {r['ganha']*100:.0f}%")
 
 
