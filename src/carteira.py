@@ -216,6 +216,26 @@ def recomecar(u: dict, hoje: str) -> None:
               "operacoes": [], "decisoes": {}, "aguarda": None})
 
 
+def ultima_operacao(u: dict) -> str | None:
+    """O que o ↩️ Desfazer vai anular, em palavras ("a compra de GMAB (0,39 a 51,00)"), ou None."""
+    ant = u.get("anterior")
+    if not ant:
+        return None
+    if len(u["operacoes"]) < len(ant.get("operacoes", [])):
+        return "o recomeço da carteira"
+    novas = u["operacoes"][len(ant.get("operacoes", [])):]
+    if len(novas) >= 2 and novas[-2]["tipo"] == "venda" and novas[-1]["tipo"] == "compra":
+        return f"a troca (venda de {novas[-2]['ticker']} e compra de {novas[-1]['ticker']})"
+    if not novas:
+        return "a última alteração (regras ou capital)"
+    o = novas[-1]
+    nomes = {"compra": "a compra", "venda": "a venda", "deposito": "o depósito", "levantamento": "o levantamento",
+             "capital": "a mudança de capital para"}
+    if o.get("ticker"):
+        return f"{nomes.get(o['tipo'], o['tipo'])} de {o['ticker']} ({fmt_qtd(o['qtd'])} a {fmt(o['preco'])})"
+    return f"{nomes.get(o['tipo'], o['tipo'])} de {fmt(abs(o.get('valor', 0)))} {u['regras']['moeda']}"
+
+
 def desfazer(u: dict) -> str:
     ant = u.get("anterior")
     if not ant:
@@ -223,7 +243,7 @@ def desfazer(u: dict) -> str:
     for k, v in ant.items():
         u[k] = v
     u["anterior"] = None
-    return f"Desfeito. Livre: {fmt(u['caixa'])} {u['regras']['moeda']}."
+    return f"↩️ Desfeito. Livre: {fmt(u['caixa'])} {u['regras']['moeda']}."
 
 
 # ---------- resumos ----------
@@ -331,7 +351,7 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
     if n:
         out.append(f"\n✔️ Já fechadas: {sinal_fmt(lucro)} {moeda} em {n} vendas ({g} a ganhar)")
     if blocos and cot:
-        out.append(f"\n<i>Preços{' das ' + hora if hora else ''} (atraso até 15 min).</i>")
+        out.append(f"\n<i>Preços{' das ' + hora if hora else ' de agora'}.</i>")
     return "\n".join(out)
 
 
@@ -359,7 +379,8 @@ def formatar_resultados(u: dict, cot: dict | None = None, sinais: dict | None = 
         out.append("Ainda não fechaste nenhuma posição.")
     if u["posicoes"]:
         aberto = sum(p["qtd"] * ((cot.get(t) or p["preco"]) - p["preco"]) for t, p in u["posicoes"].items())
-        out.append(f"Em aberto: {sinal_fmt(aberto)} {moeda} em {len(u['posicoes'])} posições")
+        n = len(u["posicoes"])
+        out.append(f"Em aberto: {sinal_fmt(aberto)} {moeda} em {n} {'posição' if n == 1 else 'posições'}")
     total = u["caixa"] + sum(p["qtd"] * (cot.get(t) or p["preco"]) for t, p in u["posicoes"].items())
     ganho = total - r["capital_inicial"]
     pct = ganho / r["capital_inicial"] * 100 if r["capital_inicial"] else 0

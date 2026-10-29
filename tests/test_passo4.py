@@ -62,7 +62,7 @@ def test_acompanhamento_sai_pela_media_de_5_dias():
     assert h.loc[0, "estado"] == "regra" and f[0]["preco_atual"] == 101
     assert "Sinal de saída" in telegram.formatar_fecho(f[0])
     m = telegram.formatar_sinal({**sinal, "entrada": 100.0})
-    assert "média de 5 dias" in m and "Objetivo" not in m and "Stop-loss" in m
+    assert "quando o preço recuperar" in m and "Objetivo" not in m and "Stop-loss" in m
 
 
 def test_stop_com_gap_sai_a_abertura_e_pausa():
