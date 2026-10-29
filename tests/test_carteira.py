@@ -68,8 +68,8 @@ def test_botao_comprei_abre_talao_e_regista_ao_confirmar():
     assert not u["posicoes"]  # ainda só o talão
     talao = _textos(out)[0]
     assert "Compra de <b>GMAB</b>" in talao and "Preço: <b>50,00</b>" in talao and "Valor: <b>20,00 USD</b>" in talao
-    assert "Quantidade: 0,4" in talao and "b|d|0|1" in out[1][1]["reply_markup"]
-    assert "b|c|v" in out[1][1]["reply_markup"] and "b|ok" in out[1][1]["reply_markup"]
+    teclado = json.loads(out[1][1]["reply_markup"])["keyboard"]
+    assert "Quantidade: 0,4" in talao and [x["text"] for x in teclado[-1]] == ["✅ Confirmar", "❌ Cancelar"]
     out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(0.4) and u["caixa"] == pytest.approx(80.0)
     assert "stop a 47,00" in _edicoes(out)[0]
@@ -497,7 +497,7 @@ def test_talao_de_venda_com_valor_arredondado_vende_tudo():
     u = e["utilizadores"][DONO]
     cart.comprar(u, "GMAB", 0.3333, 60.0, HOJE)
     bot.processar(e, _cb(DONO, "v|GMAB|61.0000"), HIST, HOJE, CFG)
-    assert "tudo o que tens" in texto_talao_atual(u)
+    assert "0,3333 ações" in texto_talao_atual(u)
     bot.processar(e, _cb(DONO, "b|p|1"), HIST, HOJE, CFG)  # mudar o preço mantém "tudo"
     assert u["talao"]["qtd"] == pytest.approx(0.3333)
     bot.processar(e, _cb(DONO, "b|e|v"), HIST, HOJE, CFG)
@@ -746,7 +746,8 @@ def test_venda_pelo_lucro_final():
     u = e["utilizadores"][DONO]
     cart.comprar(u, "UNH", 0.0504, 406.46, HOJE)
     out = bot.processar(e, _cb(DONO, "v|UNH|410.0000"), HIST, HOJE, CFG)
-    assert any(x["callback_data"] == "b|c|l" for x in _teclado(out)[0])
+    teclado = json.loads(out[-1][1]["reply_markup"])["keyboard"]
+    assert teclado[0] == [{"text": "✏️ Escrever lucro"}]  # na venda só se diz o lucro
     bot.processar(e, _cb(DONO, "b|e|l"), HIST, HOJE, CFG)
     out = bot.processar(e, _txt(DONO, "0,21"), HIST, HOJE, CFG)
     assert "Resultado: <b>+0,21 USD</b>" in _textos(out)[-1]
@@ -811,3 +812,45 @@ def test_leitor_confere_os_numeros_do_print():
     assert lp.verificar({"volume": 1}) is None and lp.verificar(None) is None
     assert lp.achar_ticker({"ticker": "UNH", "nome": ""}, {"UNH": ""}) == "UNH"
     assert lp.achar_ticker({"ticker": None, "nome": "Universal"}, {"UNH": "UnitedHealth", "UHT": "Universal Health"}) == "UHT"
+
+
+def test_talao_pelo_teclado_de_baixo():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt(DONO, "✏️ Escrever valor"), HIST, HOJE, CFG)
+    assert "valor em USD" in _textos(out)[0]
+    out = bot.processar(e, _txt(DONO, "20,91"), HIST, HOJE, CFG)
+    assert "Valor: <b>20,91 USD</b>" in _textos(out)[-1]
+    out = bot.processar(e, _txt(DONO, "✅ Confirmar"), HIST, HOJE, CFG)
+    assert "Registei" in _textos(out)[0] and "keyboard" in out[0][1]["reply_markup"]  # volta o menu
+    assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(20.91 / 50)
+    assert "Não há nenhum talão" in _textos(bot.processar(e, _txt(DONO, "✅ Confirmar"), HIST, HOJE, CFG))[0]
+
+
+def _formulario(chat, dados):
+    return {"update_id": 7, "message": {"chat": {"id": int(chat)}, "from": {"first_name": "X"},
+                                        "web_app_data": {"data": json.dumps(dados), "button_text": "🧾"}}}
+
+
+def test_pagina_do_talao_confirma_compra_e_venda(monkeypatch):
+    monkeypatch.setattr(bot, "TALAO_URL", "https://exemplo.pt/talao.html")
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    out = bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    botao = json.loads(out[-1][1]["reply_markup"])["keyboard"][0][0]
+    assert botao["text"] == "🧾 Acertar preço e valor" and "tipo=compra" in botao["web_app"]["url"]
+    assert "p=50.0" in botao["web_app"]["url"] and "v=20.0" in botao["web_app"]["url"]
+    tid = u["talao"]["id"]
+    # Página de um talão antigo: não regista.
+    out = bot.processar(e, _formulario(DONO, {"id": "velho", "t": "GMAB", "p": 50, "v": 20}), HIST, HOJE, CFG)
+    assert "já foi fechado" in _textos(out)[0] and not u["posicoes"]
+    out = bot.processar(e, _formulario(DONO, {"id": tid, "t": "GMAB", "p": 50.37, "v": 20.91}), HIST, HOJE, CFG)
+    assert "Registei" in _textos(out)[0]
+    assert u["posicoes"]["GMAB"]["preco"] == 50.37 and u["posicoes"]["GMAB"]["qtd"] == pytest.approx(20.91 / 50.37)
+    # Venda: só o lucro.
+    out = bot.processar(e, _cb(DONO, "v|GMAB|51.0000"), HIST, HOJE, CFG)
+    botao = json.loads(out[-1][1]["reply_markup"])["keyboard"][0][0]
+    assert botao["text"] == "🧾 Dizer o lucro" and "tipo=venda" in botao["web_app"]["url"]
+    out = bot.processar(e, _formulario(DONO, {"id": u["talao"]["id"], "t": "GMAB", "l": -0.5}), HIST, HOJE, CFG)
+    assert "GMAB" not in u["posicoes"] and cart.realizado(u)[0] == pytest.approx(-0.5, abs=0.005)
