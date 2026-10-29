@@ -68,8 +68,8 @@ def test_botao_comprei_abre_talao_e_regista_ao_confirmar():
     assert not u["posicoes"]  # ainda só o talão
     talao = _textos(out)[0]
     assert "Compra de <b>GMAB</b>" in talao and "Preço: <b>50,00</b>" in talao and "Valor: <b>20,00 USD</b>" in talao
-    assert "Quantidade: 0,4" in talao and "b|v|1" in out[1][1]["reply_markup"]
-    assert "b|p|1" in out[1][1]["reply_markup"] and "b|ok" in out[1][1]["reply_markup"]
+    assert "Quantidade: 0,4" in talao and "b|d|0|1" in out[1][1]["reply_markup"]
+    assert "b|c|v" in out[1][1]["reply_markup"] and "b|ok" in out[1][1]["reply_markup"]
     out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(0.4) and u["caixa"] == pytest.approx(80.0)
     assert "stop a 47,00" in _edicoes(out)[0]
@@ -715,3 +715,99 @@ def test_bot_vigia_stops_de_2_em_2_minutos(monkeypatch, tmp_path):
     assert len(enviados) == 1 and enviados[0][0] == DONO and "tocou no stop (19,00)" in enviados[0][1]
     assert e["saidas_avisadas"] and bc.vigiar_posicoes(e, agora) is False  # não repete
     assert bc.cotar(["PDS"]) == {"PDS": 18.95}  # botões usam o preço da vigia
+
+
+def _teclado(out):
+    return json.loads(out[-1][1]["reply_markup"])["inline_keyboard"]
+
+
+def test_talao_acerta_cada_algarismo_com_setas():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)  # preço 50,00, valor 20,00
+    bot.processar(e, _cb(DONO, "b|c|v"), HIST, HOJE, CFG)  # passa a acertar o valor
+    for _ in range(9):
+        bot.processar(e, _cb(DONO, "b|d|-1|1"), HIST, HOJE, CFG)  # +0,10 nove vezes
+    out = bot.processar(e, _cb(DONO, "b|d|-2|1"), HIST, HOJE, CFG)  # +0,01
+    assert u["talao"]["valor"] == pytest.approx(20.91) and "Valor: <b>20,91 USD</b>" in _edicoes(out)[0]
+    linhas = [[x["text"] for x in r] for r in json.loads(out[-1][1]["reply_markup"])["inline_keyboard"]]
+    assert linhas[0][1] == "✅ 💵 Valor" and linhas[2] == ["2", "0", ",", "9", "1"]
+    assert linhas[1] == ["▲", "▲", "·", "▲", "▲"] and linhas[3] == ["▼", "▼", "·", "▼", "▼"]
+    # O preço vai e vem com transporte: 50,00 -> 49,99 ao descer os cêntimos.
+    bot.processar(e, _cb(DONO, "b|c|p"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "b|d|-2|-1"), HIST, HOJE, CFG)
+    assert u["talao"]["preco"] == pytest.approx(49.99) and u["talao"]["valor"] == pytest.approx(20.91)
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
+    assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(20.91 / 49.99, abs=1e-6)
+
+
+def test_venda_pelo_lucro_final():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "UNH", 0.0504, 406.46, HOJE)
+    out = bot.processar(e, _cb(DONO, "v|UNH|410.0000"), HIST, HOJE, CFG)
+    assert any(x["callback_data"] == "b|c|l" for x in _teclado(out)[0])
+    bot.processar(e, _cb(DONO, "b|e|l"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt(DONO, "0,21"), HIST, HOJE, CFG)
+    assert "Resultado: <b>+0,21 USD</b>" in _textos(out)[-1]
+    assert u["talao"]["preco"] == pytest.approx(406.46 + 0.21 / 0.0504, abs=1e-3)
+    bot.processar(e, _cb(DONO, "b|c|l"), HIST, HOJE, CFG)
+    out = bot.processar(e, _cb(DONO, "b|s"), HIST, HOJE, CFG)  # afinal foi perda
+    assert "Resultado: <b>-0,21 USD</b>" in _edicoes(out)[0]
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
+    assert "UNH" not in u["posicoes"] and cart.realizado(u)[0] == pytest.approx(-0.21, abs=0.005)
+
+
+def _foto(chat):
+    return {"update_id": 9, "message": {"chat": {"id": int(chat)}, "from": {"first_name": "X"},
+                                        "photo": [{"file_id": "pequena"}, {"file_id": "grande"}]}}
+
+
+def test_print_da_xtb_preenche_o_talao_de_compra(monkeypatch):
+    from src import leitor_print
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    lido = leitor_print.verificar({"nome": "UnitedHealth", "ticker": None, "lado": "compra", "fechada": False,
+                                   "volume": 0.0504, "preco_abertura": 406.46, "valor_abertura": 20.49,
+                                   "lucro": 0.21, "data_abertura": "2026-10-29"})
+    pedidos = []
+    monkeypatch.setattr(bot, "LER_PRINT", lambda fid, tipo: pedidos.append(fid) or lido)
+    monkeypatch.setattr(bot, "NOMES", {"UNH": "UnitedHealth Group Incorporated", "UHT": "Universal Health Realty"})
+    out = bot.processar(e, _foto(DONO), HIST, HOJE, CFG)
+    assert pedidos == ["grande"] and "0,0504 ações a 406,46 (20,49 USD)" in _textos(out)[0]
+    assert "Compra de <b>UNH</b>" in _textos(out)[1]
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
+    assert u["posicoes"]["UNH"]["qtd"] == pytest.approx(0.0504) and u["caixa"] == pytest.approx(100 - 20.4856, abs=1e-3)
+    # O mesmo print outra vez: já está certo.
+    out = bot.processar(e, _foto(DONO), HIST, HOJE, CFG)
+    assert "já está certo" in _textos(out)[0]
+    # Registado com outro preço: o print propõe a correção.
+    u["posicoes"]["UNH"]["preco"] = 410.0
+    out = bot.processar(e, _foto(DONO), HIST, HOJE, CFG)
+    assert "Corrijo" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "pc|UNH|sim"), HIST, HOJE, CFG)
+    assert u["posicoes"]["UNH"]["preco"] == 406.46 and "corrigido" in _edicoes(out)[0]
+
+
+def test_print_ilegivel_ou_sem_ticker(monkeypatch):
+    from src import leitor_print
+    e = _estado()
+    monkeypatch.setattr(bot, "LER_PRINT", lambda fid, tipo: None)
+    assert "Não consegui ler" in _textos(bot.processar(e, _foto(DONO), HIST, HOJE, CFG))[0]
+    lido = leitor_print.verificar({"nome": "Empresa X", "volume": 1, "preco_abertura": 10, "valor_abertura": 10})
+    monkeypatch.setattr(bot, "LER_PRINT", lambda fid, tipo: lido)
+    monkeypatch.setattr(bot, "NOMES", {})
+    assert "Escreve-o" in _textos(bot.processar(e, _foto(DONO), HIST, HOJE, CFG))[0]
+    out = bot.processar(e, _txt(DONO, "xyz"), HIST, HOJE, CFG)
+    assert "Compra de <b>XYZ</b>" in _textos(out)[-1]
+
+
+def test_leitor_confere_os_numeros_do_print():
+    from src import leitor_print as lp
+    ok = lp.verificar({"volume": "0.0504", "preco_abertura": 406.46, "valor_abertura": "20.49"})
+    assert ok and ok["volume"] == 0.0504 and ok["valor"] == 20.49
+    assert lp.verificar({"volume": 0.06, "preco_abertura": 406.46, "valor_abertura": 20.49}) is None  # não bate
+    assert lp.verificar({"preco_abertura": 50, "valor_abertura": 20})["volume"] == pytest.approx(0.4)
+    assert lp.verificar({"volume": 1}) is None and lp.verificar(None) is None
+    assert lp.achar_ticker({"ticker": "UNH", "nome": ""}, {"UNH": ""}) == "UNH"
+    assert lp.achar_ticker({"ticker": None, "nome": "Universal"}, {"UNH": "UnitedHealth", "UHT": "Universal Health"}) == "UHT"

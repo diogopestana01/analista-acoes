@@ -15,7 +15,9 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, bot, carteira, cofre, cotacoes, precos, precos_agora, telegram
+import requests
+
+from src import acompanhamento, bot, carteira, cofre, cotacoes, leitor_print, precos, precos_agora, telegram
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("carteira")
@@ -35,6 +37,34 @@ def cotar(tickers: list[str]) -> dict:
     px.update({t: VIVOS[t][0] for t in tickers if t in VIVOS and time.time() - VIVOS[t][1] < 300})
     falta = [t for t in tickers if t not in px]
     return {**(precos.atuais(falta) if falta else {}), **px}
+
+
+def ler_print(file_id: str, tipo: str) -> dict | None:
+    """Descarrega a imagem do Telegram e lê os números (o Claude lê, o código confere)."""
+    info = telegram.api("getFile", file_id=file_id) or {}
+    caminho, token = info.get("file_path"), os.environ.get("TELEGRAM_TOKEN")
+    if not caminho or not token:
+        return None
+    try:
+        r = requests.get(f"https://api.telegram.org/file/bot{token}/{caminho}", timeout=30)
+        r.raise_for_status()
+    except requests.RequestException as e:
+        log.warning("Imagem do Telegram falhou: %s", type(e).__name__)
+        return None
+    lido = leitor_print.verificar(leitor_print.ler(r.content, tipo))
+    log.info("Print lido: %s", "números conferidos" if lido else "não deu para confiar")
+    return lido
+
+
+def nomes_universo() -> dict:
+    """Ticker -> nome das ações dos EUA (listas da Nasdaq), para achar a ação de um print pelo nome."""
+    try:
+        from src import universo
+        u = universo.universo_eua()
+        return dict(zip(u["ticker"], u["nome"].fillna("")))
+    except Exception as e:  # noqa: BLE001  sem nomes, o bot pergunta o ticker
+        log.warning("Nomes das ações indisponíveis: %s", e)
+        return {}
 
 
 def bolsa_eua_aberta(agora: pd.Timestamp) -> bool:
@@ -144,6 +174,7 @@ def main(minutos: float) -> None:
     k = cofre.chave()
     bot.COTAR = cotar  # carteira e sinais em aberto ao preço de agora
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
+    bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
     eu = telegram.api("getMe") or {}
     bot.USERNAME = eu.get("username")  # para os links de convite
     if k is None:
