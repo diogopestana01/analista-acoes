@@ -83,3 +83,6 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-28,DIS,pullback,compra,109.16000366210938,,105.28088888896265,2.0,5,41.4,aberto,,,,sma5,duvidoso,4.0,neutro,0.15
 2026-10-28,TRU,pullback,compra,74.125,,67.07190196541573,1.0,5,61.0,aberto,,,,sma5,manter,3.0,apoia,0.4
 2026-10-28,RNST,pullback,compra,40.06999969482422,,38.346581329206174,2.0,5,70.5,aberto,,,,sma5,manter,3.0,apoia,0.3
+2026-10-28,HRTG,pullback,compra,34.72999954223633,,32.60634182540628,2.0,5,61.8,aberto,,,,sma5,manter,2.0,apoia,0.6
+2026-10-28,CNXN,pullback,compra,86.5,,81.55682816003261,2.0,5,61.8,aberto,,,,sma5,duvidoso,4.0,apoia,0.6
+2026-10-28,AVTR,pullback,compra,16.690000534057617,,15.66300065816759,1.0,5,87.8,aberto,,,,sma5,manter,3.0,apoia,0.3
