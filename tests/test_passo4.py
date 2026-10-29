@@ -73,3 +73,21 @@ def test_stop_com_gap_sai_a_abertura_e_pausa():
     assert h.loc[0, "estado"] == "stop" and h.loc[0, "preco_fecho"] == 96.0
     assert acompanhamento.em_pausa(h, "2026-10-05", 3) == {"AAPL"}
     assert acompanhamento.em_pausa(h, "2026-10-12", 3) == set()
+
+
+def test_saida_ao_fecho_espera_pelo_fecho_da_bolsa():
+    """Às 14:00 UTC a vela de hoje dos EUA está incompleta: a regra da média de 5 dias não fecha."""
+    import pandas as pd
+    from src import acompanhamento
+    from pathlib import Path
+    hist = acompanhamento.carregar(Path("/nao/existe"))
+    hist = pd.concat([hist, pd.DataFrame([{"data_sinal": "2026-10-28", "ticker": "AAA", "setup": "pullback",
+                                           "direcao": "compra", "entrada": 100.0, "objetivo": None, "stop": 90.0,
+                                           "max_dias": 5, "estado": "aberto", "saida": "sma5"}])], ignore_index=True)
+    dias = pd.bdate_range("2026-10-20", "2026-10-29")
+    precos = pd.DataFrame({"ticker": "AAA", "data": dias, "open": 100.0, "high": 106.0, "low": 99.0,
+                           "close": [100.0] * (len(dias) - 1) + [105.0]})
+    h, f = acompanhamento.atualizar(hist, precos, pd.Timestamp("2026-10-29 14:00", tz="UTC"))
+    assert h.iloc[-1]["estado"] == "aberto" and not f
+    h, f = acompanhamento.atualizar(hist, precos, pd.Timestamp("2026-10-29 20:15", tz="UTC"))
+    assert h.iloc[-1]["estado"] == "regra" and len(f) == 1

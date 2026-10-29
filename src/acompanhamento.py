@@ -42,8 +42,24 @@ def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int) 
     return pd.concat([hist, n], ignore_index=True)[COLUNAS]
 
 
-def atualizar(hist: pd.DataFrame, precos: pd.DataFrame) -> tuple[pd.DataFrame, list[dict]]:
-    """Verifica cada sinal aberto contra os preços desde a data do sinal."""
+def sessao_fechada(ticker: str, dia: str, agora: pd.Timestamp) -> bool:
+    """A vela deste dia já é a final? (a de hoje só depois do fecho da bolsa, com 10 min de folga)."""
+    from .precos import _horario
+    agora = pd.Timestamp(agora).tz_convert("UTC") if pd.Timestamp(agora).tzinfo else pd.Timestamp(agora)
+    hoje = f"{agora:%Y-%m-%d}"
+    if dia < hoje:
+        return True
+    if dia > hoje:
+        return False
+    return agora.hour + agora.minute / 60 >= _horario(ticker)[1] + 10 / 60
+
+
+def atualizar(hist: pd.DataFrame, precos: pd.DataFrame,
+              agora: pd.Timestamp | None = None) -> tuple[pd.DataFrame, list[dict]]:
+    """Verifica cada sinal aberto contra os preços desde a data do sinal.
+    Stop e objetivo contam a qualquer hora; as saídas "ao fecho" (regra do setup e fim do prazo)
+    só depois de a bolsa fechar, como no backtest. Antes disso a vela de hoje ainda vai mudar."""
+    agora = pd.Timestamp.now(tz="UTC") if agora is None else agora
     fechos = []
     hist = hist.copy()
     hist["data_fecho"] = hist["data_fecho"].astype(object)
@@ -68,6 +84,8 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame) -> tuple[pd.DataFrame, l
             if stop or obj:
                 resultado, linha = ("stop" if stop else "objetivo"), (k, r)
                 break
+            if not sessao_fechada(s["ticker"], r["data"], agora):
+                break   # vela de hoje incompleta: a saída ao fecho decide-se depois do fecho
             if regra is not None and compra and saidas.condicao_saida(regra, r):
                 resultado, linha = "regra", (k, r)
                 break
