@@ -869,9 +869,11 @@ def test_menu_curto_com_mais_sinais_e_desfazer_que_diz_o_que_desfaz(monkeypatch)
     assert "mm|0|0" in out[0][1]["reply_markup"] and "mm|d|1" in out[0][1]["reply_markup"]
     out = bot.processar(e, _cb(DONO, "mm|0|0"), HIST, HOJE, CFG)  # 📊 Resultados
     assert "Os teus resultados" in _textos(out)[0]
-    # 📈 Sinais: os sinais em aberto ao preço de agora.
+    # 📈 Sinais: a lista ao preço de agora; o botão 🟢 Ver mostra o sinal com quanto comprar.
     monkeypatch.setattr(bot, "COTAR", lambda ts: {t: 50.5 for t in ts})
     out = bot.processar(e, _txt(DONO, "📈 Sinais"), HIST, HOJE, CFG)
+    assert "🟢 <b>GMAB</b>" in _textos(out)[0] and f"ls|GMAB|{HOJE}" in out[0][1]["reply_markup"]
+    out = bot.processar(e, _cb(DONO, f"ls|GMAB|{HOJE}"), HIST, HOJE, CFG)
     assert any("COMPRAR GMAB" in t and "Compra só até <b>53,00</b>" in t for t in _textos(out))
     # Desfazer diz o que vai anular e pede confirmação.
     cart.comprar(u, "GMAB", 0.4, 50.0, HOJE)
