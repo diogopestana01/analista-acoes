@@ -1575,8 +1575,9 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     livres = max(n - len(u["posicoes"]), 0)
     hora = _hora_lisboa(_ler_cotacoes().get("hora", ""))
     linhas = [f"📈 <b>Sinais agora</b>{f' (preços das {hora})' if hora else ''}",
-              "Reavalio cada sinal a cada 10 min. <i>Ainda dá</i> é quanto um sinal destes costuma render "
-              "daqui até à saída, contando com o que já subiu e os dias que passaram."]
+              "Reavalio cada sinal a cada 10 min. Ficam por ordem do retorno esperado. Um sinal deixa de estar "
+              "para comprar quando passa o limite de preço ou quando o que ainda costuma render (contando com o "
+              "que já subiu e os dias que passaram) já não paga o spread."]
     linhas.append(f"\n🏆 <b>Os teus {n} lugares</b>")
     k = 0
     for f in sorted(pos, key=lambda x: (x["falta"] is None, -(x["falta"] or 0))):
@@ -1588,9 +1589,8 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         linhas.append(f"{k}. ⭐ <b>{f['ticker']}</b> {cart.sinal_fmt(f['pct'], 1)}% · {estado}")
     for s in comprar[:livres]:
         k += 1
-        linhas.append(f"{k}. 🟢 <b>{s['ticker']}</b> {_ainda(s['forca'])} · compra até {cart.fmt(s['limite'])} "
-                      f"(agora {cart.fmt(s['preco'])})" if s["limite"] else
-                      f"{k}. 🟢 <b>{s['ticker']}</b> {_ainda(s['forca'])} (agora {cart.fmt(s['preco'])})")
+        lim = f" · compra até {cart.fmt(s['limite'])}" if s["limite"] else ""
+        linhas.append(f"{k}. 🟢 <b>{s['ticker']}</b> esperado <b>{_txt_ret(s)}</b>{lim} (agora {cart.fmt(s['preco'])})")
     while k < n:
         k += 1
         linhas.append(f"{k}. ➖ livre")
@@ -1611,15 +1611,13 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         for s in resto[:6]:
             lim = f" · compra até {cart.fmt(s['limite'])}" if s["limite"] else ""
             quando = "entra à abertura" if _a_espera_da_abertura(s) else _dia(s)
-            linhas.append(f"• <b>{s['ticker']}</b> {_ainda(s['forca'])}{lim} (agora {cart.fmt(s['preco'])}) · {quando}")
+            linhas.append(f"• <b>{s['ticker']}</b> esperado {_txt_ret(s)}{lim} (agora {cart.fmt(s['preco'])}) · {quando}")
         if len(resto) > 6:
             linhas.append(f"• e mais {len(resto) - 6}")
     if andamento:
-        linhas.append("\n🟡 <b>Em andamento</b> (já passaram o limite de compra: quem tem, mantém)")
+        linhas.append("\n🟡 <b>Em andamento</b> (já não compensa entrar: quem tem, mantém)")
         for s in andamento[:6]:
-            fim = s["dias_usados"] >= s["max_dias"]
-            linhas.append(f"• <b>{s['ticker']}</b> {cart.sinal_fmt(s['ganho'] * 100, 1)}% desde o sinal · "
-                          + (_dia(s) if fim else f"{_ainda(s['forca'])} · {_dia(s)}"))
+            linhas.append(f"• <b>{s['ticker']}</b> {cart.sinal_fmt(s['ganho'] * 100, 1)}% desde o sinal · {_dia(s)}")
         if len(andamento) > 6:
             linhas.append(f"• e mais {len(andamento) - 6}")
     if not itens and not pos:
@@ -1641,7 +1639,7 @@ def ver_sinal(chat: str, u: dict, ticker: str, data: str, hist, hoje: str) -> tu
                           f"Carrega outra vez em 📈 Sinais para ver a lista de agora.")
     u.setdefault("precos_mostrados", {})[cart.chave_sinal(ticker, data)] = s["entrada"]
     t = cart.tamanho(u, ticker, s["entrada"])
-    extra = f"agora ainda dá {_pct(s['forca'])} ({_dia(s)})" if s["forca"] is not None else _dia(s)
+    extra = _dia(s)
     texto = sinal_simples(u, s, t, u["caixa"] - (0 if t["motivo"] else t["valor"]),
                           linha_numeros(s, taxas_setup(hist), extra))
     b = botoes_sinal(ticker, data) + ([botoes_copiar(t["qtd"], s)] if not t["motivo"] else [])

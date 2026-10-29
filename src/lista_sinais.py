@@ -2,7 +2,7 @@
 
 Cada sinal tem um estado:
   comprar     o preço ainda está abaixo do limite de compra (não fez mais de metade do caminho até ao
-              objetivo) e o prazo ainda não acabou
+              objetivo), o prazo ainda não acabou e o que ainda costuma render paga o spread
   andamento   já passou o limite: quem comprou mantém, quem não comprou já não entra
 Os que bateram no stop ou no objetivo saem da lista (o registo fecha-os na corrida seguinte).
 
@@ -10,6 +10,10 @@ E uma força atualizada: quanto um sinal destes ainda costuma render daqui até 
 subiu e os dias que já passaram ("valor que falta", src/trocas.py, medido no backtest). Um sinal que já
 subiu 3% de 5% vale menos do que quando apareceu. No dia do sinal é a média do setup; no último dia
 do prazo é zero (sai ao fecho).
+
+A força serve de filtro (comprar só se pagar o spread), não para ordenar. A ordem é pelo retorno esperado
+da ação: no estudo passo3g_reavaliar.py (40 711 sinais vivos de 0 a 4 dias), os 3 primeiros do dia por
+retorno esperado bateram a média em +1,3 pontos nas duas metades; pelo valor que falta, não.
 """
 from __future__ import annotations
 
@@ -46,7 +50,7 @@ def retorno(s: dict) -> float | None:
 
 
 def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | None, cfg: dict) -> list[dict]:
-    """Sinais de compra em aberto, cada um com o preço de agora, estado e força; do mais forte ao mais fraco."""
+    """Sinais de compra em aberto, cada um com o preço de agora, estado e força; por retorno esperado."""
     if hist is None or hist.empty:
         return []
     h = hist[(hist["estado"] == "aberto") & (hist["direcao"] == "compra")]
@@ -64,7 +68,6 @@ def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | N
         dias = int(np.busday_count(data, hoje)) if hoje >= data else 0
         max_dias = int(_num(r.get("max_dias")) or 5)
         lim = limite(e, o, st)
-        estado = "comprar" if (lim is None or preco <= lim) and dias < max_dias else "andamento"
         setup = r.get("setup") if isinstance(r.get("setup"), str) else ""
         forca = None
         if modelo:
@@ -75,8 +78,10 @@ def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | N
             else:
                 atr = trocas.atr_pct(setup, e, st, cfg) if st else None
                 forca = trocas.valor_que_falta(setup, dias, preco / e - 1, atr, modelo)
+        paga = forca is None or not modelo or forca > modelo.get("custo", 0.0)
+        estado = "comprar" if (lim is None or preco <= lim) and dias < max_dias and paga else "andamento"
         out.append({**r, "ticker": t, "data_sinal": data, "entrada_sinal": e, "entrada": preco, "preco": preco,
                     "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,
                     "limite": lim, "estado_lista": estado, "forca": forca})
-    out.sort(key=lambda s: (s["forca"] is None, -(s["forca"] or 0.0), -(retorno(s) or -1.0)))
+    out.sort(key=lambda s: (retorno(s) is None, -(retorno(s) or 0.0), -(s["forca"] or 0.0)))
     return out
