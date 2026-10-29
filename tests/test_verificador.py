@@ -116,3 +116,13 @@ def test_conferencia_de_precos_com_segunda_fonte():
     p = saude.conferir_precos(precos, lambda t: fonte.get(t))
     assert len(p) == 1 and "MSFT 11.1%" in p[0][1] and "AAPL" not in p[0][1]
     assert saude.conferir_precos(precos, lambda t: None) == []   # segunda fonte em baixo: sem alarme
+
+
+def test_precos_agora_nasdaq_com_reserva_no_yahoo():
+    from src import precos_agora
+    assert precos_agora._num("$1,234.50") == 1234.5 and precos_agora._num("") is None
+    nas = {"AAPL": {"preco": 352.0, "fonte": "nasdaq"}}
+    out = precos_agora.agora(["AAPL", "KIDS", "AAPL"], lambda t: nas.get(t),
+                             lambda ts: {t: {"preco": 31.4, "fonte": "yahoo"} for t in ts})
+    assert out["AAPL"]["fonte"] == "nasdaq" and out["KIDS"] == {"preco": 31.4, "fonte": "yahoo"}
+    assert precos_agora.nasdaq("SAP.DE") is None   # só EUA
