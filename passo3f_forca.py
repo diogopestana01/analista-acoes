@@ -107,12 +107,26 @@ def main() -> None:
         a = teste[teste["esperado_acao"] >= fasquia]
         print(f"  fasquia {fasquia*100:.1f}% no esperado_acao: {len(a)} sinais, real {a['ret'].mean()*100:+.2f}% "
               f"| abaixo: {len(teste) - len(a)}, real {teste[teste['esperado_acao'] < fasquia]['ret'].mean()*100:+.2f}%")
+    print("\n### No mesmo dia: o 1.º e os 3 primeiros de cada medida contra a média desse dia (dias com 5+ sinais)")
+    dias = teste.groupby("entrada_data").filter(lambda g: len(g) >= 5)
+    for chave in ("esperado_acao", "pontuacao", "media_setup"):
+        d1 = dias.assign(rk=dias.groupby("entrada_data")[chave].rank(ascending=False, method="first"),
+                         md=dias.groupby("entrada_data")["ret"].transform("mean"))
+        for n in (1, 3):
+            x = d1[d1["rk"] <= n]
+            dif = (x["ret"] - x["md"])
+            print(f"  {chave:13s} top {n}: {dif.mean()*100:+.2f} pontos face à média do dia "
+                  f"(1.ª metade do teste {dif[x['entrada_data'] < x['entrada_data'].median()].mean()*100:+.2f}, "
+                  f"2.ª {dif[x['entrada_data'] >= x['entrada_data'].median()].mean()*100:+.2f}) | {dias['entrada_data'].nunique()} dias")
     print("\n### Carteira sem trocas: enche os lugares livres pela ordem de cada medida (custo 0,3% descontado)")
     rng = np.random.default_rng(1)
     for lugares in (5, 10):
         for chave in ("esperado_acao", "pontuacao", "media_setup", "aleatorio"):
             tot, n, med = carteira(teste, chave, lugares, rng)
             print(f"  {lugares:2d} lugares | {chave:13s} | total {tot*100:+6.1f}% | {n} trades | {med*100:+.2f}%/trade")
+        sorte = sorted(carteira(teste, "aleatorio", lugares, rng)[0] * 100 for _ in range(30))
+        print(f"  {lugares:2d} lugares | 30 ordens ao acaso: de {sorte[0]:+.1f}% a {sorte[-1]:+.1f}% "
+              f"(metade entre {sorte[7]:+.1f}% e {sorte[22]:+.1f}%)")
 
 
 if __name__ == "__main__":
