@@ -270,56 +270,67 @@ def simular(hist: pd.DataFrame, regras: dict, desde: str = "") -> dict:
             "abertas": len(abertas), "fechadas": fechadas, "ganhas": ganhas}
 
 
-def formatar_carteira(u: dict, sim: dict | None = None, cot: dict | None = None, hoje: str = "",
-                      prazos: dict | None = None) -> str:
-    """Carteira com cada posição ao preço de agora (`cot`), lucro por realizar, distância ao objetivo
-    e ao stop e dias do prazo. Sem cotação, usa o preço de compra."""
-    r, moeda, cot, prazos = u["regras"], u["regras"]["moeda"], cot or {}, prazos or {}
-    linhas_pos, em_acoes, por_realizar = [], 0.0, 0.0
+def _barra(px: float, stop: float, obj: float, n: int = 9) -> str:
+    """🛑 47,00 ━━━━●━━━━ 55,00 🎯: onde está o preço entre o stop e o objetivo."""
+    pos = min(max((px - stop) / (obj - stop), 0.0), 1.0) if obj > stop else 0.5
+    k = round(pos * (n - 1))
+    return f"🛑 {fmt(stop)} {'━' * k}●{'━' * (n - 1 - k)} {fmt(obj)} 🎯"
+
+
+def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: dict | None = None,
+                      saidas: dict | None = None, hora: str = "") -> str:
+    """Carteira ao preço de agora (`cot`): valor total e, por posição, ganho, prazo e onde está o preço
+    entre o stop e o objetivo. `saidas[t]` = stop/objetivo já atingido (cotacoes.saida_atingida)."""
+    r, moeda = u["regras"], u["regras"]["moeda"]
+    cot, prazos, saidas = cot or {}, prazos or {}, saidas or {}
+    blocos, em_acoes = [], 0.0
     for t, p in sorted(u["posicoes"].items(), key=lambda x: x[1].get("data", "")):
         agora = cot.get(t)
         px = agora or p["preco"]
-        valor, lucro = p["qtd"] * px, p["qtd"] * (px - p["preco"])
-        em_acoes, por_realizar = em_acoes + valor, por_realizar + lucro
-        pct = (px / p["preco"] - 1) * 100
-        cor = "⚪" if not agora else ("🟢" if lucro >= 0 else "🔴")
-        linha = f"{cor} <b>{t}</b>: {fmt_qtd(p['qtd'])} a {fmt(p['preco'])}"
-        linha += (f" → agora {fmt(agora)} · <b>{sinal_fmt(lucro)} {moeda}</b> ({sinal_fmt(pct, 1)}%)" if agora
-                  else f" ({fmt(valor)} {moeda}, sem cotação agora)")
-        info = []
-        obj, stop = p.get("objetivo"), p.get("stop")
-        if obj and pd.notna(obj):
-            info.append(f"🎯 {fmt(obj)} (faltam {sinal_fmt((obj / px - 1) * 100, 1)}%)")
-        if stop and pd.notna(stop):
-            info.append(f"🛑 {fmt(stop)} (a {sinal_fmt((stop / px - 1) * 100, 1)}%)")
+        em_acoes += p["qtd"] * px
+        lucro, pct = p["qtd"] * (px - p["preco"]), (px / p["preco"] - 1) * 100
+        if agora:
+            cab = f"{'🟢' if lucro >= 0 else '🔴'} <b>{t}</b>   <b>{sinal_fmt(pct, 1)}%</b> · {sinal_fmt(lucro)} {moeda}"
+            l2 = f"{fmt(agora)} (compraste a {fmt(p['preco'])})"
+        else:
+            cab = f"⚪ <b>{t}</b>   sem preço de agora"
+            l2 = f"compraste a {fmt(p['preco'])}"
         prazo = prazos.get(t)
         if prazo and hoje and p.get("data"):
             dia = int(np.busday_count(p["data"], hoje)) + 1
-            info.append(f"⏳ dia {min(dia, prazo)} de {prazo}" + (" (último)" if dia >= prazo else ""))
-        elif p.get("data"):
-            info.append(f"desde {p['data']}")
+            l2 += f" · dia {min(dia, prazo)}/{prazo}" + (" ⏳ último" if dia >= prazo else "")
+        linhas = [cab, l2]
+        obj, stop = p.get("objetivo"), p.get("stop")
+        obj = obj if obj is not None and pd.notna(obj) else None
+        stop = stop if stop is not None and pd.notna(stop) else None
+        s = saidas.get(t)
+        if s:
+            dia_s = f"{s['data'][8:10]}/{s['data'][5:7]}"
+            linhas.append(("🛑 <b>Tocou no stop</b>" if s["tipo"] == "stop" else "🎯 <b>Chegou ao objetivo</b>")
+                          + f" ({fmt(s['nivel'])}) a {dia_s}: vende e regista em 🔴 Vendi")
+        elif stop and obj:
+            linhas.append(_barra(px, stop, obj))
+        elif stop:
+            linhas.append(f"🛑 {fmt(stop)} (a {sinal_fmt((stop / px - 1) * 100, 1)}%) · sai quando o bot avisar")
         if not p.get("acompanhar", True):
-            info.append("sem avisos de venda")
-        linhas_pos.append(linha + ("\n    " + " · ".join(info) if info else ""))
+            linhas.append("🔕 sem avisos de venda")
+        blocos.append("\n".join(linhas))
     total = u["caixa"] + em_acoes
     ganho = total - r["capital_inicial"]
-    linhas = [f"💼 <b>Carteira de {u['nome']}</b> ({moeda})",
-              f"Valor agora: <b>{fmt(total)}</b> ({sinal_fmt(ganho)} {moeda}, "
-              f"{sinal_fmt(ganho / r['capital_inicial'] * 100 if r['capital_inicial'] else 0, 1)}% desde o início)",
-              f"Em ações {fmt(em_acoes)} · livre {fmt(u['caixa'])} · {len(u['posicoes'])}/{r['max_posicoes']} posições"]
-    if u["posicoes"]:
-        linhas.append(f"Por realizar: <b>{sinal_fmt(por_realizar)} {moeda}</b>\n")
-        linhas += linhas_pos
-        if cot:
-            linhas.append("<i>Preços do Yahoo, podem ter até 15 min de atraso.</i>")
+    ganho_pct = ganho / r["capital_inicial"] * 100 if r["capital_inicial"] else 0
+    out = [f"💼 <b>A tua carteira</b>",
+           f"<b>{fmt(total)} {moeda}</b>   {'🟢' if ganho >= 0 else '🔴'} {sinal_fmt(ganho)} ({sinal_fmt(ganho_pct, 1)}%)",
+           f"Em ações {fmt(em_acoes)} · Livre {fmt(u['caixa'])} · {len(u['posicoes'])}/{r['max_posicoes']} lugares"]
+    if blocos:
+        out += ["", "\n\n".join(blocos)]
+    else:
+        out.append("\nSem posições abertas. Os próximos sinais chegam aqui com o botão ✅ Comprei.")
     lucro, n, g = realizado(u)
     if n:
-        linhas.append(f"\nLucro realizado: {sinal_fmt(lucro)} {moeda} em {n} vendas ({g} a ganhar).")
-    if sim:
-        linhas.append(f"🤖 Simulada (entra em todos os sinais): {fmt(sim['valor'])} "
-                      f"({sinal_fmt(sim['retorno_pct'], 1)}%), "
-                      f"{sim['abertas']} abertas, {sim['fechadas']} fechadas.")
-    return "\n".join(linhas)
+        out.append(f"\n✔️ Já fechadas: {sinal_fmt(lucro)} {moeda} em {n} vendas ({g} a ganhar)")
+    if blocos and cot:
+        out.append(f"\n<i>Preços{' das ' + hora if hora else ''} (atraso até 15 min).</i>")
+    return "\n".join(out)
 
 
 def formatar_historico(u: dict, n: int = 10) -> str:

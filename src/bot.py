@@ -16,11 +16,12 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import saidas, telegram
+from . import cotacoes, saidas, telegram
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
 COTAR = None
+LER_COTACOES = None  # devolve data/cotacoes.json (preço de agora e velas recentes, escrito pelos sinais)
 FUGIU = 0.5   # já percorreu mais de metade do caminho até ao objetivo -> não sugerir
 USERNAME = None   # nome do bot no Telegram (para os links de convite); o bot_carteira.py preenche-o
 DONO = ""         # chat do dono, para lhe mostrar o botão 🎟️ Convidar no menu
@@ -30,7 +31,7 @@ CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (se
 
 AJUDA = """<b>Como usar</b>
 Usa o menu de botões em baixo:
-💼 Carteira: posições, dinheiro livre e a carteira simulada
+💼 Carteira: posições ao preço de agora e dinheiro livre
 📜 Histórico: últimas vendas e resultado
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
@@ -56,10 +57,10 @@ A ⭐ Confiança (0 a 100) junta o histórico do padrão e da própria ação. R
 ⏳ <b>Prazo</b>: se nenhum dos dois acontecer, vendes ao fim desses dias.
 
 Alguns sinais não têm objetivo fixo: vendes quando o bot avisar (ex. "quando fechar acima da média de 5 dias"). O bot avisa-te sempre que for hora de vender."""),
-    "carteira": ("💼 Carteira e simulada", """💼 <b>Carteira e carteira simulada</b>
+    "carteira": ("💼 A carteira", """💼 <b>A carteira</b>
 A tua <b>carteira</b> tem só o que registaste: o que compraste (✅ Comprei), o que vendeste e o dinheiro livre. É o teu registo; ninguém mais o vê.
 
-A <b>carteira simulada</b> faz de conta que entraste em todos os sinais desde o teu início, com as tuas regras. Comparar as duas mostra se as tuas escolhas estão a ajudar ou a atrapalhar."""),
+Cada posição aparece ao preço de agora (atualizado de 10 em 10 minutos), com o ganho, o dia do prazo e uma barra que mostra onde está o preço entre o 🛑 stop e o 🎯 objetivo. Se o preço tocar num deles, o bot avisa-te logo."""),
     "riscos": ("⚠️ Riscos", """⚠️ <b>Riscos</b>
 Nenhum sinal é garantia. Há semanas em que a maioria perde. O stop limita a perda, mas uma ação pode abrir abaixo do stop (por exemplo depois de resultados) e a perda ser maior.
 
@@ -687,11 +688,29 @@ def forcas(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
     return sorted(out, key=lambda x: (x["forca"], u["posicoes"][x["ticker"]].get("data", "")))
 
 
+def _ler_cotacoes() -> dict:
+    try:
+        return (LER_COTACOES() if LER_COTACOES else None) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+def _hora_lisboa(iso: str) -> str:
+    try:
+        return pd.Timestamp(iso).tz_convert("Europe/Lisbon").strftime("%H:%M")
+    except (ValueError, TypeError):
+        return ""
+
+
 def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str) -> str:
-    """💼 Carteira com as posições ao preço de agora e o prazo de cada sinal."""
+    """💼 Carteira com as posições ao preço de agora, o prazo de cada sinal e o stop/objetivo já tocado."""
     prazos = {t: _conf_prazo(t, p, hist)[1] for t, p in u["posicoes"].items()}
-    return cart.formatar_carteira(u, cart.simular(hist, u["regras"], u.get("desde", "")),
-                                  _cotacoes(list(u["posicoes"])), hoje, prazos)
+    dados = _ler_cotacoes()
+    velas = dados.get("acoes", {})
+    saidas = {t: s for t, p in u["posicoes"].items()
+              if (s := cotacoes.saida_atingida(p, velas.get(t, {}).get("velas", [])))}
+    return cart.formatar_carteira(u, _cotacoes(list(u["posicoes"])), hoje, prazos, saidas,
+                                  _hora_lisboa(dados.get("hora", "")))
 
 
 def posicao_mais_fraca(u: dict, hist: pd.DataFrame | None, hoje: str) -> dict | None:
@@ -994,8 +1013,13 @@ def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
     return [_msg(chat, texto, b) for texto, b in ronda]
 
 
+def _tem_niveis(p: dict) -> bool:
+    return any(p.get(k) is not None and pd.notna(p.get(k)) for k in ("stop", "objetivo"))
+
+
 def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) -> list:
-    """Aviso de venda: personalizado (com botões) para quem tem a ação; o dono recebe sempre."""
+    """Aviso de venda: personalizado (com botões) para quem tem a ação; o dono recebe sempre.
+    Stop e objetivo de quem tem a posição com níveis próprios vão por mensagens_saidas (preço de agora)."""
     out = []
     for f in fechos:
         base = telegram.formatar_fecho(f)
@@ -1004,6 +1028,9 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) 
             p = u["posicoes"].get(f["ticker"])
             if not p or not p.get("acompanhar", True):
                 continue
+            if f["resultado"] in ("stop", "objetivo") and _tem_niveis(p):
+                donos_avisados |= chat == dono
+                continue
             pct = (f["preco_saida"] / p["preco"] - 1) * 100
             texto = (f"{base}\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])} "
                      f"({cart.sinal_fmt(pct, 1)}% a {cart.fmt(f['preco_saida'])}).")
@@ -1011,6 +1038,32 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) 
             donos_avisados |= chat == dono
         if dono and not donos_avisados:
             out.append((dono, base, None))
+    return out
+
+
+def mensagens_saidas(estado: dict | None, dados: dict, avisados: set) -> list:
+    """De 10 em 10 min: a cada pessoa, as posições que tocaram no seu stop ou objetivo, uma vez só.
+    `avisados` guarda as chaves já enviadas (e recebe as novas)."""
+    out, acoes = [], dados.get("acoes", {})
+    for chat, u in (cart.ativos(estado).items() if estado else []):
+        for t, p in u["posicoes"].items():
+            if not p.get("acompanhar", True) or t not in acoes:
+                continue
+            s = cotacoes.saida_atingida(p, acoes[t]["velas"])
+            if not s:
+                continue
+            chave = f"saida|{chat}|{t}|{p.get('data', '')}|{s['tipo']}"
+            if chave in avisados:
+                continue
+            avisados.add(chave)
+            agora = acoes[t]["preco"]
+            pct = (agora / p["preco"] - 1) * 100
+            cab = (f"🛑 <b>{t}</b> tocou no stop ({cart.fmt(s['nivel'])})" if s["tipo"] == "stop"
+                   else f"🎯 <b>{t}</b> chegou ao objetivo ({cart.fmt(s['nivel'])})")
+            texto = (f"{cab}: vende.\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])}; "
+                     f"agora {cart.fmt(agora)} ({cart.sinal_fmt(pct, 1)}%).\n"
+                     "Se a ordem já executou na XTB, carrega em ✅ Vendi e acerta o preço no talão.")
+            out.append((chat, texto, botoes_venda(t, s["nivel"])))
     return out
 
 

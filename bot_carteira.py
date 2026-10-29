@@ -15,13 +15,21 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, bot, cofre, precos, telegram
+from src import acompanhamento, bot, cofre, cotacoes, precos, telegram
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("carteira")
 RAIZ = Path(__file__).parent
 ESTADO = RAIZ / "data" / "carteira.enc"
 HIST = RAIZ / "data" / "historico_sinais.csv"
+COTACOES = RAIZ / "data" / "cotacoes.json"
+
+
+def cotar(tickers: list[str]) -> dict:
+    """Preço de agora: o que os sinais guardaram há menos de 10 min; o Yahoo só para o que faltar."""
+    px = cotacoes.precos_agora(cotacoes.ler(COTACOES), tickers)
+    falta = [t for t in tickers if t not in px]
+    return {**(precos.atuais(falta) if falta else {}), **px}
 
 
 def git(*args: str) -> bool:
@@ -60,7 +68,8 @@ def executar(chamadas: list) -> None:
 def main(minutos: float) -> None:
     cfg = yaml.safe_load((RAIZ / "config_carteira.yaml").read_text())
     k = cofre.chave()
-    bot.COTAR = precos.atuais  # sinais em aberto mostrados ao preço de agora
+    bot.COTAR = cotar  # carteira e sinais em aberto ao preço de agora
+    bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
     eu = telegram.api("getMe") or {}
     bot.USERNAME = eu.get("username")  # para os links de convite
     if k is None:

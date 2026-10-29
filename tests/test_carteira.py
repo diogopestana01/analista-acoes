@@ -140,7 +140,7 @@ def test_outras_pessoas_precisam_de_aprovacao_do_dono():
     bot.processar(e, _cb(DONO, "a|222"), HIST, HOJE, CFG)
     assert e["utilizadores"]["222"]["estado"] == "ativo"
     out = bot.processar(e, _txt("222", "/carteira"), HIST, HOJE, CFG)
-    assert "Carteira de Rui" in _textos(out)[0]
+    assert "A tua carteira" in _textos(out)[0] and "100,00 USD" in _textos(out)[0]
     # Um estranho não mexe na carteira de ninguém.
     out = bot.processar(e, _cb("333", f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
     assert _textos(out) == ["Olá! Carrega em /start para começar."] and not e["utilizadores"]["111"]["posicoes"]
@@ -196,7 +196,7 @@ def test_menu_de_botoes_guia_compra_venda_deposito_e_regras():
     e = _estado()
     u = e["utilizadores"][DONO]
     out = bot.processar(e, _txt(DONO, "/start", "Pestana"), HIST, HOJE, CFG)
-    assert "keyboard" in out[0][1]["reply_markup"] and "Carteira" in out[0][1]["reply_markup"]
+    assert any('"keyboard"' in m[1].get("reply_markup", "") and "Carteira" in m[1]["reply_markup"] for m in out)
     bot.processar(e, _txt(DONO, "🟢 Comprei"), HIST, HOJE, CFG)
     out = bot.processar(e, _txt(DONO, "gmab"), HIST, HOJE, CFG)
     assert "Compra de <b>GMAB</b>" in _textos(out)[0] and u["talao"]["data"] == HOJE
@@ -420,14 +420,43 @@ def test_carteira_mostra_posicoes_ao_preco_de_agora(monkeypatch):
                    "max_dias": 5}])
     e = _estado()
     u = e["utilizadores"][DONO]
-    u["desde"] = HOJE  # sem sinais desde hoje: a simulada não pode partir
     cart.comprar(u, "PDS", 1, 20.0, "2026-10-26", bot._sinal(hist, "PDS"))
     cart.comprar(u, "MAO", 0.5, 10.0, HOJE)
     monkeypatch.setattr(bot, "COTAR", lambda ts: {"PDS": 21.0})
+    monkeypatch.setattr(bot, "LER_COTACOES", lambda: {"hora": "2026-10-29T15:10Z", "acoes": {
+        "PDS": {"preco": 21.0, "velas": [["2026-10-27", 20.5, 19.5, 20.2], [HOJE, 21.2, 20.1, 21.0]]}}})
     texto = _textos(bot.processar(e, _txt(DONO, "💼 Carteira"), hist, HOJE, CFG))[0]
-    assert "Valor agora: <b>101,00</b>" in texto and "Por realizar: <b>+1,00 USD</b>" in texto
-    assert "agora 21,00 · <b>+1,00 USD</b> (+5,0%)" in texto and "dia 3 de 5" in texto
-    assert "faltam +4,8%" in texto and "MAO</b>: 0,5 a 10,00 (5,00 USD, sem cotação agora)" in texto
+    assert "<b>101,00 USD</b>   🟢 +1,00 (+1,0%)" in texto and "simulada" not in texto.lower()
+    assert "🟢 <b>PDS</b>   <b>+5,0%</b> · +1,00 USD" in texto and "21,00 (compraste a 20,00) · dia 3/5" in texto
+    assert "🛑 19,00 ━━━━━●━━━ 22,00 🎯" in texto  # 21 está a 2/3 do caminho entre 19 e 22
+    assert "⚪ <b>MAO</b>   sem preço de agora" in texto and "Preços das 15:10" in texto
+    # O preço tocou no stop num dos dias desde a compra: a carteira diz para vender.
+    monkeypatch.setattr(bot, "LER_COTACOES", lambda: {"hora": "", "acoes": {
+        "PDS": {"preco": 19.2, "velas": [["2026-10-27", 20.5, 18.9, 19.2]]}}})
+    texto = _textos(bot.processar(e, _txt(DONO, "💼 Carteira"), hist, HOJE, CFG))[0]
+    assert "🛑 <b>Tocou no stop</b> (19,00) a 27/10: vende" in texto
+
+
+def test_aviso_de_stop_e_objetivo_a_cada_corrida_uma_vez_so():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "PDS", 1, 20.0, "2026-10-26", {"chave": "PDS|2026-10-26", "stop": 19.0, "objetivo": 22.0,
+                                                    "entrada": 20.0})
+    e["utilizadores"]["222"] = cart.novo_utilizador("Rui", CFG["regras_base"], "ativo", HOJE)
+    # No dia da compra só conta o fecho: o mínimo desse dia pode ter sido antes de comprar.
+    dados = {"acoes": {"PDS": {"preco": 20.5, "velas": [["2026-10-26", 21.0, 18.5, 20.5]]}}}
+    avisados = set()
+    assert bot.mensagens_saidas(e, dados, avisados) == []
+    dados["acoes"]["PDS"]["velas"].append(["2026-10-27", 22.3, 20.4, 22.1])
+    dados["acoes"]["PDS"]["preco"] = 22.1
+    msgs = bot.mensagens_saidas(e, dados, avisados)
+    assert len(msgs) == 1 and msgs[0][0] == DONO and "chegou ao objetivo (22,00)" in msgs[0][1]
+    assert msgs[0][2][0][0][1] == "v|PDS|22.0000"
+    assert bot.mensagens_saidas(e, dados, avisados) == []  # não repete
+    # O fecho do sinal no histórico já não manda outro aviso a quem tem a posição.
+    fecho = {"ticker": "PDS", "direcao": "compra", "data_sinal": "2026-10-26", "entrada": 20.0,
+             "resultado": "objetivo", "preco_atual": 22.1, "preco_saida": 22.0, "variacao_pct": 10.0}
+    assert bot.mensagens_fechos(e, [fecho], DONO) == []
 
 
 def test_alerta_de_noticia_vai_para_quem_tem_a_acao(monkeypatch):
@@ -442,3 +471,14 @@ def test_alerta_de_noticia_vai_para_quem_tem_a_acao(monkeypatch):
     # Sem posição, o dono recebe só o aviso.
     e["utilizadores"][DONO]["posicoes"].clear()
     assert bot.mensagens_vigia(e, alertas, DONO, lambda a: "x") == [(DONO, "x", None)]
+
+
+def test_cotacoes_guardam_preco_de_agora_e_velas():
+    from src import cotacoes
+    p = pd.DataFrame({"data": pd.to_datetime(["2026-10-28", "2026-10-29", "2026-10-29"]),
+                      "ticker": ["PDS", "PDS", "OUT"], "open": [20, 20.5, 5], "high": [21, 21.5, 6],
+                      "low": [19.5, 20.2, 4], "close": [20.8, 21.3, 5.5], "volume": [1, 1, 1]})
+    d = cotacoes.construir(p, {"PDS"}, pd.Timestamp("2026-10-29 15:10", tz="UTC"))
+    assert d["hora"] == "2026-10-29T15:10Z" and list(d["acoes"]) == ["PDS"]
+    assert d["acoes"]["PDS"]["preco"] == 21.3 and d["acoes"]["PDS"]["velas"][0] == ["2026-10-28", 21.0, 19.5, 20.8]
+    assert cotacoes.precos_agora(d, ["PDS", "XYZ"]) == {"PDS": 21.3}
