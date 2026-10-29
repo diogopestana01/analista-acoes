@@ -1,0 +1,41 @@
+name: Ensaio
+
+# Só à mão: corre os sinais como de verdade, mas sem Telegram e sem gravar nada (permissões só de leitura).
+# Serve para testar mudanças fora do horário da bolsa.
+on:
+  workflow_dispatch:
+    inputs:
+      com_cache:
+        description: "Usar as leituras do Claude já feitas hoje (mais rápido, não testa o Claude)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ensaio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ler os dados guardados pelos sinais
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/precos.parquet
+            data/universo.csv
+            data/universo_filtrado.csv
+            data/universo_atualizado_em.txt
+            data/avaliacoes_cache.json
+          key: dados-nenhum
+          restore-keys: dados-
+      - run: python ensaio.py ${{ inputs.com_cache && '--com-cache' || '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MODELO_CLAUDE: ${{ secrets.MODELO_CLAUDE }}
