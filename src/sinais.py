@@ -162,6 +162,7 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
                 "rsi_semanal": hoje.get("rsi_semanal", np.nan),
                 "semanal_sobe": hoje.get("semanal_sobe", np.nan),
                 "vol_ratio": hoje["vol_ratio"],
+                "ret5": hoje["ret5"],
                 "ret20": hoje["ret20"],
                 "dist_sma50": hoje["close"] / hoje["sma50"] - 1,
                 "choque_baixa_5d": hoje["choque_baixa_5d"],
