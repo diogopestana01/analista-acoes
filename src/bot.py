@@ -764,14 +764,20 @@ def texto_talao(u: dict) -> str:
     linhas = [f"🧾 {titulo}", "",
               f"💲 Preço: <b>{cart.fmt(preco)}</b>",
               f"📦 Quantidade: <b>{cart.fmt_qtd(qtd)}</b>",
-              f"💵 Total: <b>{cart.fmt(total)} {moeda}</b>"]
+              f"💵 Valor: <b>{cart.fmt(total)} {moeda}</b>  (preço × quantidade)"]
+    pct = u["regras"]["custo_pct"]
+    taxa = total * pct / 100
+    linhas.append(f"🏦 Taxas: {cart.fmt(taxa)} {moeda}"
+                  + ("  (XTB: 0% até 100 mil €/mês, conta USD sem câmbio)" if pct == 0 else f"  ({cart.fmt(pct)}%)"))
     if b["tipo"] == "compra":
-        livre = u["caixa"] - total * (1 + u["regras"]["custo_pct"] / 100)
+        linhas.append(f"Pagas: <b>{cart.fmt(total + taxa)} {moeda}</b>")
+        livre = u["caixa"] - total - taxa
         linhas.append(f"Livre depois: {cart.fmt(livre)} {moeda}" + (" ⚠️ mais do que tens livre" if livre < -1e-6 else ""))
     else:
         p = u["posicoes"].get(t)
         if p:
-            lucro = qtd * (preco - p["preco"])
+            linhas.append(f"Recebes: <b>{cart.fmt(total - taxa)} {moeda}</b>")
+            lucro = qtd * (preco - p["preco"]) - taxa
             linhas.append(f"Resultado: <b>{cart.sinal_fmt(lucro)} {moeda}</b> "
                           f"({cart.sinal_fmt((preco / p['preco'] - 1) * 100, 1)}%) · tens {cart.fmt_qtd(p['qtd'])}"
                           + (" ⚠️ mais do que tens" if qtd > p["qtd"] + 1e-9 else ""))

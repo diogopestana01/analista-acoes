@@ -83,7 +83,9 @@ def test_talao_ajusta_preco_e_quantidade_com_setas_e_a_escrever():
     out = bot.processar(e, _cb(DONO, "b|p|2"), HIST, HOJE, CFG)  # +0,50
     assert "Preço: <b>50,50</b>" in _edicoes(out)[0]
     bot.processar(e, _cb(DONO, "b|p|-1"), HIST, HOJE, CFG)  # -0,05
-    bot.processar(e, _cb(DONO, "b|q|-2"), HIST, HOJE, CFG)  # -0,01
+    out = bot.processar(e, _cb(DONO, "b|q|-2"), HIST, HOJE, CFG)  # -0,01
+    # O valor acompanha cada seta: 50,45 x 0,39 = 19,68.
+    assert "Valor: <b>19,68 USD</b>" in _edicoes(out)[0] and "Pagas: <b>19,68 USD</b>" in _edicoes(out)[0]
     assert u["talao"]["preco"] == pytest.approx(50.45) and u["talao"]["qtd"] == pytest.approx(0.39)
     # Escrever à mão também serve.
     bot.processar(e, _cb(DONO, "b|e|p"), HIST, HOJE, CFG)
