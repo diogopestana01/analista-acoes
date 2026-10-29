@@ -9,6 +9,9 @@ Modelo de sinais de curto prazo (1 dia a 1 semana) com alertas no Telegram. O do
   - Relógio: `.github/workflows/relogio.yml` lança os dois (o cron do GitHub não dispara neste repo). Desliga-se desativando o workflow "Relógio".
 - Código partilhado em `src/` (notícias, preços, Telegram, calendário de resultados).
 - Notícias em dois papéis: analista (`src/sentimento.py`, lê Google Notícias + Nasdaq de `src/noticias.py`) e advogado do diabo (`src/investigador.py`, faz a sua própria pesquisa de risco). O Yahoo e a SEC bloqueiam os servidores do GitHub. Para ver as fontes e os dois papéis sem enviar nada: workflow "Teste das notícias".
+- Regra de ouro: só o código cria, verifica e decide sinais; o Claude só lê e anota. Tudo o que o Claude devolve passa por `src/verificador.py` (citações de manchetes numeradas, números confirmados nas fontes, datas contadas pelo código). Se o Claude falhar, fica neutro. As opiniões estão em modo sombra (`sinais.noticias_decidem: false`, `investigador.bloquear: false`) até o registo em papel provar que acertam.
+- Força do sinal: a ordem é pelo retorno esperado da ação (`passo3f_forca.py`); a "pontuacao" é só técnica e não serve para escolher.
+- Saúde: `src/saude.py` avisa o dono (preços velhos, Claude a falhar); o Relógio avisa se os sinais pararem ou falharem 2 vezes seguidas.
 - Tendências nas redes (`src/tendencias.py`): Reddit via ApeWisdom e StockTwits, só informação no alerta e no resumo da manhã; guardadas no histórico para medir antes de mexerem na pontuação.
 - Setups em `src/sinais.py` (`SETUPS` + `detetar`).
 - Novo setup: adicionar a `SETUPS`, a regra em `detetar`, o nome em `config.yaml`, e um teste em `tests/`.

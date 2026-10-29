@@ -47,7 +47,9 @@ sinais:
   avisar_resultados_dias: 5     # de 3 a 5 dias úteis (dentro do prazo do trade) o sinal sai com a data e um aviso
   pausa_apos_fecho_dias: 3      # uma ação fechada (objetivo, stop ou saída) não dá novo sinal durante 3 dias úteis
   max_candidatos_noticias: 40   # quantas ações passam à análise de notícias
-  peso_noticias: 15             # pontos máximos somados/subtraídos pelas notícias
+  noticias_decidem: false       # false = modo sombra: a leitura do Claude só anota (não apaga nem reordena sinais)
+                                # até o registo em papel mostrar que acerta (rever no fim do mês de validação)
+  peso_noticias: 15             # só com noticias_decidem: pontos máximos somados/subtraídos pelas notícias
   max_alertas: 15               # limite de segurança contra excesso de mensagens
   custo_cambio_pct_por_lado: 0.0   # 0: ações dos EUA negociadas na subconta USD da XTB (sem câmbio por trade). Sem subconta: 0.5
 

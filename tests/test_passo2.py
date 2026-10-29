@@ -64,9 +64,10 @@ def test_pontuar_retorno_esperado_custos_e_filtros():
     assert not out.loc["C", "passa_filtros"] and out.loc["A.DE", "passa_filtros"]
 
 
-def test_sentimento_sem_chave_usa_palavras(monkeypatch):
+def test_sentimento_sem_chave_fica_neutro(monkeypatch):
+    """Sem Claude não há leitura "de recurso": o sinal segue igual."""
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    news = pd.DataFrame({"titulo": ["Company beats estimates, analysts upgrade"], "resumo": [""],
+    news = pd.DataFrame({"titulo": ["Company misses estimates, analysts downgrade"], "resumo": [""],
                          "fonte": ["X"], "data": [pd.Timestamp.now(tz="UTC")]})
     av = sentimento.avaliar({"ticker": "A", "direcao": "compra"}, news)
-    assert av.sentimento > 0 and av.impacto == "apoia"
+    assert av.sentimento == 0 and av.impacto == "neutro" and av.verificacao == "sem_claude"
