@@ -106,3 +106,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-29,NGVC,pullback,compra,29.43000030517578,,27.3420383515981,2.0,5,48.4,aberto,,,,sma5,manter,2.0,neutro,-0.1
 2026-10-29,CRM,pullback,compra,231.49000549316406,,213.2036083878565,3.0,5,64.1,aberto,,,,sma5,duvidoso,4.0,neutro,0.1
 2026-10-29,ABSI,semana_forte,compra,12.4350004196167,15.119041543304292,11.092979857772903,5.0,5,76.6,aberto,,,,atr_3_15,manter,3.0,apoia,0.6
+2026-10-29,MBIN,rompimento,compra,54.29499816894531,59.334283978388974,51.77535526422348,5.0,5,79.5,aberto,,,,atr_3_15,duvidoso,4.0,apoia,0.6
