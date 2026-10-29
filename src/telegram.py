@@ -82,10 +82,49 @@ def formatar_fecho(f: dict) -> str:
             f"({f['variacao_pct']:+.1f}%).")
 
 
+COPIAR = "copiar:"  # botão que copia um valor para a área de transferência (ex. a quantidade para a XTB)
+
+
+def _botao(t: str, d: str) -> dict:
+    if d.startswith(COPIAR):
+        return {"text": t, "copy_text": {"text": d[len(COPIAR):]}}
+    return {"text": t, "callback_data": d}
+
+
 def teclado(botoes: list[list[tuple[str, str]]] | None) -> str:
-    """Botões por baixo da mensagem: linhas de (texto, dados devolvidos ao bot)."""
-    return json.dumps({"inline_keyboard": [[{"text": t, "callback_data": d} for t, d in linha]
-                                           for linha in (botoes or [])]})
+    """Botões por baixo da mensagem: linhas de (texto, dados devolvidos ao bot ou "copiar:valor")."""
+    return json.dumps({"inline_keyboard": [[_botao(t, d) for t, d in linha] for linha in (botoes or [])]})
+
+
+def enviar_foto(foto: bytes | str, legenda: str = "", chat_id: str | int | None = None,
+                botoes: list | None = None, silencioso: bool = False) -> str | None:
+    """Envia uma imagem (bytes, ou o file_id de uma já enviada). Devolve o file_id para reutilizar."""
+    token, chat = os.environ.get("TELEGRAM_TOKEN"), chat_id or os.environ.get("TELEGRAM_CHAT_ID")
+    if not token or not chat:
+        print("[imagem]", legenda, "\n")
+        return None
+    dados = {"chat_id": chat, "parse_mode": "HTML"}
+    if legenda:
+        dados["caption"] = legenda
+    if botoes:
+        dados["reply_markup"] = teclado(botoes)
+    if silencioso:
+        dados["disable_notification"] = "true"
+    ficheiros = None
+    if isinstance(foto, bytes):
+        ficheiros = {"photo": ("grafico.png", foto, "image/png")}
+    else:
+        dados["photo"] = foto
+    try:
+        r = requests.post(f"https://api.telegram.org/bot{token}/sendPhoto", data=dados, files=ficheiros, timeout=60)
+    except requests.RequestException as e:
+        log.error("Telegram (imagem) falhou: %s", e)
+        return None
+    if not r.ok:
+        log.error("Telegram (imagem) falhou: %s %s", r.status_code, r.text[:200])
+        return None
+    fotos = (r.json().get("result") or {}).get("photo") or []
+    return fotos[-1]["file_id"] if fotos else None
 
 
 def api(metodo: str, espera: int = 30, **dados) -> dict | None:

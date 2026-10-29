@@ -13,7 +13,7 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import acompanhamento, bot, cofre, cotacoes, precos as precos_mod, telegram, vigia
+from src import acompanhamento, bot, cofre, cotacoes, grafico, precos as precos_mod, resultados, telegram, vigia
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -75,22 +75,90 @@ def _ativos(estado: dict | None) -> list:
     return [u for u in (estado or {}).get("utilizadores", {}).values() if u.get("estado") == "ativo"]
 
 
-def avisar_saidas(estado: dict | None, dados: dict) -> None:
-    """Quem tem uma posição que tocou no stop ou no objetivo recebe o aviso (uma vez)."""
+def _ler_cache() -> dict:
     import json
+    try:
+        return json.loads((DADOS / "avaliacoes_cache.json").read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def _guardar_avisados(avisados: set) -> None:
+    import json
+    cache = _ler_cache()
+    cache["saidas_avisadas"] = sorted(avisados)[-500:]
+    (DADOS / "avaliacoes_cache.json").write_text(json.dumps(cache))
+
+
+def avisar_saidas(estado: dict | None, dados: dict, avisados: set) -> None:
+    """Quem tem uma posição que tocou no stop ou no objetivo recebe o aviso (uma vez)."""
+    msgs = bot.mensagens_saidas(estado, dados, avisados)
+    for chat, texto, botoes in msgs:
+        telegram.enviar(texto, chat, botoes)
+    logging.info("Avisos de stop/objetivo: %d", len(msgs))
+
+
+def avisar_resultados(estado: dict | None) -> None:
+    """Posições com resultados hoje ou no próximo dia útil: aviso a quem as tem, uma vez.
+    O calendário da Nasdaq é pedido uma vez por dia; cada corrida vê as posições novas."""
+    import json
+    em_carteira = sorted({t for u in _ativos(estado) for t in u["posicoes"]})
+    if not em_carteira:
+        return
     caminho = DADOS / "avaliacoes_cache.json"
     try:
         cache = json.loads(caminho.read_text()) if caminho.exists() else {}
     except ValueError:
         cache = {}
-    avisados = set(cache.get("saidas_avisadas", []))
-    msgs = bot.mensagens_saidas(estado, dados, avisados)
+    agora = pd.Timestamp.now(tz="UTC")
+    hoje = agora.strftime("%Y-%m-%d")
+    chave = f"agenda_resultados|{hoje}"
+    agenda = cache.get(chave, {})
+    falta = [t for t in em_carteira if t not in cache.get(chave + "|vistos", [])]
+    if falta:
+        agenda.update(resultados.agenda(agora, falta, 1))
+        cache[chave] = agenda
+        cache[chave + "|vistos"] = sorted(set(cache.get(chave + "|vistos", [])) | set(falta))
+    avisados = set(cache.get("resultados_avisados", []))
+    msgs = bot.mensagens_resultados(estado, agenda, avisados, hoje)
     for chat, texto, botoes in msgs:
         telegram.enviar(texto, chat, botoes)
-    if msgs:
-        cache["saidas_avisadas"] = sorted(avisados)[-500:]
-        caminho.write_text(json.dumps(cache))
-    logging.info("Avisos de stop/objetivo: %d", len(msgs))
+    cache["resultados_avisados"] = sorted(avisados)[-500:]
+    caminho.write_text(json.dumps(cache))
+    logging.info("Avisos de resultados nas posições: %d", len(msgs))
+
+
+def enviar_sinais(msgs: list, registos: list[dict], precos: pd.DataFrame, estado: dict | None) -> None:
+    """Envia as mensagens dos sinais; cada sinal leva o gráfico (entrada, objetivo, stop). A imagem é feita
+    uma vez por ação e reenviada às outras pessoas pelo file_id do Telegram."""
+    por_ticker = {s["ticker"]: s for s in registos}
+    imagens: dict[str, bytes | str | None] = {}
+
+    def imagem(t: str):
+        if t not in imagens:
+            try:
+                imagens[t] = grafico.grafico_sinal(precos[precos["ticker"] == t], por_ticker[t])
+            except Exception as e:  # noqa: BLE001  sem gráfico, o sinal segue só com texto
+                logging.warning("Gráfico de %s falhou: %s", t, e)
+                imagens[t] = None
+        return imagens[t]
+
+    for chat, texto, botoes in msgs:
+        mudo = bot.sem_som(estado, chat)
+        t = bot.ticker_do_sinal(botoes)
+        img = imagem(t) if t in por_ticker else None
+        if img is None:
+            telegram.enviar(texto, chat, botoes, silencioso=mudo)
+            continue
+        if len(texto) <= 1000:  # cabe na legenda da imagem (máx. 1024)
+            fid = telegram.enviar_foto(img, texto, chat, botoes, mudo)
+            if fid is None:
+                telegram.enviar(texto, chat, botoes, silencioso=mudo)
+        else:
+            fid = telegram.enviar_foto(img, "", chat, None, mudo)
+            telegram.enviar(texto, chat, botoes, silencioso=mudo)
+        if fid:
+            imagens[t] = fid
 
 
 def main() -> None:
@@ -105,10 +173,15 @@ def main() -> None:
     # cada posição é comparada com o seu stop e objetivo a cada corrida.
     dados = guardar_cotacoes(precos, hist, estado)
     bot.COTAR = lambda ts: cotacoes.precos_agora(dados, ts)
-    avisar_saidas(estado, dados)
+    # Stop/objetivo: pela posição de cada pessoa e pelo fecho do sinal no registo; a mesma lista de avisos
+    # já enviados serve aos dois, para ninguém ficar sem aviso nem recebê-lo duas vezes.
+    avisados = set(_ler_cache().get("saidas_avisadas", []))
+    avisar_saidas(estado, dados, avisados)
     hist, fechos = acompanhamento.atualizar(hist, precos)
-    for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono):
+    for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono, avisados):
         telegram.enviar(texto, chat, botoes)
+    _guardar_avisados(avisados)
+    avisar_resultados(estado)
 
     try:
         sinais = pd.read_csv(saida)
@@ -124,8 +197,7 @@ def main() -> None:
         cabecalho = (f"📊 <b>Novos sinais ({pd.Timestamp.now(tz='UTC'):%d/%m %H:%M} UTC)</b> ({len(novos)})\n"
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
         registos = [{**s, "data_sinal": data} for s in novos.to_dict("records")]
-        for chat, texto, botoes in bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data):
-            telegram.enviar(texto, chat, botoes, silencioso=bot.sem_som(estado, chat))
+        enviar_sinais(bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data), registos, precos, estado)
 
     vigiar_posicoes(hist, data, dono, config)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"])

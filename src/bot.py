@@ -37,7 +37,7 @@ Usa o menu de botões em baixo:
 📊 Resultados: quanto ganhaste, % de vendas a ganhar e as últimas vendas
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
-⚙️ Regras: capital, número de posições e 🔔 avisos (som, confiança mínima)
+⚙️ Regras: capital, número de posições e 🔔 avisos (som, retorno mínimo)
 ↩️ Desfazer: anula a última operação
 🔄 Recomeçar: põe a carteira a zero e volta a perguntar o capital e as posições
 
@@ -52,7 +52,7 @@ O bot analisa as ações dos EUA de 10 em 10 minutos. Quando uma ação mostra u
 
 Um sinal diz: que ação comprar, a que preço, quanto investir (já à medida da tua carteira), onde vender com lucro, onde vender para travar a perda e em quanto tempo.
 
-A ⭐ Confiança (0 a 100) junta o histórico do padrão e da própria ação. Recebes só os sinais mais fortes que cabem nos teus lugares livres."""),
+O 📊 Retorno esperado é a média do que sinais parecidos renderam, já sem custos, e a percentagem diz quantos deles ganharam. Recebes só os de maior retorno esperado que cabem nos teus lugares livres."""),
     "saidas": ("🎯 Objetivo e stop", """🎯 <b>Objetivo e stop</b>
 🎯 <b>Objetivo</b>: o preço a que vendes com lucro.
 🛑 <b>Stop</b>: o preço a que vendes para a perda não crescer. Na XTB podes deixá-lo já marcado como ordem "stop loss".
@@ -91,7 +91,7 @@ Chega assim:
 🛑 Vender para travar a perda a 226,00 (−1,7%)
 ⏳ Prazo: até 5 dias úteis
 
-Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde acertas, com setas, o preço e a quantidade que a corretora te deu. Se não, ❌ <b>Ignorar</b>.""",
+Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde acertas, com setas, o preço e o valor pago que a XTB te mostra. Se não, ❌ <b>Ignorar</b>.""",
     """💼 <b>Depois de comprar</b> (3 de 3)
 Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
 
@@ -128,6 +128,32 @@ TECLADO_MENU, TECLADO_DONO = _teclado_menu(MENU), _teclado_menu(MENU_DONO)
 def botoes_sinal(ticker: str, data: str) -> list:
     return [[("✅ Comprei", f"c|{ticker}|{data}"), ("❌ Ignorar", f"i|{ticker}|{data}")],
             [("ℹ️ Porquê este sinal?", f"q|{ticker}|{data}")]]
+
+
+def ticker_do_sinal(botoes: list | None) -> str | None:
+    """A ação de uma mensagem de sinal (a que tem o botão ✅ Comprei), ou None."""
+    try:
+        d = botoes[0][0][1]
+    except (TypeError, IndexError):
+        return None
+    return d.split("|")[1] if d.startswith("c|") else None
+
+
+def _copia(x: float) -> str:
+    """Número para colar na corretora: ponto decimal, sem zeros a mais."""
+    return f"{x:.4f}".rstrip("0").rstrip(".")
+
+
+def botoes_copiar(qtd: float, s: dict) -> list:
+    """Uma linha de botões que copiam o valor a investir, o stop e o objetivo, para colar na XTB."""
+    valor = round(qtd * float(s["entrada"]), 2) if _num(s.get("entrada")) else None
+    linha = ([(f"📋 Valor {cart.fmt(valor)}", telegram.COPIAR + _copia(valor))] if valor
+             else [(f"📋 Qtd {cart.fmt_qtd(qtd)}", telegram.COPIAR + _copia(qtd))])
+    for nome, k in (("Stop", "stop"), ("Obj.", "objetivo")):
+        v = _num(s.get(k))
+        if v:
+            linha.append((f"📋 {nome} {cart.fmt(v)}", telegram.COPIAR + _copia(round(v, 2))))
+    return linha
 
 
 def botoes_venda(ticker: str, preco: float) -> list:
@@ -368,7 +394,12 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
                 raise ValueError(v)
             u["aguarda"] = None
             b = u["talao"]
-            b["preco" if a["campo"] == "p" else "qtd"] = round(v, 4)
+            _acertar_talao(b, "")
+            campo = {"p": "preco", "v": "valor"}.get(a["campo"], "qtd")
+            b[campo] = round(v, 4)
+            if campo != "preco":
+                b["tudo"] = False
+            _acertar_talao(b, {"preco": "p", "valor": "v"}.get(campo, "q"))
             antigo = b.get("msg")
             b["msg"] = None
             return ([("editMessageReplyMarkup", {"chat_id": chat, "message_id": antigo,
@@ -539,9 +570,8 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         a = avisos(u)
         if ticker == "som":
             a["som"] = not a["som"]
-        elif ticker == "conf":
-            a["conf_min"] = CONF_OPCOES[(CONF_OPCOES.index(a["conf_min"]) + 1) % len(CONF_OPCOES)] \
-                if a["conf_min"] in CONF_OPCOES else 0
+        elif ticker == "ret":
+            a["ret_min"] = _seguinte_ret(a["ret_min"])
         elif ticker == "fora":
             a["fora"] = not a["fora"]
         u["avisos"] = a
@@ -647,18 +677,57 @@ def _confianca(s: dict) -> float:
     return 0.0 if pd.isna(v) else v
 
 
+def _retorno(s: dict) -> float | None:
+    """Retorno esperado do sinal, já sem custos (0,012 = +1,2%). O estudo passo3f_forca.py mostrou que,
+    entre sinais do mesmo dia, é isto que escolhe melhor (a pontuação técnica não)."""
+    for k in ("retorno_esperado_liquido", "retorno_esperado"):
+        v = _num(s.get(k))
+        if v is not None:
+            return v
+    return None
+
+
+def _txt_ret(s: dict) -> str:
+    r = _retorno(s)
+    return _pct(r) if r is not None else "?"
+
+
+def taxas_setup(hist: pd.DataFrame | None) -> dict:
+    """{setup: (n fechados, % que ganharam)} do registo real (sinais em papel), só compras."""
+    if hist is None or hist.empty:
+        return {}
+    f = acompanhamento._fechados_compra(hist)
+    return {k: (len(g), float((g["ret"] > 0).mean())) for k, g in f.groupby("setup")}
+
+
+def linha_numeros(s: dict, taxas: dict, extra: str = "") -> str:
+    """📊 Retorno esperado +1,2% · este tipo de sinal ganhou 64% de 45 vezes."""
+    partes = []
+    if _retorno(s) is not None:
+        partes.append(f"Retorno esperado <b>{_txt_ret(s)}</b>")
+    n, taxa = taxas.get(s.get("setup"), (0, None))
+    if n >= 10:
+        partes.append(f"este tipo de sinal ganhou {taxa * 100:.0f}% de {n} vezes")
+    return "📊 " + " · ".join(partes + ([extra] if extra else [])) if partes or extra else ""
+
+
 def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
-    """Sinais que servem a esta carteira, do mais forte para o mais fraco, partidos em
+    """Sinais que servem a esta carteira, do melhor para o pior (retorno esperado), partidos em
     (os que cabem nos lugares livres, os que ficam de fora, lugares livres)."""
     elegiveis = [s for s in sinais if cart.mercado(s["ticker"]) in u["regras"]["mercados"]
                  and s["ticker"] not in u["posicoes"]]
-    elegiveis.sort(key=_confianca, reverse=True)
+    elegiveis.sort(key=lambda s: (_retorno(s) if _retorno(s) is not None else -1.0, _confianca(s)), reverse=True)
     livres = max(u["regras"]["max_posicoes"] - len(u["posicoes"]), 0)
     return elegiveis[:livres], elegiveis[livres:], livres
 
 
-AVISOS_BASE = {"som": True, "conf_min": 0, "fora": True}
-CONF_OPCOES = [0, 60, 70, 80]
+AVISOS_BASE = {"som": True, "ret_min": 0.0, "fora": True}
+RET_OPCOES = [0.0, 0.005, 0.01, 0.015]  # retorno esperado mínimo: qualquer, +0,5%, +1%, +1,5%
+
+
+def _seguinte_ret(v: float) -> float:
+    i = min(range(len(RET_OPCOES)), key=lambda k: abs(RET_OPCOES[k] - v))
+    return RET_OPCOES[(i + 1) % len(RET_OPCOES)]
 
 
 def avisos(u: dict) -> dict:
@@ -675,27 +744,29 @@ def texto_avisos(u: dict) -> tuple[str, list]:
     a = avisos(u)
     txt = ("🔔 <b>Avisos</b>\n"
            f"• Som nos sinais: <b>{'ligado' if a['som'] else 'desligado'}</b> (os avisos de venda tocam sempre)\n"
-           f"• Confiança mínima: <b>{a['conf_min'] or 'qualquer'}</b> (sinais abaixo disto não te chegam)\n"
+           f"• Retorno esperado mínimo: <b>{_pct(a['ret_min']) if a['ret_min'] else 'qualquer'}</b> "
+           "(sinais abaixo disto não te chegam)\n"
            f"• Sinais que não cabem na carteira: <b>{'mostrar numa linha' if a['fora'] else 'não mostrar'}</b>\n"
            "Carrega para mudar:")
-    seguinte = CONF_OPCOES[(CONF_OPCOES.index(a["conf_min"]) + 1) % len(CONF_OPCOES)] if a["conf_min"] in CONF_OPCOES else 0
+    seguinte = _seguinte_ret(a["ret_min"])
     return txt, [[("🔕 Desligar som" if a["som"] else "🔔 Ligar som", "g|som")],
-                 [(f"⭐ Confiança mínima → {seguinte or 'qualquer'}", "g|conf")],
+                 [(f"📊 Retorno mínimo → {_pct(seguinte) if seguinte else 'qualquer'}", "g|ret")],
                  [("🙈 Esconder os que não cabem" if a["fora"] else "👀 Mostrar os que não cabem", "g|fora")]]
 
 
 def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | None = None, hoje: str = "") -> list:
     """Cabeçalho + os melhores sinais (com botões) + uma linha com os que ficaram de fora.
     Com a carteira cheia: propõe trocar a posição mais fraca pelo melhor sinal, se valer a pena.
-    Respeita as preferências de avisos da pessoa (confiança mínima, mostrar os que não cabem)."""
+    Respeita as preferências de avisos da pessoa (retorno mínimo, mostrar os que não cabem)."""
     pref = avisos(u)
-    sinais = [s for s in sinais if _confianca(s) >= pref["conf_min"]]
+    if pref["ret_min"]:
+        sinais = [s for s in sinais if (_retorno(s) or 0.0) >= pref["ret_min"] - 1e-9]
     top, resto, livres = escolher(u, sinais)
     if not top and not resto:
         return []
     r = u["regras"]
     ocupadas = f"{len(u['posicoes'])}/{r['max_posicoes']}"
-    nomes = ", ".join(f"{s['ticker']} ({_confianca(s):.0f})" for s in resto[:8])
+    nomes = ", ".join(f"{s['ticker']} ({_txt_ret(s)})" for s in resto[:8])
     nomes += f" e mais {len(resto) - 8}" if len(resto) > 8 else ""
     if not top:
         troca = proposta_troca(u, resto[0], hist, hoje)
@@ -712,9 +783,9 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | Non
         return [(cabecalho + txt, None)] if pref["fora"] else []
     extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
              f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
-    out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto))
+    out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto), hist)
     if resto and pref["fora"]:
-        out.append((f"➖ Ficaram de fora {len(resto)} com menos confiança: {nomes}.", None))
+        out.append((f"➖ Ficaram de fora {len(resto)} com menos retorno esperado: {nomes}.", None))
     return out
 
 
@@ -834,7 +905,7 @@ def proposta_troca(u: dict, s: dict, hist: pd.DataFrame | None, hoje: str) -> tu
     t = cart.tamanho(depois, s["ticker"], s["entrada"])
     if t["motivo"]:
         return None
-    rank = f"⭐ Confiança {_confianca(s):.0f}/100"
+    rank = linha_numeros(s, taxas_setup(hist))
     texto = (f"🔁 <b>Proposta de troca</b>\n"
              f"Vender <b>{fraca['ticker']}</b> a ~{cart.fmt(fraca['preco'])} ({cart.sinal_fmt(fraca['pct'], 1)}%).\n"
              f"📊 Um sinal como o novo costuma render <b>{_pct(modelo['media'][s['setup']])}</b>; "
@@ -857,13 +928,32 @@ def _passos_qtd(q: float) -> tuple[float, float]:
     return (0.001, 0.01) if q < 1 else (0.01, 0.1) if q < 10 else (0.1, 1.0)
 
 
+def _passos_valor(v: float) -> tuple[float, float]:
+    return (0.01, 0.10) if v < 20 else (0.10, 1.0) if v < 200 else (1.0, 10.0) if v < 2000 else (10.0, 100.0)
+
+
+def _acertar_talao(b: dict, mudou: str) -> None:
+    """O talão guarda preço, valor (o que pagaste/recebes) e quantidade, sempre coerentes:
+    mudar o preço mantém o valor (ou a quantidade, se é "vendi tudo"); mudar o valor muda a quantidade."""
+    b.setdefault("valor", round(b["preco"] * b["qtd"], 2))
+    if mudou == "q" or (mudou != "v" and b.get("tudo")):
+        b["valor"] = round(b["preco"] * b["qtd"], 2)
+    else:
+        b["qtd"] = round(b["valor"] / b["preco"], 6) if b["preco"] > 0 else 0.0
+
+
 def abrir_talao(u: dict, tipo: str, ticker: str, preco: float, qtd: float, data: str | None = None,
                 troca: dict | None = None) -> dict:
     """Talão por confirmar: o preço e a quantidade sugeridos, para acertar com o que saiu na corretora."""
     u["aguarda"] = None
-    u["talao"] = {"tipo": tipo, "ticker": ticker, "preco": round(float(preco), 4), "qtd": round(float(qtd), 4),
+    p = u["posicoes"].get(ticker) if tipo == "venda" else None
+    tudo = bool(p) and abs(float(qtd) - p["qtd"]) < 1e-9
+    valor = round(float(preco) * float(qtd), 2)
+    u["talao"] = {"tipo": tipo, "ticker": ticker, "preco": round(float(preco), 4),
+                  "qtd": float(qtd) if tudo else round(float(qtd), 6), "valor": valor, "tudo": tudo,
                   "data": data, "troca": troca, "msg": None,
-                  "pp": _passos_preco(float(preco)), "pq": _passos_qtd(float(qtd) or 1.0)}
+                  "pp": _passos_preco(float(preco)), "pq": _passos_qtd(float(qtd) or 1.0),
+                  "pv": _passos_valor(valor or 1.0)}
     return u["talao"]
 
 
@@ -878,15 +968,17 @@ def _abrir_compra(chat: str, u: dict, ticker: str, preco: float, data: str | Non
 
 def texto_talao(u: dict) -> str:
     b, moeda = u["talao"], u["regras"]["moeda"]
+    _acertar_talao(b, "")
     t, preco, qtd = b["ticker"], b["preco"], b["qtd"]
-    total = preco * qtd
+    total = b["valor"] if not b.get("tudo") else preco * qtd
     titulo = ("🟢 Compra" if b["tipo"] == "compra" else "🔴 Venda") + f" de <b>{t}</b>"
     if b["troca"]:
         titulo += f" (troca, passo {1 if b['tipo'] == 'venda' else 2} de 2)"
     linhas = [f"🧾 {titulo}", "",
               f"💲 Preço: <b>{cart.fmt(preco)}</b>",
-              f"📦 Quantidade: <b>{cart.fmt_qtd(qtd)}</b>",
-              f"💵 Valor: <b>{cart.fmt(total)} {moeda}</b>  (preço × quantidade)"]
+              f"💵 Valor: <b>{cart.fmt(total)} {moeda}</b>"
+              + ("  (tudo o que tens)" if b.get("tudo") else ""),
+              f"📦 Quantidade: {cart.fmt_qtd(qtd)}  (valor ÷ preço)"]
     pct = u["regras"]["custo_pct"]
     taxa = total * pct / 100
     linhas.append(f"🏦 Taxas: {cart.fmt(taxa)} {moeda}"
@@ -902,19 +994,20 @@ def texto_talao(u: dict) -> str:
             lucro = qtd * (preco - p["preco"]) - taxa
             linhas.append(f"Resultado: <b>{cart.sinal_fmt(lucro)} {moeda}</b> "
                           f"({cart.sinal_fmt((preco / p['preco'] - 1) * 100, 1)}%) · tens {cart.fmt_qtd(p['qtd'])}"
-                          + (" ⚠️ mais do que tens" if qtd > p["qtd"] + 1e-9 else ""))
-    linhas.append("\nAcerta com as setas até ficar igual ao que a XTB mostra e carrega em ✅ Confirmar.")
+                          + (" ⚠️ mais do que tens" if qtd > p["qtd"] * 1.01 + 1e-9 else ""))
+    linhas.append("\nAcerta o preço e o valor com as setas até ficarem iguais aos da XTB e carrega em ✅ Confirmar.")
     return "\n".join(linhas)
 
 
 def botoes_talao(b: dict) -> list:
-    (sp, bp), (sq, bq) = b["pp"], b["pq"]
-    qf = cart.fmt_qtd
-    linhas = [[(f"💲 ⬇ {cart.fmt(bp)}", "b|p|-2"), (f"💲 ↓ {cart.fmt(sp)}", "b|p|-1"),
-               (f"💲 ↑ {cart.fmt(sp)}", "b|p|1"), (f"💲 ⬆ {cart.fmt(bp)}", "b|p|2")],
-              [(f"📦 ⬇ {qf(bq)}", "b|q|-2"), (f"📦 ↓ {qf(sq)}", "b|q|-1"),
-               (f"📦 ↑ {qf(sq)}", "b|q|1"), (f"📦 ⬆ {qf(bq)}", "b|q|2")],
-              [("✏️ Escrever preço", "b|e|p"), ("✏️ Escrever quantidade", "b|e|q")]]
+    (sp, bp) = b["pp"]
+    (sv, bv) = b.get("pv") or _passos_valor(b.get("valor") or 1.0)
+    f = cart.fmt
+    linhas = [[(f"💲 ⬇ {f(bp)}", "b|p|-2"), (f"💲 ↓ {f(sp)}", "b|p|-1"),
+               (f"💲 ↑ {f(sp)}", "b|p|1"), (f"💲 ⬆ {f(bp)}", "b|p|2")],
+              [(f"💵 ⬇ {f(bv)}", "b|v|-2"), (f"💵 ↓ {f(sv)}", "b|v|-1"),
+               (f"💵 ↑ {f(sv)}", "b|v|1"), (f"💵 ⬆ {f(bv)}", "b|v|2")],
+              [("✏️ Escrever preço", "b|e|p"), ("✏️ Escrever valor", "b|e|v")]]
     if b["tipo"] == "venda":
         linhas.append([("📦 Vendi tudo", "b|t")])
     linhas.append([("✅ Confirmar", "b|ok"), ("❌ Cancelar", "b|x")])
@@ -938,19 +1031,26 @@ def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str)
         return [_tirar_botoes(cq), _msg(chat, "Este talão já foi fechado.")]
     b["msg"] = cq.get("message", {}).get("message_id")
     op = partes[1] if len(partes) > 1 else ""
-    if op in ("p", "q"):
+    if op in ("p", "q", "v"):
+        _acertar_talao(b, "")
         k = int(partes[2])
-        passo = (b["pp"] if op == "p" else b["pq"])[abs(k) - 1] * (1 if k > 0 else -1)
-        campo = "preco" if op == "p" else "qtd"
+        passos = {"p": b["pp"], "q": b["pq"], "v": b.get("pv") or _passos_valor(b["valor"] or 1.0)}[op]
+        passo = passos[abs(k) - 1] * (1 if k > 0 else -1)
+        campo = {"p": "preco", "q": "qtd", "v": "valor"}[op]
         b[campo] = round(max(b[campo] + passo, 0.01 if op == "p" else 0.0), 4)
+        if op != "p":
+            b["tudo"] = False
+        _acertar_talao(b, op)
         return [_editar(cq, texto_talao(u), botoes_talao(b))]
     if op == "t" and b["ticker"] in u["posicoes"]:
-        b["qtd"] = u["posicoes"][b["ticker"]]["qtd"]
+        b["qtd"], b["tudo"] = u["posicoes"][b["ticker"]]["qtd"], True
+        _acertar_talao(b, "q")
         return [_editar(cq, texto_talao(u), botoes_talao(b))]
     if op == "e":
         u["aguarda"] = {"tipo": "talao", "campo": partes[2]}
-        return [_msg(chat, "✏️ Escreve o " + ("preço (ex. <code>51,20</code>)" if partes[2] == "p"
-                                               else "número de ações (ex. <code>0,4</code>)") + ".")]
+        pede = {"p": "o preço (ex. <code>51,20</code>)", "v": "o valor em USD que a XTB mostra (ex. <code>20,15</code>)",
+                "q": "o número de ações (ex. <code>0,4</code>)"}.get(partes[2], "o número")
+        return [_msg(chat, f"✏️ Escreve {pede}.")]
     if op == "x":
         u["talao"] = None
         txt = "❌ Cancelado, não registei nada."
@@ -959,9 +1059,13 @@ def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str)
         return [_editar(cq, txt, None)]
     if op != "ok":
         return []
+    _acertar_talao(b, "")
     t, preco, qtd = b["ticker"], b["preco"], b["qtd"]
     if qtd <= 0:
-        return [_msg(chat, "A quantidade tem de ser maior que zero.")]
+        return [_msg(chat, "O valor tem de ser maior que zero.")]
+    p = u["posicoes"].get(t)
+    if b["tipo"] == "venda" and p and qtd > p["qtd"] and qtd <= p["qtd"] * 1.01:
+        qtd = p["qtd"]  # o valor da XTB vem arredondado ao cêntimo: é tudo o que tens
     if b["tipo"] == "venda":
         if t not in u["posicoes"]:
             u["talao"] = None
@@ -981,7 +1085,7 @@ def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str)
     sinal = _sinal(hist, t, b["data"]) if b["data"] else None
     txt = cart.comprar(u, t, qtd, preco, hoje, sinal)
     if t not in u["posicoes"]:  # não registou (ex. sem dinheiro livre): o talão fica aberto
-        return [_msg(chat, txt + "\nAcerta a quantidade no talão e confirma outra vez.")]
+        return [_msg(chat, txt + "\nAcerta o valor no talão e confirma outra vez.")]
     u["talao"] = None
     if b["troca"]:
         u["anterior"] = b["troca"]["anterior"]
@@ -1025,20 +1129,23 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     if isinstance(s.get("argumento_inv"), str) and s.get("argumento_inv"):
         icone = {"rejeitar": "🚩", "duvidoso": "⚠️", "manter": "✔️"}.get(s.get("veredicto_inv"), "🕵️")
         linhas.append(f"{icone} Advogado do diabo: {html.escape(s['argumento_inv'])}")
-    linhas.append(rank)
+    if rank:
+        linhas.append(rank)
     return "\n".join(linhas)
 
 
-def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
+def _sinais_para(u: dict, sinais: list[dict], total: int | None = None, hist: pd.DataFrame | None = None) -> list:
     """Texto e botões de cada sinal para este utilizador; o dinheiro vai sendo reservado pela ordem."""
-    out, reservado, ocupadas = [], 0.0, 0
+    out, reservado, ocupadas, taxas = [], 0.0, 0, taxas_setup(hist)
     for k, s in enumerate(sinais, start=1):
         t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
         if not t["motivo"]:
             reservado, ocupadas = reservado + t["valor"], ocupadas + 1
-        rank = f"⭐ Confiança {_confianca(s):.0f}/100 (n.º {k} de {total or len(sinais)})"
+        rank = linha_numeros(s, taxas, f"n.º {k} de {total or len(sinais)}")
         texto = sinal_simples(u, s, t, u["caixa"] - reservado, rank)
         b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
+        if b and not t["motivo"]:
+            b = b + [botoes_copiar(t["qtd"], s)]
         out.append((texto, b))
     return out
 
@@ -1065,9 +1172,12 @@ def porque(hist: pd.DataFrame, ticker: str, data: str) -> str:
     explic = PORQUE.get(s["setup"], telegram.SETUPS_PT.get(s["setup"], s["setup"]))
     regra = saidas.REGRAS.get(s.get("saida") or "")
     linhas = [f"ℹ️ <b>Porquê {ticker}?</b> (sinal de {data})", explic]
-    if _num(s.get("pontuacao")) is not None:
-        linhas.append(f"\n⭐ Confiança {_num(s['pontuacao']):.0f}/100: junta os resultados passados deste padrão "
-                      f"e desta ação. Quanto mais alta, melhor correram sinais parecidos.")
+    if _retorno(s) is not None:
+        linhas.append(f"\n📊 <b>Retorno esperado {_txt_ret(s)}</b>, já sem custos: a média do que este padrão "
+                      f"rendeu no passado, ajustada ao histórico desta ação. É o que ordena os sinais.")
+    n, taxa = taxas_setup(hist).get(s["setup"], (0, None))
+    if n >= 10:
+        linhas.append(f"✔️ Nos sinais reais deste tipo até hoje, {taxa * 100:.0f}% de {n} ganharam.")
     if regra and regra.sair_se:
         linhas.append(f"🚪 Regra de saída: {regra.texto_alerta()}.")
     linhas.append("\nNenhum sinal é garantia; o stop existe para a perda ficar pequena quando corre mal.")
@@ -1109,21 +1219,22 @@ def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
     else:
         cab = ("📋 <b>Sinais ainda em aberto</b>\nO preço é o do dia do sinal; "
                "confirma o preço atual na XTB antes de entrar.")
-    ronda = _ronda(u, sinais, cab)
+    ronda = _ronda(u, sinais, cab, hist)
     if not ronda:
         return [_msg(chat, "Não há sinais em aberto que ainda valham a pena agora. Aviso-te quando chegar o próximo.",
                      menu=True)]
     return [_msg(chat, texto, b) for texto, b in ronda]
 
 
-def _tem_niveis(p: dict) -> bool:
-    return any(p.get(k) is not None and pd.notna(p.get(k)) for k in ("stop", "objetivo"))
+def _chave_saida(chat, t: str, p: dict, tipo: str) -> str:
+    return f"saida|{chat}|{t}|{p.get('data', '')}|{tipo}"
 
 
-def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) -> list:
+def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None, avisados: set | None = None) -> list:
     """Aviso de venda: personalizado (com botões) para quem tem a ação; o dono recebe sempre.
-    Stop e objetivo de quem tem a posição com níveis próprios vão por mensagens_saidas (preço de agora)."""
-    out = []
+    Stop e objetivo: quem já recebeu o aviso pela sua posição (mensagens_saidas, mesma chave em `avisados`)
+    não recebe outro; quem não recebeu (ex. comprou nesse dia) é avisado aqui."""
+    out, avisados = [], (set() if avisados is None else avisados)
     for f in fechos:
         base = telegram.formatar_fecho(f)
         donos_avisados = False
@@ -1131,9 +1242,12 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) 
             p = u["posicoes"].get(f["ticker"])
             if not p or not p.get("acompanhar", True):
                 continue
-            if f["resultado"] in ("stop", "objetivo") and _tem_niveis(p):
-                donos_avisados |= chat == dono
-                continue
+            if f["resultado"] in ("stop", "objetivo"):
+                chave = _chave_saida(chat, f["ticker"], p, f["resultado"])
+                if chave in avisados:
+                    donos_avisados |= chat == dono
+                    continue
+                avisados.add(chave)
             pct = (f["preco_saida"] / p["preco"] - 1) * 100
             texto = (f"{base}\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])} "
                      f"({cart.sinal_fmt(pct, 1)}% a {cart.fmt(f['preco_saida'])}).")
@@ -1141,6 +1255,33 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None) 
             donos_avisados |= chat == dono
         if dono and not donos_avisados:
             out.append((dono, base, None))
+    return out
+
+
+def mensagens_resultados(estado: dict | None, agenda: dict, avisados: set, hoje: str) -> list:
+    """Quem tem uma ação que apresenta resultados hoje ou no próximo dia útil recebe um aviso (uma vez).
+    Um trade de poucos dias não costuma valer o risco de um salto de preço com as contas."""
+    out = []
+    px = _cotacoes(sorted(agenda)) if agenda else {}
+    for chat, u in (cart.ativos(estado).items() if estado else []):
+        for t, p in u["posicoes"].items():
+            a = agenda.get(t)
+            if not a:
+                continue
+            chave = f"res|{chat}|{t}|{a['data']}"
+            if chave in avisados:
+                continue
+            avisados.add(chave)
+            quando = "hoje" if a["data"] == hoje else f"a {cart._dm(a['data'])}"
+            agora = px.get(t)
+            linha = (f"agora {cart.fmt(agora)} ({cart.sinal_fmt((agora / p['preco'] - 1) * 100, 1)}%)" if agora
+                     else f"compradas a {cart.fmt(p['preco'])}")
+            texto = (f"📅 <b>{t}</b> apresenta resultados {quando} ({a['quando']}).\n"
+                     f"💼 Tens {cart.fmt_qtd(p['qtd'])}, {linha}.\n"
+                     "Com as contas o preço pode saltar muito, para cima ou para baixo, e passar o stop. "
+                     "Num trade de poucos dias, o mais prudente costuma ser vender antes.")
+            botoes = botoes_venda(t, agora) if agora else [[("✏️ Vendi", f"w|{t}"), ("🔒 Mantenho", f"m|{t}")]]
+            out.append((chat, texto, botoes))
     return out
 
 
@@ -1155,7 +1296,7 @@ def mensagens_saidas(estado: dict | None, dados: dict, avisados: set) -> list:
             s = cotacoes.saida_atingida(p, acoes[t]["velas"])
             if not s:
                 continue
-            chave = f"saida|{chat}|{t}|{p.get('data', '')}|{s['tipo']}"
+            chave = _chave_saida(chat, t, p, s["tipo"])
             if chave in avisados:
                 continue
             avisados.add(chave)

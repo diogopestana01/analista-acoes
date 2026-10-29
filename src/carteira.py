@@ -312,6 +312,8 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
             linhas.append(_barra(px, stop, obj))
         elif stop:
             linhas.append(f"🛑 {fmt(stop)} (a {sinal_fmt((stop / px - 1) * 100, 1)}%) · sai quando o bot avisar")
+        elif not obj:
+            linhas.append("⚠️ Sem stop: comprada fora de um sinal aberto, não te consigo avisar de quando vender")
         if not p.get("acompanhar", True):
             linhas.append("🔕 sem avisos de venda")
         blocos.append("\n".join(linhas))

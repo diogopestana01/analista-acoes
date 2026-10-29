@@ -9,3 +9,4 @@ requests>=2.31
 anthropic>=1.17
 pydantic>=2.0
 cryptography>=42.0
+matplotlib>=3.8

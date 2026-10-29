@@ -74,3 +74,15 @@ def datas(hoje: pd.Timestamp, dias_uteis: int = 2) -> dict[str, str]:
 def proximos(hoje: pd.Timestamp, dias_uteis: int = 2) -> set[str]:
     """Tickers com resultados de hoje até daqui a `dias_uteis` dias úteis."""
     return set(datas(hoje, dias_uteis))
+
+
+def agenda(hoje: pd.Timestamp, tickers, dias_uteis: int = 1) -> dict[str, dict]:
+    """{ticker: {"data", "quando"}} das ações de `tickers` com resultados de hoje até daqui a `dias_uteis`."""
+    quero, out = set(tickers), {}
+    if not quero:
+        return out
+    for d in pd.bdate_range(hoje.normalize().tz_localize(None), periods=dias_uteis + 1):
+        for r in calendario(d):
+            if r["ticker"] in quero:
+                out.setdefault(r["ticker"], {"data": f"{d:%Y-%m-%d}", "quando": r["quando"]})
+    return out
