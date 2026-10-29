@@ -15,7 +15,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, bot, cofre, cotacoes, precos, telegram
+from src import acompanhamento, bot, carteira, cofre, cotacoes, precos, precos_agora, telegram
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("carteira")
@@ -25,11 +25,43 @@ HIST = RAIZ / "data" / "historico_sinais.csv"
 COTACOES = RAIZ / "data" / "cotacoes.json"
 
 
+VIVOS: dict[str, tuple[float, float]] = {}  # ticker -> (preço de agora, quando foi lido)
+
+
 def cotar(tickers: list[str]) -> dict:
-    """Preço de agora: o que os sinais guardaram há menos de 10 min; o Yahoo só para o que faltar."""
+    """Preço de agora: o da vigia de 2 em 2 min (Nasdaq) se tiver menos de 5 min; senão o que os sinais
+    guardaram (10 em 10 min); o Yahoo só para o que faltar."""
     px = cotacoes.precos_agora(cotacoes.ler(COTACOES), tickers)
+    px.update({t: VIVOS[t][0] for t in tickers if t in VIVOS and time.time() - VIVOS[t][1] < 300})
     falta = [t for t in tickers if t not in px]
     return {**(precos.atuais(falta) if falta else {}), **px}
+
+
+def bolsa_eua_aberta(agora: pd.Timestamp) -> bool:
+    """Dias úteis entre as 13:25 e as 21:05 UTC (cobre a sessão de NY com e sem hora de verão)."""
+    return agora.day_of_week < 5 and "13:25" <= agora.strftime("%H:%M") <= "21:05"
+
+
+def vigiar_posicoes(estado: dict, agora: pd.Timestamp) -> bool:
+    """De 2 em 2 min com a bolsa aberta: preço de agora (Nasdaq, Yahoo de reserva) das ações em carteira
+    de todos e aviso de stop/objetivo a quem as tem, uma vez só. Devolve True se avisou alguém."""
+    tickers = sorted({t for u in carteira.ativos(estado).values() for t in u["posicoes"]})
+    if not tickers:
+        return False
+    vivos = precos_agora.agora(tickers)
+    for t, q in vivos.items():
+        VIVOS[t] = (q["preco"], time.time())
+    hora = agora.strftime("%Y-%m-%dT%H:%MZ")
+    dados = cotacoes.juntar_agora(cotacoes.ler(COTACOES), {t: q["preco"] for t, q in vivos.items()},
+                                  agora.strftime("%Y-%m-%d"), hora)
+    avisados = set(estado.get("saidas_avisadas", []))
+    msgs = bot.mensagens_saidas(estado, dados, avisados)
+    for chat, texto, botoes in msgs:
+        telegram.enviar(texto, chat, botoes)
+    if msgs:
+        estado["saidas_avisadas"] = sorted(avisados)[-500:]
+    log.info("Vigia de 2 em 2 min: %d preços de %d ações, %d avisos", len(vivos), len(tickers), len(msgs))
+    return bool(msgs)
 
 
 def git(*args: str) -> bool:
@@ -126,6 +158,7 @@ def main(minutos: float) -> None:
         {"command": "carteira", "description": "Ver a carteira"},
         {"command": "ajuda", "description": "Como usar"}]))
     hist, ultimo_pull, ultima_vigia, ultimo_aviso_sinais = acompanhamento.carregar(HIST), 0.0, 0.0, 0.0
+    ultima_vigia_precos = 0.0
     fim = time.time() + minutos * 60
     while time.time() < fim:
         upds = telegram.api("getUpdates", espera=60, timeout=40, offset=estado["offset"],
@@ -157,6 +190,12 @@ def main(minutos: float) -> None:
             estado["resumo_semanal"] = hoje
             executar(bot.resumos_semanais(estado, hoje))
             mudou = True
+        if bolsa_eua_aberta(agora) and time.time() - ultima_vigia_precos > cfg.get("vigia_precos_seg", 120):
+            ultima_vigia_precos = time.time()
+            try:
+                mudou |= vigiar_posicoes(estado, agora)
+            except Exception:  # noqa: BLE001  a vigia nunca pode parar o bot
+                log.exception("Vigia dos preços falhou")
         if mudou:
             guardar_e_enviar(estado, k, com_git)
         if com_git and time.time() - ultima_vigia > 600:
