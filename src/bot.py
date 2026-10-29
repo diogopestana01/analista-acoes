@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 import secrets
 
 import copy
@@ -121,14 +122,12 @@ TECLADO_MENU, TECLADO_DONO = _teclado_menu(MENU), _teclado_menu(MENU_DONO)
 # ---------- botões ----------
 
 def botoes_sinal(ticker: str, data: str) -> list:
-    return [[("✅ Comprei", f"c|{ticker}|{data}"), ("✏️ Outro preço", f"o|{ticker}|{data}"),
-             ("❌ Ignorar", f"i|{ticker}|{data}")],
+    return [[("✅ Comprei", f"c|{ticker}|{data}"), ("❌ Ignorar", f"i|{ticker}|{data}")],
             [("ℹ️ Porquê este sinal?", f"q|{ticker}|{data}")]]
 
 
 def botoes_venda(ticker: str, preco: float) -> list:
-    return [[(f"✅ Vendi a {cart.fmt(preco)}", f"v|{ticker}|{preco:.4f}")],
-            [("✏️ Outro preço ou parte", f"w|{ticker}"), ("🔒 Mantenho", f"m|{ticker}")]]
+    return [[(f"✅ Vendi (~{cart.fmt(preco)})", f"v|{ticker}|{preco:.4f}"), ("🔒 Mantenho", f"m|{ticker}")]]
 
 
 def _msg(chat, texto: str, botoes: list | None = None, menu: bool = False) -> tuple[str, dict]:
@@ -344,6 +343,26 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
             u["aguarda"] = None
             return [_menu(chat, u, texto, hist, hoje)]
         a = u.get("aguarda") or {}
+        if a.get("tipo") == "talao" and not cmd.startswith("/") and u.get("talao"):
+            v = cart.numero(partes[0])
+            if v < 0 or (a["campo"] == "p" and v == 0):
+                raise ValueError(v)
+            u["aguarda"] = None
+            b = u["talao"]
+            b["preco" if a["campo"] == "p" else "qtd"] = round(v, 4)
+            antigo = b.get("msg")
+            b["msg"] = None
+            return ([("editMessageReplyMarkup", {"chat_id": chat, "message_id": antigo,
+                                                 "reply_markup": json.dumps({"inline_keyboard": []})})] if antigo else []) \
+                + [msg_talao(chat, u)]
+        if a.get("tipo") == "ticker" and not cmd.startswith("/"):
+            t = partes[0].upper()
+            sinal = _sinal(hist, t)
+            data = sinal["data"] if sinal and sinal["estado"] == "aberto" else None
+            preco = _cotacoes([t]).get(t) or (sinal["entrada"] if data else None)
+            if preco:
+                u["aguarda"] = None
+                return [_abrir_compra(chat, u, t, preco, data)]
         if a.get("op") == "capital_inicio" and not cmd.startswith("/"):
             v = cart.numero(partes[0])
             if v <= 0:
@@ -498,7 +517,15 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
     if acao == "q":
         return out + [_msg(chat, porque(hist, ticker, partes[2]))]
     if acao == "s":
-        return out + [_tirar_botoes(cq), _msg(chat, _trocar(u, ticker, partes[2], partes[3], hist, hoje), menu=True)]
+        vende, compra, data = ticker, partes[2], partes[3]
+        if vende not in u["posicoes"]:
+            return out + [_msg(chat, f"Já não tens {vende} na carteira; se ainda quiseres {compra}, usa 🟢 Comprei.")]
+        if compra in u["posicoes"]:
+            return out + [_msg(chat, f"Já tens {compra} na carteira.")]
+        p = u["posicoes"][vende]
+        abrir_talao(u, "venda", vende, _cotacoes([vende]).get(vende) or p["preco"], p["qtd"],
+                    troca={"compra": compra, "data": data})
+        return out + [_tirar_botoes(cq), msg_talao(chat, u)]
     if acao == "n":
         u["decisoes"].setdefault(cart.chave_sinal(ticker, partes[2]), "ignorei")
         return out + [_tirar_botoes(cq), _msg(chat, "🔒 Mantive a carteira como está.")]
@@ -537,30 +564,24 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         if acao == "i":
             u["decisoes"][chave] = "ignorei"
             return out + [_tirar_botoes(cq), _msg(chat, f"❌ {ticker} ignorado.")]
-        if acao == "o":
-            u["aguarda"] = {"tipo": "compra", "ticker": ticker, "data": data}
-            return out + [_msg(chat, f"✏️ {ticker}: escreve o preço a que compraste e, se quiseres, a quantidade.\n"
-                                     f"Ex.: <code>51,20</code> ou <code>51,20 0,4</code>")]
         sinal = _sinal(hist, ticker, data)
         if not sinal:
             return out + [_msg(chat, f"Ainda não tenho o sinal de {ticker}. Tenta outra vez daqui a 1 minuto.")]
         preco = (u.get("precos_mostrados") or {}).get(chave, sinal["entrada"])
-        t = cart.tamanho(u, ticker, preco)
-        if t["motivo"]:
-            return out + [_msg(chat, cart.linha_tamanho(u, t) + "\nSe compraste na mesma, usa ✏️ Outro preço com a quantidade.")]
-        return out + [_tirar_botoes(cq), _msg(chat, cart.comprar(u, ticker, t["qtd"], preco, hoje, sinal))]
+        return out + [_abrir_compra(chat, u, ticker, preco, data)]
+    if acao == "b":
+        return out + _callback_talao(chat, u, cq, partes, hist, hoje)
     if ticker not in u["posicoes"]:
         return out + [_tirar_botoes(cq), _msg(chat, f"Já não tens {ticker} na carteira.")]
-    if acao == "v":
-        return out + [_tirar_botoes(cq), _msg(chat, cart.vender(u, ticker, None, cart.numero(partes[2]), hoje))]
-    if acao == "w":
-        u["aguarda"] = {"tipo": "venda", "ticker": ticker}
-        return out + [_msg(chat, f"✏️ {ticker}: escreve o preço de venda e, se foi só uma parte, a quantidade.\n"
-                                 f"Ex.: <code>53,10</code> ou <code>53,10 0,2</code>")]
+    if acao in ("v", "w"):
+        p = u["posicoes"][ticker]
+        preco = cart.numero(partes[2]) if acao == "v" else (_cotacoes([ticker]).get(ticker) or p["preco"])
+        abrir_talao(u, "venda", ticker, preco, p["qtd"])
+        return out + [msg_talao(chat, u)]
     if acao == "m":
         u["posicoes"][ticker]["acompanhar"] = False
-        return out + [_tirar_botoes(cq), _msg(chat, f"🔒 Mantens {ticker}. Deixo de avisar; quando venderes usa "
-                                                    f"/vendi {ticker} tudo preço.")]
+        return out + [_tirar_botoes(cq), _msg(chat, f"🔒 Mantens {ticker}. Deixo de avisar; quando venderes, "
+                                                    f"carrega em 🔴 Vendi no menu.")]
     return out
 
 
@@ -704,26 +725,146 @@ def proposta_troca(u: dict, s: dict, hist: pd.DataFrame | None, hoje: str) -> tu
                    [("ℹ️ Porquê este sinal?", f"q|{s['ticker']}|{s['data_sinal']}")]]
 
 
-def _trocar(u: dict, vende: str, compra: str, data: str, hist: pd.DataFrame, hoje: str) -> str:
-    if vende not in u["posicoes"]:
-        return f"Já não tens {vende} na carteira; se ainda quiseres {compra}, usa 🟢 Comprei."
-    if compra in u["posicoes"]:
-        return f"Já tens {compra} na carteira."
-    sinal = _sinal(hist, compra, data)
-    px = _cotacoes([vende, compra])
-    preco_venda = px.get(vende) or u["posicoes"][vende]["preco"]
-    preco_compra = px.get(compra) or (sinal or {}).get("entrada")
-    if not preco_compra:
-        return f"Não tenho o preço de {compra}. Regista com 🔴 Vendi e 🟢 Comprei."
-    txt_venda = cart.vender(u, vende, None, preco_venda, hoje)
-    anterior = u["anterior"]
-    t = cart.tamanho(u, compra, preco_compra)
-    if t["motivo"]:
-        return txt_venda + "\n" + cart.linha_tamanho(u, t)
-    txt_compra = cart.comprar(u, compra, t["qtd"], preco_compra, hoje, sinal)
-    u["anterior"] = anterior  # ↩️ Desfazer anula a troca inteira
-    return (f"🔁 Troca registada.\n{txt_venda}\n{txt_compra}\n"
-            f"Se os preços na XTB foram outros, carrega em ↩️ Desfazer e regista com 🔴 Vendi e 🟢 Comprei.")
+# ---------- talão: confirmar preço e quantidade com setas ----------
+
+def _passos_preco(p: float) -> tuple[float, float]:
+    return (0.01, 0.10) if p < 20 else (0.05, 0.50) if p < 200 else (0.10, 1.00)
+
+
+def _passos_qtd(q: float) -> tuple[float, float]:
+    return (0.001, 0.01) if q < 1 else (0.01, 0.1) if q < 10 else (0.1, 1.0)
+
+
+def abrir_talao(u: dict, tipo: str, ticker: str, preco: float, qtd: float, data: str | None = None,
+                troca: dict | None = None) -> dict:
+    """Talão por confirmar: o preço e a quantidade sugeridos, para acertar com o que saiu na corretora."""
+    u["aguarda"] = None
+    u["talao"] = {"tipo": tipo, "ticker": ticker, "preco": round(float(preco), 4), "qtd": round(float(qtd), 4),
+                  "data": data, "troca": troca, "msg": None,
+                  "pp": _passos_preco(float(preco)), "pq": _passos_qtd(float(qtd) or 1.0)}
+    return u["talao"]
+
+
+def _abrir_compra(chat: str, u: dict, ticker: str, preco: float, data: str | None,
+                  troca: dict | None = None) -> tuple[str, dict]:
+    t = cart.tamanho(u, ticker, preco)
+    qtd = t["qtd"] if not t["motivo"] else math.floor(
+        cart.valor_total(u) * u["regras"]["pct"] / 100 / preco * 1e4) / 1e4
+    abrir_talao(u, "compra", ticker, preco, qtd, data, troca)
+    return msg_talao(chat, u)
+
+
+def texto_talao(u: dict) -> str:
+    b, moeda = u["talao"], u["regras"]["moeda"]
+    t, preco, qtd = b["ticker"], b["preco"], b["qtd"]
+    total = preco * qtd
+    titulo = ("🟢 Compra" if b["tipo"] == "compra" else "🔴 Venda") + f" de <b>{t}</b>"
+    if b["troca"]:
+        titulo += f" (troca, passo {1 if b['tipo'] == 'venda' else 2} de 2)"
+    linhas = [f"🧾 {titulo}", "",
+              f"💲 Preço: <b>{cart.fmt(preco)}</b>",
+              f"📦 Quantidade: <b>{cart.fmt_qtd(qtd)}</b>",
+              f"💵 Valor: <b>{cart.fmt(total)} {moeda}</b>  (preço × quantidade)"]
+    pct = u["regras"]["custo_pct"]
+    taxa = total * pct / 100
+    linhas.append(f"🏦 Taxas: {cart.fmt(taxa)} {moeda}"
+                  + ("  (XTB: 0% até 100 mil €/mês, conta USD sem câmbio)" if pct == 0 else f"  ({cart.fmt(pct)}%)"))
+    if b["tipo"] == "compra":
+        linhas.append(f"Pagas: <b>{cart.fmt(total + taxa)} {moeda}</b>")
+        livre = u["caixa"] - total - taxa
+        linhas.append(f"Livre depois: {cart.fmt(livre)} {moeda}" + (" ⚠️ mais do que tens livre" if livre < -1e-6 else ""))
+    else:
+        p = u["posicoes"].get(t)
+        if p:
+            linhas.append(f"Recebes: <b>{cart.fmt(total - taxa)} {moeda}</b>")
+            lucro = qtd * (preco - p["preco"]) - taxa
+            linhas.append(f"Resultado: <b>{cart.sinal_fmt(lucro)} {moeda}</b> "
+                          f"({cart.sinal_fmt((preco / p['preco'] - 1) * 100, 1)}%) · tens {cart.fmt_qtd(p['qtd'])}"
+                          + (" ⚠️ mais do que tens" if qtd > p["qtd"] + 1e-9 else ""))
+    linhas.append("\nAcerta com as setas até ficar igual ao que a XTB mostra e carrega em ✅ Confirmar.")
+    return "\n".join(linhas)
+
+
+def botoes_talao(b: dict) -> list:
+    (sp, bp), (sq, bq) = b["pp"], b["pq"]
+    qf = cart.fmt_qtd
+    linhas = [[(f"💲 ⬇ {cart.fmt(bp)}", "b|p|-2"), (f"💲 ↓ {cart.fmt(sp)}", "b|p|-1"),
+               (f"💲 ↑ {cart.fmt(sp)}", "b|p|1"), (f"💲 ⬆ {cart.fmt(bp)}", "b|p|2")],
+              [(f"📦 ⬇ {qf(bq)}", "b|q|-2"), (f"📦 ↓ {qf(sq)}", "b|q|-1"),
+               (f"📦 ↑ {qf(sq)}", "b|q|1"), (f"📦 ⬆ {qf(bq)}", "b|q|2")],
+              [("✏️ Escrever preço", "b|e|p"), ("✏️ Escrever quantidade", "b|e|q")]]
+    if b["tipo"] == "venda":
+        linhas.append([("📦 Vendi tudo", "b|t")])
+    linhas.append([("✅ Confirmar", "b|ok"), ("❌ Cancelar", "b|x")])
+    return linhas
+
+
+def msg_talao(chat: str, u: dict) -> tuple[str, dict]:
+    return _msg(chat, texto_talao(u), botoes_talao(u["talao"]))
+
+
+def _editar(cq: dict, texto: str, botoes: list | None) -> tuple[str, dict]:
+    m = cq.get("message", {})
+    return "editMessageText", {"chat_id": str(m.get("chat", {}).get("id", "")), "message_id": m.get("message_id"),
+                               "text": texto, "parse_mode": "HTML",
+                               "reply_markup": telegram.teclado(botoes) if botoes else json.dumps({"inline_keyboard": []})}
+
+
+def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str) -> list:
+    b = u.get("talao")
+    if not b:
+        return [_tirar_botoes(cq), _msg(chat, "Este talão já foi fechado.")]
+    b["msg"] = cq.get("message", {}).get("message_id")
+    op = partes[1] if len(partes) > 1 else ""
+    if op in ("p", "q"):
+        k = int(partes[2])
+        passo = (b["pp"] if op == "p" else b["pq"])[abs(k) - 1] * (1 if k > 0 else -1)
+        campo = "preco" if op == "p" else "qtd"
+        b[campo] = round(max(b[campo] + passo, 0.01 if op == "p" else 0.0), 4)
+        return [_editar(cq, texto_talao(u), botoes_talao(b))]
+    if op == "t" and b["ticker"] in u["posicoes"]:
+        b["qtd"] = u["posicoes"][b["ticker"]]["qtd"]
+        return [_editar(cq, texto_talao(u), botoes_talao(b))]
+    if op == "e":
+        u["aguarda"] = {"tipo": "talao", "campo": partes[2]}
+        return [_msg(chat, "✏️ Escreve o " + ("preço (ex. <code>51,20</code>)" if partes[2] == "p"
+                                               else "número de ações (ex. <code>0,4</code>)") + ".")]
+    if op == "x":
+        u["talao"] = None
+        txt = "❌ Cancelado, não registei nada."
+        if b["troca"] and b["tipo"] == "compra":
+            txt = f"❌ A compra de {b['ticker']} ficou por registar; a venda já está registada."
+        return [_editar(cq, txt, None)]
+    if op != "ok":
+        return []
+    t, preco, qtd = b["ticker"], b["preco"], b["qtd"]
+    if qtd <= 0:
+        return [_msg(chat, "A quantidade tem de ser maior que zero.")]
+    if b["tipo"] == "venda":
+        if t not in u["posicoes"]:
+            u["talao"] = None
+            return [_editar(cq, f"Já não tens {t} na carteira.", None)]
+        txt = cart.vender(u, t, qtd, preco, hoje)
+        u["talao"] = None
+        if not b["troca"]:
+            return [_editar(cq, txt, None)]
+        # troca: a seguir, o talão da compra (o ↩️ Desfazer anula as duas)
+        compra, data = b["troca"]["compra"], b["troca"]["data"]
+        sinal = _sinal(hist, compra, data)
+        px = _cotacoes([compra]).get(compra) or (sinal or {}).get("entrada")
+        if not px:
+            return [_editar(cq, txt + f"\nNão tenho o preço de {compra}; regista a compra com 🟢 Comprei.", None)]
+        return [_editar(cq, txt, None),
+                _abrir_compra(chat, u, compra, px, data, troca={"anterior": u["anterior"], "venda": txt})]
+    sinal = _sinal(hist, t, b["data"]) if b["data"] else None
+    txt = cart.comprar(u, t, qtd, preco, hoje, sinal)
+    if t not in u["posicoes"]:  # não registou (ex. sem dinheiro livre): o talão fica aberto
+        return [_msg(chat, txt + "\nAcerta a quantidade no talão e confirma outra vez.")]
+    u["talao"] = None
+    if b["troca"]:
+        u["anterior"] = b["troca"]["anterior"]
+        txt = f"🔁 Troca registada.\n{b['troca']['venda']}\n{txt}"
+    return [_editar(cq, txt, None)]
 
 
 def _num(x) -> float | None:

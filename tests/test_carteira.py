@@ -56,25 +56,50 @@ def test_tamanho_20_por_cento_e_sem_capital():
     assert cart.tamanho(u, "X", 10.0, reservado=100.0, ocupadas=5)["motivo"] == "max_posicoes"
 
 
-def test_botao_comprei_regista_ao_preco_do_sinal_e_tira_botoes():
+def _edicoes(chamadas):
+    return [p["text"] for m, p in chamadas if m == "editMessageText"]
+
+
+def test_botao_comprei_abre_talao_e_regista_ao_confirmar():
     e = _estado()
     out = bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
     u = e["utilizadores"][DONO]
+    assert not u["posicoes"]  # ainda só o talão
+    talao = _textos(out)[0]
+    assert "Compra de <b>GMAB</b>" in talao and "Preço: <b>50,00</b>" in talao and "Quantidade: <b>0,4</b>" in talao
+    assert "b|p|1" in out[1][1]["reply_markup"] and "b|ok" in out[1][1]["reply_markup"]
+    out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(0.4) and u["caixa"] == pytest.approx(80.0)
-    assert any(m == "editMessageReplyMarkup" for m, _ in out)
-    assert "stop a 47,00" in _textos(out)[0]
+    assert "stop a 47,00" in _edicoes(out)[0]
     # Carregar outra vez não compra duas vezes.
     bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
     assert u["caixa"] == pytest.approx(80.0)
 
 
-def test_outro_preco_e_aviso_de_ja_ter_fugido():
+def test_talao_ajusta_preco_e_quantidade_com_setas_e_a_escrever():
     e = _estado()
-    bot.processar(e, _cb(DONO, f"o|GMAB|{HOJE}"), HIST, HOJE, CFG)
-    out = bot.processar(e, _txt(DONO, "54,00 0,3"), HIST, HOJE, CFG)
     u = e["utilizadores"][DONO]
+    bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    out = bot.processar(e, _cb(DONO, "b|p|2"), HIST, HOJE, CFG)  # +0,50
+    assert "Preço: <b>50,50</b>" in _edicoes(out)[0]
+    bot.processar(e, _cb(DONO, "b|p|-1"), HIST, HOJE, CFG)  # -0,05
+    out = bot.processar(e, _cb(DONO, "b|q|-2"), HIST, HOJE, CFG)  # -0,01
+    # O valor acompanha cada seta: 50,45 x 0,39 = 19,68.
+    assert "Valor: <b>19,68 USD</b>" in _edicoes(out)[0] and "Pagas: <b>19,68 USD</b>" in _edicoes(out)[0]
+    assert u["talao"]["preco"] == pytest.approx(50.45) and u["talao"]["qtd"] == pytest.approx(0.39)
+    # Escrever à mão também serve.
+    bot.processar(e, _cb(DONO, "b|e|p"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt(DONO, "54"), HIST, HOJE, CFG)
+    assert out[0][0] == "editMessageReplyMarkup" and "Preço: <b>54,00</b>" in _textos(out)[0]
+    bot.processar(e, _cb(DONO, "b|e|q"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "0,3"), HIST, HOJE, CFG)
+    out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["preco"] == 54.0 and u["posicoes"]["GMAB"]["qtd"] == 0.3
-    assert "acima do preço do sinal" in _textos(out)[0] and u["aguarda"] is None
+    assert "acima do preço do sinal" in _edicoes(out)[0] and u["aguarda"] is None and u["talao"] is None
+    # Cancelar não regista nada.
+    bot.processar(e, _cb(DONO, "v|GMAB|55.0000"), HIST, HOJE, CFG)
+    out = bot.processar(e, _cb(DONO, "b|x"), HIST, HOJE, CFG)
+    assert "Cancelado" in _edicoes(out)[0] and "GMAB" in u["posicoes"]
 
 
 def test_venda_parcial_total_e_desfazer():
@@ -86,8 +111,10 @@ def test_venda_parcial_total_e_desfazer():
     bot.processar(e, _txt(DONO, "/desfazer"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["qtd"] == pytest.approx(0.4)
     out = bot.processar(e, _cb(DONO, "v|GMAB|55.0000"), HIST, HOJE, CFG)
+    assert "Venda de <b>GMAB</b>" in _textos(out)[0] and "Resultado: <b>+2,00 USD</b>" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert "GMAB" not in u["posicoes"] and u["caixa"] == pytest.approx(102.0)
-    assert "+2,00 USD (+10,0%)" in _textos(out)[0]
+    assert "+2,00 USD (+10,0%)" in _edicoes(out)[0]
     assert cart.realizado(u) == (pytest.approx(2.0), 1, 1)
 
 
@@ -172,13 +199,17 @@ def test_menu_de_botoes_guia_compra_venda_deposito_e_regras():
     assert "keyboard" in out[0][1]["reply_markup"] and "Carteira" in out[0][1]["reply_markup"]
     bot.processar(e, _txt(DONO, "🟢 Comprei"), HIST, HOJE, CFG)
     out = bot.processar(e, _txt(DONO, "gmab"), HIST, HOJE, CFG)
-    assert "GMAB" in _textos(out)[0] and u["aguarda"]["data"] == HOJE
-    bot.processar(e, _txt(DONO, "50 0,2"), HIST, HOJE, CFG)
+    assert "Compra de <b>GMAB</b>" in _textos(out)[0] and u["talao"]["data"] == HOJE
+    bot.processar(e, _cb(DONO, "b|e|q"), HIST, HOJE, CFG)
+    bot.processar(e, _txt(DONO, "0,2"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert u["posicoes"]["GMAB"]["qtd"] == 0.2 and u["posicoes"]["GMAB"]["stop"] == 47.0
     out = bot.processar(e, _txt(DONO, "🔴 Vendi"), HIST, HOJE, CFG)
     assert "w|GMAB" in out[0][1]["reply_markup"]
     bot.processar(e, _cb(DONO, "w|GMAB"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "b|e|p"), HIST, HOJE, CFG)
     bot.processar(e, _txt(DONO, "55"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
     assert "GMAB" not in u["posicoes"]
     bot.processar(e, _txt(DONO, "💵 Depositar"), HIST, HOJE, CFG)
     bot.processar(e, _txt(DONO, "50"), HIST, HOJE, CFG)
@@ -280,6 +311,7 @@ def test_sinais_em_aberto_ao_preco_de_agora(monkeypatch):
     assert len(textos) == 2 and "COMPRAR BOM" in textos[1] and "51,00" in textos[1]  # só o BOM, ao preço atual
     # O botão Comprei regista ao preço mostrado (51), não ao do sinal (50).
     bot.processar(e, _cb(DONO, "c|BOM|2026-10-27"), hist, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "b|ok"), hist, HOJE, CFG)
     assert u["posicoes"]["BOM"]["preco"] == 51.0 and u["posicoes"]["BOM"]["stop"] == 47.0
 
 
@@ -350,7 +382,11 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     assert "Vender <b>VELHA</b>" in texto and "Força 11" in texto and "COMPRAR NOVA" in texto
     assert botoes[0][0][1] == f"s|VELHA|NOVA|{HOJE}"
     out = bot.processar(e, _cb(DONO, f"s|VELHA|NOVA|{HOJE}"), hist, HOJE, CFG)
-    assert "Troca registada" in _textos(out)[0]
+    assert "Venda de <b>VELHA</b> (troca, passo 1 de 2)" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "b|ok"), hist, HOJE, CFG)
+    assert "VELHA" not in u["posicoes"] and "Compra de <b>NOVA</b> (troca, passo 2 de 2)" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "b|ok"), hist, HOJE, CFG)
+    assert "Troca registada" in _edicoes(out)[0]
     assert "VELHA" not in u["posicoes"] and u["posicoes"]["NOVA"]["preco"] == 20.0
     assert u["posicoes"]["NOVA"]["stop"] == 19.0
     # Desfazer anula a troca inteira.
