@@ -105,12 +105,15 @@ def api(metodo: str, espera: int = 30, **dados) -> dict | None:
     return r.json().get("result")
 
 
-def enviar(texto: str, chat_id: str | int | None = None, botoes: list | None = None) -> bool:
+def enviar(texto: str, chat_id: str | int | None = None, botoes: list | None = None,
+           silencioso: bool = False) -> bool:
     token, chat = os.environ.get("TELEGRAM_TOKEN"), chat_id or os.environ.get("TELEGRAM_CHAT_ID")
     if not token or not chat:
         print(texto, "\n")
         return False
     dados = {"chat_id": chat, "text": texto, "parse_mode": "HTML", "disable_web_page_preview": "true"}
+    if silencioso:
+        dados["disable_notification"] = "true"
     if botoes:
         dados["reply_markup"] = teclado(botoes)
     r = requests.post(API.format(token=token), timeout=30, data=dados)

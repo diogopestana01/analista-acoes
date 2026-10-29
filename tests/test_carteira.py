@@ -531,3 +531,46 @@ def test_resumo_semanal_so_para_quem_mexeu_na_carteira(monkeypatch):
     t = out[0][1]["text"]
     assert "A tua semana</b> (26/10 a hoje)" in t and "Compraste: AAA, CCC" in t
     assert "Vendeste: AAA → <b>+2,00 USD</b> (1 de 1 a ganhar)" in t and "CCC -10,0%" in t
+
+
+def test_preferencias_de_avisos_filtram_os_sinais_de_cada_pessoa():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.definir_posicoes(u, 2)
+    base = {"data_sinal": HOJE, "setup": "rompimento", "direcao": "compra", "objetivo": 22.0, "stop": 19.0,
+            "dias_estimados": 3, "saida": "atr_3_15", "entrada": 20.0}
+    novos = [{**base, "ticker": t, "pontuacao": p} for t, p in [("FRACO", 55.0), ("FORTE", 92.0), ("MEDIO", 70.0),
+                                                                 ("OUTRO", 65.0)]]
+    out = bot.processar(e, _cb(DONO, "g|ver"), HIST, HOJE, CFG)
+    assert "Som nos sinais: <b>ligado</b>" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "g|som"), HIST, HOJE, CFG)
+    assert "Som nos sinais: <b>desligado</b>" in _edicoes(out)[0] and bot.sem_som(e, DONO)
+    bot.processar(e, _cb(DONO, "g|conf"), HIST, HOJE, CFG)  # qualquer -> 60
+    assert u["avisos"]["conf_min"] == 60
+    textos = [m[1] for m in bot.mensagens_sinais(e, novos, "cab", DONO)]
+    assert not any("FRACO" in t for t in textos)  # 55 < 60: não chega
+    assert "Ficaram de fora 1" in textos[-1] and "OUTRO" in textos[-1]
+    bot.processar(e, _cb(DONO, "g|fora"), HIST, HOJE, CFG)
+    textos = [m[1] for m in bot.mensagens_sinais(e, novos, "cab", DONO)]
+    assert len(textos) == 3 and not any("Ficaram de fora" in t for t in textos)
+    # Carteira cheia e "não mostrar": nenhuma mensagem.
+    bot.definir_posicoes(u, 1)
+    cart.comprar(u, "AAA", 1, 10.0, HOJE)
+    assert bot.mensagens_sinais(e, novos, "cab", DONO) == []
+
+
+def test_sugestao_chega_ao_dono_e_painel_mostra_o_uso():
+    e = _estado()
+    e["utilizadores"]["222"] = cart.novo_utilizador("Rui", CFG["regras_base"], "ativo", HOJE)
+    r = e["utilizadores"]["222"]
+    r["decisoes"] = {"A|1": "comprei", "B|1": "ignorei", "C|1": "comprei"}
+    cart.comprar(r, "AAA", 1, 10.0, HOJE)
+    cart.vender(r, "AAA", None, 12.0, HOJE)
+    bot.processar(e, _cb("222", "y|"), HIST, HOJE, CFG)
+    out = bot.processar(e, _txt("222", "O botão X não funciona & mais"), HIST, HOJE, CFG)
+    assert "Obrigado" in _textos(out)[0]
+    assert out[1][1]["chat_id"] == DONO and "Sugestão de Rui" in out[1][1]["text"]
+    assert "não funciona &amp; mais" in out[1][1]["text"]
+    texto = _textos(bot.processar(e, _txt(DONO, "👥 Pessoas"), HIST, HOJE, CFG))[0]
+    assert "<b>Rui</b>" in texto and "1 vendas (+2,00 USD, 1 a ganhar) · seguiu 2 de 3 sinais" in texto
+    assert "última vez 28/10" in texto

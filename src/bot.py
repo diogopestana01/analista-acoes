@@ -37,7 +37,7 @@ Usa o menu de botões em baixo:
 📊 Resultados: quanto ganhaste, % de vendas a ganhar e as últimas vendas
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
-⚙️ Regras: capital e número de posições
+⚙️ Regras: capital, número de posições e 🔔 avisos (som, confiança mínima)
 ↩️ Desfazer: anula a última operação
 🔄 Recomeçar: põe a carteira a zero e volta a perguntar o capital e as posições
 
@@ -72,7 +72,8 @@ Investe só dinheiro que podes perder. O bot não mexe no teu dinheiro: decides 
 
 def botoes_ajuda() -> list:
     temas = [(titulo, f"h|{k}") for k, (titulo, _) in TEMAS.items()]
-    return [temas[:2], temas[2:], [("📖 Visita guiada (1 min)", "t|1|a")]]
+    return [temas[:2], temas[2:], [("📖 Visita guiada (1 min)", "t|1|a")],
+            [("💬 Enviar sugestão ou erro", "y|")]]
 
 
 # Visita guiada: 3 ecrãs curtos para quem chega (ou carrega na Ajuda).
@@ -283,8 +284,15 @@ def _pessoas(estado: dict) -> tuple[str, dict]:
     linhas, botoes = ["👥 <b>Pessoas no bot</b>"], []
     for c, x in sorted(estado["utilizadores"].items(), key=lambda kv: (kv[1]["estado"] != "pendente", kv[1]["nome"])):
         extra = " (tu)" if c == estado.get("dono") else (" · convidado" if x.get("convidado") else "")
-        pos = f" · {len(x['posicoes'])} posições" if x["estado"] == "ativo" else ""
-        linhas.append(f"{nomes.get(x['estado'], '?')} {x['nome']}{extra}{pos} · desde {x.get('desde') or '?'}")
+        uso = ""
+        if x["estado"] == "ativo":
+            lucro, n, g = cart.realizado(x)
+            dec = list(x.get("decisoes", {}).values())
+            uso = (f"\n      {len(x['posicoes'])} posições · {n} vendas"
+                   + (f" ({cart.sinal_fmt(lucro)} {x['regras']['moeda']}, {g} a ganhar)" if n else "")
+                   + f" · seguiu {dec.count('comprei')} de {len(dec)} sinais"
+                   + (f" · última vez {cart._dm(x['visto'])}" if x.get("visto") else ""))
+        linhas.append(f"{nomes.get(x['estado'], '?')} <b>{x['nome']}</b>{extra} · desde {x.get('desde') or '?'}{uso}")
         if x["estado"] in ("pendente", "recusado"):
             botoes.append([(f"✅ Aceitar {x['nome'][:20]}", f"a|{c}")]
                           + ([(f"❌ Recusar", f"r|{c}")] if x["estado"] == "pendente" else []))
@@ -330,6 +338,7 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
     u = estado["utilizadores"].get(chat)
     if not u or u["estado"] != "ativo":
         return [_msg(chat, _sem_acesso(u))]
+    u["visto"] = hoje
     try:
         if texto == PESSOAS and chat == estado.get("dono"):
             u["aguarda"] = None
@@ -346,6 +355,13 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
             u["aguarda"] = None
             return [_menu(chat, u, texto, hist, hoje)]
         a = u.get("aguarda") or {}
+        if a.get("tipo") == "sugestao" and not cmd.startswith("/"):
+            u["aguarda"] = None
+            dono = estado.get("dono")
+            out = [_msg(chat, "🙏 Obrigado! Já está entregue.", menu=True)]
+            if dono and dono != chat:
+                out.append(_msg(dono, f"💬 <b>Sugestão de {html.escape(u['nome'])}</b>:\n{html.escape(texto)}"))
+            return out
         if a.get("tipo") == "talao" and not cmd.startswith("/") and u.get("talao"):
             v = cart.numero(partes[0])
             if v < 0 or (a["campo"] == "p" and v == 0):
@@ -414,7 +430,7 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
                       f"Menos posições = mais dinheiro em cada sinal e mais risco por trade; "
                       f"mais posições = risco mais espalhado, ordens mais pequenas. Escolhe para mudar:",
                 [[(f"{n} posições", f"x|{n}") for n in (3, 5, 8, 10)],
-                 [("💰 Mudar capital", "k|")]])
+                 [("💰 Mudar capital", "k|"), ("🔔 Avisos", "g|ver")]])
 
 
 def _resposta(u: dict, partes: list, hist, hoje: str) -> str:
@@ -519,6 +535,22 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, "👍 Qualquer dúvida, carrega em ❓ Ajuda.", menu=True)]
     if acao == "q":
         return out + [_msg(chat, porque(hist, ticker, partes[2]))]
+    if acao == "g":
+        a = avisos(u)
+        if ticker == "som":
+            a["som"] = not a["som"]
+        elif ticker == "conf":
+            a["conf_min"] = CONF_OPCOES[(CONF_OPCOES.index(a["conf_min"]) + 1) % len(CONF_OPCOES)] \
+                if a["conf_min"] in CONF_OPCOES else 0
+        elif ticker == "fora":
+            a["fora"] = not a["fora"]
+        u["avisos"] = a
+        txt, botoes = texto_avisos(u)
+        return out + [_msg(chat, txt, botoes) if ticker == "ver" else _editar(cq, txt, botoes)]
+    if acao == "y":
+        u["aguarda"] = {"tipo": "sugestao"}
+        return out + [_msg(chat, "💬 Escreve numa mensagem a tua sugestão ou o erro que encontraste. "
+                                 "Vai direta para quem gere o bot.")]
     if acao == "s":
         vende, compra, data = ticker, partes[2], partes[3]
         if vende not in u["posicoes"]:
@@ -625,9 +657,39 @@ def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
     return elegiveis[:livres], elegiveis[livres:], livres
 
 
+AVISOS_BASE = {"som": True, "conf_min": 0, "fora": True}
+CONF_OPCOES = [0, 60, 70, 80]
+
+
+def avisos(u: dict) -> dict:
+    return {**AVISOS_BASE, **(u.get("avisos") or {})}
+
+
+def sem_som(estado: dict | None, chat: str) -> bool:
+    """Sinais sem som para quem desligou o som (os avisos de venda tocam sempre)."""
+    u = (estado or {}).get("utilizadores", {}).get(str(chat))
+    return bool(u) and not avisos(u)["som"]
+
+
+def texto_avisos(u: dict) -> tuple[str, list]:
+    a = avisos(u)
+    txt = ("🔔 <b>Avisos</b>\n"
+           f"• Som nos sinais: <b>{'ligado' if a['som'] else 'desligado'}</b> (os avisos de venda tocam sempre)\n"
+           f"• Confiança mínima: <b>{a['conf_min'] or 'qualquer'}</b> (sinais abaixo disto não te chegam)\n"
+           f"• Sinais que não cabem na carteira: <b>{'mostrar numa linha' if a['fora'] else 'não mostrar'}</b>\n"
+           "Carrega para mudar:")
+    seguinte = CONF_OPCOES[(CONF_OPCOES.index(a["conf_min"]) + 1) % len(CONF_OPCOES)] if a["conf_min"] in CONF_OPCOES else 0
+    return txt, [[("🔕 Desligar som" if a["som"] else "🔔 Ligar som", "g|som")],
+                 [(f"⭐ Confiança mínima → {seguinte or 'qualquer'}", "g|conf")],
+                 [("🙈 Esconder os que não cabem" if a["fora"] else "👀 Mostrar os que não cabem", "g|fora")]]
+
+
 def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | None = None, hoje: str = "") -> list:
     """Cabeçalho + os melhores sinais (com botões) + uma linha com os que ficaram de fora.
-    Com a carteira cheia: propõe trocar a posição mais fraca pelo melhor sinal, se valer a pena."""
+    Com a carteira cheia: propõe trocar a posição mais fraca pelo melhor sinal, se valer a pena.
+    Respeita as preferências de avisos da pessoa (confiança mínima, mostrar os que não cabem)."""
+    pref = avisos(u)
+    sinais = [s for s in sinais if _confianca(s) >= pref["conf_min"]]
     top, resto, livres = escolher(u, sinais)
     if not top and not resto:
         return []
@@ -647,11 +709,11 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | Non
                     f"nenhum sinal novo rende o suficiente a mais para pagar o spread da troca.")
         else:
             txt += "\nNão proponho troca: as tuas posições ainda são recentes ou não vêm de um sinal."
-        return [(cabecalho + txt, None)]
+        return [(cabecalho + txt, None)] if pref["fora"] else []
     extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
              f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
     out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto))
-    if resto:
+    if resto and pref["fora"]:
         out.append((f"➖ Ficaram de fora {len(resto)} com menos confiança: {nomes}.", None))
     return out
 
