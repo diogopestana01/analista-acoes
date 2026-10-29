@@ -85,6 +85,23 @@ def vigiar_relogio(dono: str | None) -> None:
         log.warning("Vigia do Relógio falhou: %s", e)
 
 
+def sinais_parados(agora: pd.Timestamp, ultimo_commit: pd.Timestamp | None, minutos: int = 40) -> bool:
+    """Num dia útil entre as 08:00 e as 21:30 UTC, os sinais commitam de 10 em 10 min (cotacoes.json).
+    Mais de `minutos` sem commit "Sinais de ..." = o Relógio ou os sinais pararam."""
+    if agora.day_of_week >= 5 or not ("08:00" <= agora.strftime("%H:%M") <= "21:30"):
+        return False
+    return ultimo_commit is None or (agora - ultimo_commit).total_seconds() > minutos * 60
+
+
+def ultimo_commit_sinais() -> pd.Timestamp | None:
+    r = subprocess.run(["git", "log", "-1", "--grep=^Sinais de", "--format=%ct", "origin/main"],
+                       cwd=RAIZ, capture_output=True, text=True)
+    try:
+        return pd.Timestamp(int(r.stdout.strip()), unit="s", tz="UTC")
+    except ValueError:
+        return None
+
+
 def executar(chamadas: list) -> None:
     for metodo, params in chamadas:
         telegram.api(metodo, **params)
@@ -108,7 +125,7 @@ def main(minutos: float) -> None:
         {"command": "start", "description": "Mostrar o menu de botões"},
         {"command": "carteira", "description": "Ver a carteira"},
         {"command": "ajuda", "description": "Como usar"}]))
-    hist, ultimo_pull, ultima_vigia = acompanhamento.carregar(HIST), 0.0, 0.0
+    hist, ultimo_pull, ultima_vigia, ultimo_aviso_sinais = acompanhamento.carregar(HIST), 0.0, 0.0, 0.0
     fim = time.time() + minutos * 60
     while time.time() < fim:
         upds = telegram.api("getUpdates", espera=60, timeout=40, offset=estado["offset"],
@@ -144,7 +161,16 @@ def main(minutos: float) -> None:
             guardar_e_enviar(estado, k, com_git)
         if com_git and time.time() - ultima_vigia > 600:
             ultima_vigia = time.time()
-            vigiar_relogio(os.environ.get("TELEGRAM_CHAT_ID"))
+            dono = os.environ.get("TELEGRAM_CHAT_ID")
+            vigiar_relogio(dono)
+            # O contrário da vigia do Relógio: se os sinais deixarem de correr, o dono sabe (1 vez por hora).
+            ultimo = ultimo_commit_sinais()
+            if dono and sinais_parados(agora, ultimo) and time.time() - ultimo_aviso_sinais > 3600:
+                ultimo_aviso_sinais = time.time()
+                desde = f" desde as {ultimo:%H:%M} UTC" if ultimo is not None else ""
+                telegram.api("sendMessage", chat_id=dono,
+                             text=f"⚠️ Os sinais não correm{desde}. Vê o separador Actions do GitHub "
+                                  f"(workflows Relógio e Alertas do analista).")
         if upds is None:
             time.sleep(5)  # Telegram em baixo ou sem rede: não martelar
 

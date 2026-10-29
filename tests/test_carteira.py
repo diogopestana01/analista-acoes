@@ -17,7 +17,8 @@ def _hist(linhas):
     return pd.DataFrame([{**base, **l} for l in linhas])
 
 
-HIST = _hist([{"data_sinal": HOJE, "ticker": "GMAB", "entrada": 50.0, "objetivo": 56.0, "stop": 47.0},
+HIST = _hist([{"data_sinal": HOJE, "ticker": "GMAB", "entrada": 50.0, "objetivo": 56.0, "stop": 47.0,
+               "retorno_esperado": 0.012},
               {"data_sinal": HOJE, "ticker": "RAND.AS", "entrada": 40.0, "objetivo": 44.0, "stop": 38.0}])
 
 
@@ -280,12 +281,14 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
     cart.comprar(u, "AAA", 1, 10.0, HOJE)  # 1 de 3 ocupada -> 2 lugares livres
     base = {"data_sinal": HOJE, "setup": "rompimento", "direcao": "compra", "objetivo": 22.0, "stop": 19.0,
             "dias_estimados": 3, "saida": "atr_3_15", "entrada": 20.0}
-    novos = [{**base, "ticker": t, "pontuacao": p} for t, p in [("FRACO", 55.0), ("FORTE", 92.0), ("MEDIO", 70.0),
-                                                                 ("AAA", 99.0)]]
+    # Ordena pelo retorno esperado, não pela pontuação técnica (FRACO tem a pontuação mais alta).
+    novos = [{**base, "ticker": t, "pontuacao": p, "retorno_esperado_liquido": r}
+             for t, p, r in [("FRACO", 95.0, 0.004), ("FORTE", 60.0, 0.015), ("MEDIO", 70.0, 0.008),
+                             ("AAA", 99.0, 0.02)]]
     msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
     textos = [m[1] for m in msgs]
     assert "os 2 melhores" in textos[0] and "2 lugares livres" in textos[0]
-    assert "COMPRAR FORTE" in textos[1] and "Confiança 92/100 (n.º 1 de 3)" in textos[1]
+    assert "COMPRAR FORTE" in textos[1] and "Retorno esperado <b>+1,5%</b> · n.º 1 de 3" in textos[1]
     assert "COMPRAR MEDIO" in textos[2]
     assert "Ficaram de fora 1" in textos[3] and "FRACO" in textos[3] and msgs[3][2] is None
     # Carteira cheia e nenhum sinal claramente melhor: só um aviso, sem sinais.
@@ -354,7 +357,7 @@ def test_ajuda_por_temas_e_porque_do_sinal():
     out = bot.processar(e, _cb(DONO, "t|3|a"), HIST, HOJE, CFG)
     assert "t|fim|a" in out[-1][1]["reply_markup"]
     texto = _textos(bot.processar(e, _cb(DONO, f"q|GMAB|{HOJE}"), HIST, HOJE, CFG))[0]
-    assert "Porquê GMAB" in texto and "Confiança 70/100" in texto
+    assert "Porquê GMAB" in texto and "Retorno esperado +1,2%" in texto
 
 
 def test_nome_com_simbolos_nao_parte_o_html():
@@ -398,8 +401,9 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), hist, HOJE, CFG)
     assert "VELHA" in u["posicoes"] and "NOVA" not in u["posicoes"]
     # Sinal do mesmo setup: não rende mais do que a posição que já tem, não troca.
-    msgs = bot.mensagens_sinais(e, [{**nova, "setup": "rompimento", "pontuacao": 65.0}], "cab", DONO, hist, HOJE)
-    assert len(msgs) == 1 and "Não entraram: NOVA (65)" in msgs[0][1] and "ainda costuma dar +0,4%" in msgs[0][1]
+    msgs = bot.mensagens_sinais(e, [{**nova, "setup": "rompimento", "retorno_esperado_liquido": 0.006}], "cab",
+                                DONO, hist, HOJE)
+    assert len(msgs) == 1 and "Não entraram: NOVA (+0,6%)" in msgs[0][1] and "ainda costuma dar +0,4%" in msgs[0][1]
     # Posição comprada hoje: não se troca.
     u["posicoes"]["VELHA"]["data"] = HOJE
     msgs = bot.mensagens_sinais(e, [nova], "cab", DONO, hist, HOJE)
@@ -539,16 +543,16 @@ def test_preferencias_de_avisos_filtram_os_sinais_de_cada_pessoa():
     bot.definir_posicoes(u, 2)
     base = {"data_sinal": HOJE, "setup": "rompimento", "direcao": "compra", "objetivo": 22.0, "stop": 19.0,
             "dias_estimados": 3, "saida": "atr_3_15", "entrada": 20.0}
-    novos = [{**base, "ticker": t, "pontuacao": p} for t, p in [("FRACO", 55.0), ("FORTE", 92.0), ("MEDIO", 70.0),
-                                                                 ("OUTRO", 65.0)]]
+    novos = [{**base, "ticker": t, "retorno_esperado_liquido": r}
+             for t, r in [("FRACO", 0.003), ("FORTE", 0.02), ("MEDIO", 0.009), ("OUTRO", 0.006)]]
     out = bot.processar(e, _cb(DONO, "g|ver"), HIST, HOJE, CFG)
     assert "Som nos sinais: <b>ligado</b>" in _textos(out)[0]
     out = bot.processar(e, _cb(DONO, "g|som"), HIST, HOJE, CFG)
     assert "Som nos sinais: <b>desligado</b>" in _edicoes(out)[0] and bot.sem_som(e, DONO)
-    bot.processar(e, _cb(DONO, "g|conf"), HIST, HOJE, CFG)  # qualquer -> 60
-    assert u["avisos"]["conf_min"] == 60
+    out = bot.processar(e, _cb(DONO, "g|ret"), HIST, HOJE, CFG)  # qualquer -> +0,5%
+    assert u["avisos"]["ret_min"] == 0.005 and "Retorno esperado mínimo: <b>+0,5%</b>" in _edicoes(out)[0]
     textos = [m[1] for m in bot.mensagens_sinais(e, novos, "cab", DONO)]
-    assert not any("FRACO" in t for t in textos)  # 55 < 60: não chega
+    assert not any("FRACO" in t for t in textos)  # +0,3% < +0,5%: não chega
     assert "Ficaram de fora 1" in textos[-1] and "OUTRO" in textos[-1]
     bot.processar(e, _cb(DONO, "g|fora"), HIST, HOJE, CFG)
     textos = [m[1] for m in bot.mensagens_sinais(e, novos, "cab", DONO)]
@@ -616,3 +620,24 @@ def test_sinal_leva_grafico_e_botoes_para_copiar(monkeypatch):
     assert len(textos) == 1 and textos[0].startswith("cab") and len(fotos) == 2
     assert isinstance(fotos[0][0], bytes) and fotos[0][0][:4] == b"\x89PNG" and fotos[1][0] == "FID"
     assert "COMPRAR AAA" in fotos[0][1]
+
+
+def test_numeros_do_sinal_retorno_esperado_e_taxa_real_do_setup():
+    linhas = [{"data_sinal": "2026-10-1" + str(k % 10), "ticker": f"T{k}", "entrada": 10.0, "objetivo": 11.0,
+               "stop": 9.0, "estado": "objetivo" if k < 8 else "stop", "preco_fecho": 11.0 if k < 8 else 9.0,
+               "setup": "pullback"} for k in range(12)]
+    taxas = bot.taxas_setup(_hist(linhas))
+    assert taxas["pullback"] == (12, 8 / 12)
+    s = {"setup": "pullback", "retorno_esperado_liquido": 0.0123}
+    assert bot.linha_numeros(s, taxas) == "📊 Retorno esperado <b>+1,2%</b> · este tipo de sinal ganhou 67% de 12 vezes"
+    assert bot.linha_numeros({"setup": "rompimento"}, taxas) == ""  # sem números, sem linha
+
+
+def test_aviso_de_sinais_parados_so_em_horas_de_mercado():
+    import bot_carteira
+    T = lambda x: pd.Timestamp(x, tz="UTC")
+    assert bot_carteira.sinais_parados(T("2026-10-29 15:00"), T("2026-10-29 14:10"))  # 50 min sem sinais
+    assert not bot_carteira.sinais_parados(T("2026-10-29 15:00"), T("2026-10-29 14:30"))
+    assert not bot_carteira.sinais_parados(T("2026-10-29 22:30"), T("2026-10-29 14:00"))  # fora de horas
+    assert not bot_carteira.sinais_parados(T("2026-10-31 15:00"), None)  # sábado
+    assert bot_carteira.sinais_parados(T("2026-10-29 09:00"), None)

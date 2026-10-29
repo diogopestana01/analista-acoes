@@ -37,7 +37,7 @@ Usa o menu de botões em baixo:
 📊 Resultados: quanto ganhaste, % de vendas a ganhar e as últimas vendas
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
 💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
-⚙️ Regras: capital, número de posições e 🔔 avisos (som, confiança mínima)
+⚙️ Regras: capital, número de posições e 🔔 avisos (som, retorno mínimo)
 ↩️ Desfazer: anula a última operação
 🔄 Recomeçar: põe a carteira a zero e volta a perguntar o capital e as posições
 
@@ -52,7 +52,7 @@ O bot analisa as ações dos EUA de 10 em 10 minutos. Quando uma ação mostra u
 
 Um sinal diz: que ação comprar, a que preço, quanto investir (já à medida da tua carteira), onde vender com lucro, onde vender para travar a perda e em quanto tempo.
 
-A ⭐ Confiança (0 a 100) junta o histórico do padrão e da própria ação. Recebes só os sinais mais fortes que cabem nos teus lugares livres."""),
+O 📊 Retorno esperado é a média do que sinais parecidos renderam, já sem custos, e a percentagem diz quantos deles ganharam. Recebes só os de maior retorno esperado que cabem nos teus lugares livres."""),
     "saidas": ("🎯 Objetivo e stop", """🎯 <b>Objetivo e stop</b>
 🎯 <b>Objetivo</b>: o preço a que vendes com lucro.
 🛑 <b>Stop</b>: o preço a que vendes para a perda não crescer. Na XTB podes deixá-lo já marcado como ordem "stop loss".
@@ -563,9 +563,8 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         a = avisos(u)
         if ticker == "som":
             a["som"] = not a["som"]
-        elif ticker == "conf":
-            a["conf_min"] = CONF_OPCOES[(CONF_OPCOES.index(a["conf_min"]) + 1) % len(CONF_OPCOES)] \
-                if a["conf_min"] in CONF_OPCOES else 0
+        elif ticker == "ret":
+            a["ret_min"] = _seguinte_ret(a["ret_min"])
         elif ticker == "fora":
             a["fora"] = not a["fora"]
         u["avisos"] = a
@@ -671,18 +670,57 @@ def _confianca(s: dict) -> float:
     return 0.0 if pd.isna(v) else v
 
 
+def _retorno(s: dict) -> float | None:
+    """Retorno esperado do sinal, já sem custos (0,012 = +1,2%). O estudo passo3f_forca.py mostrou que,
+    entre sinais do mesmo dia, é isto que escolhe melhor (a pontuação técnica não)."""
+    for k in ("retorno_esperado_liquido", "retorno_esperado"):
+        v = _num(s.get(k))
+        if v is not None:
+            return v
+    return None
+
+
+def _txt_ret(s: dict) -> str:
+    r = _retorno(s)
+    return _pct(r) if r is not None else "?"
+
+
+def taxas_setup(hist: pd.DataFrame | None) -> dict:
+    """{setup: (n fechados, % que ganharam)} do registo real (sinais em papel), só compras."""
+    if hist is None or hist.empty:
+        return {}
+    f = acompanhamento._fechados_compra(hist)
+    return {k: (len(g), float((g["ret"] > 0).mean())) for k, g in f.groupby("setup")}
+
+
+def linha_numeros(s: dict, taxas: dict, extra: str = "") -> str:
+    """📊 Retorno esperado +1,2% · este tipo de sinal ganhou 64% de 45 vezes."""
+    partes = []
+    if _retorno(s) is not None:
+        partes.append(f"Retorno esperado <b>{_txt_ret(s)}</b>")
+    n, taxa = taxas.get(s.get("setup"), (0, None))
+    if n >= 10:
+        partes.append(f"este tipo de sinal ganhou {taxa * 100:.0f}% de {n} vezes")
+    return "📊 " + " · ".join(partes + ([extra] if extra else [])) if partes or extra else ""
+
+
 def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
-    """Sinais que servem a esta carteira, do mais forte para o mais fraco, partidos em
+    """Sinais que servem a esta carteira, do melhor para o pior (retorno esperado), partidos em
     (os que cabem nos lugares livres, os que ficam de fora, lugares livres)."""
     elegiveis = [s for s in sinais if cart.mercado(s["ticker"]) in u["regras"]["mercados"]
                  and s["ticker"] not in u["posicoes"]]
-    elegiveis.sort(key=_confianca, reverse=True)
+    elegiveis.sort(key=lambda s: (_retorno(s) if _retorno(s) is not None else -1.0, _confianca(s)), reverse=True)
     livres = max(u["regras"]["max_posicoes"] - len(u["posicoes"]), 0)
     return elegiveis[:livres], elegiveis[livres:], livres
 
 
-AVISOS_BASE = {"som": True, "conf_min": 0, "fora": True}
-CONF_OPCOES = [0, 60, 70, 80]
+AVISOS_BASE = {"som": True, "ret_min": 0.0, "fora": True}
+RET_OPCOES = [0.0, 0.005, 0.01, 0.015]  # retorno esperado mínimo: qualquer, +0,5%, +1%, +1,5%
+
+
+def _seguinte_ret(v: float) -> float:
+    i = min(range(len(RET_OPCOES)), key=lambda k: abs(RET_OPCOES[k] - v))
+    return RET_OPCOES[(i + 1) % len(RET_OPCOES)]
 
 
 def avisos(u: dict) -> dict:
@@ -699,27 +737,29 @@ def texto_avisos(u: dict) -> tuple[str, list]:
     a = avisos(u)
     txt = ("🔔 <b>Avisos</b>\n"
            f"• Som nos sinais: <b>{'ligado' if a['som'] else 'desligado'}</b> (os avisos de venda tocam sempre)\n"
-           f"• Confiança mínima: <b>{a['conf_min'] or 'qualquer'}</b> (sinais abaixo disto não te chegam)\n"
+           f"• Retorno esperado mínimo: <b>{_pct(a['ret_min']) if a['ret_min'] else 'qualquer'}</b> "
+           "(sinais abaixo disto não te chegam)\n"
            f"• Sinais que não cabem na carteira: <b>{'mostrar numa linha' if a['fora'] else 'não mostrar'}</b>\n"
            "Carrega para mudar:")
-    seguinte = CONF_OPCOES[(CONF_OPCOES.index(a["conf_min"]) + 1) % len(CONF_OPCOES)] if a["conf_min"] in CONF_OPCOES else 0
+    seguinte = _seguinte_ret(a["ret_min"])
     return txt, [[("🔕 Desligar som" if a["som"] else "🔔 Ligar som", "g|som")],
-                 [(f"⭐ Confiança mínima → {seguinte or 'qualquer'}", "g|conf")],
+                 [(f"📊 Retorno mínimo → {_pct(seguinte) if seguinte else 'qualquer'}", "g|ret")],
                  [("🙈 Esconder os que não cabem" if a["fora"] else "👀 Mostrar os que não cabem", "g|fora")]]
 
 
 def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | None = None, hoje: str = "") -> list:
     """Cabeçalho + os melhores sinais (com botões) + uma linha com os que ficaram de fora.
     Com a carteira cheia: propõe trocar a posição mais fraca pelo melhor sinal, se valer a pena.
-    Respeita as preferências de avisos da pessoa (confiança mínima, mostrar os que não cabem)."""
+    Respeita as preferências de avisos da pessoa (retorno mínimo, mostrar os que não cabem)."""
     pref = avisos(u)
-    sinais = [s for s in sinais if _confianca(s) >= pref["conf_min"]]
+    if pref["ret_min"]:
+        sinais = [s for s in sinais if (_retorno(s) or 0.0) >= pref["ret_min"] - 1e-9]
     top, resto, livres = escolher(u, sinais)
     if not top and not resto:
         return []
     r = u["regras"]
     ocupadas = f"{len(u['posicoes'])}/{r['max_posicoes']}"
-    nomes = ", ".join(f"{s['ticker']} ({_confianca(s):.0f})" for s in resto[:8])
+    nomes = ", ".join(f"{s['ticker']} ({_txt_ret(s)})" for s in resto[:8])
     nomes += f" e mais {len(resto) - 8}" if len(resto) > 8 else ""
     if not top:
         troca = proposta_troca(u, resto[0], hist, hoje)
@@ -736,9 +776,9 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | Non
         return [(cabecalho + txt, None)] if pref["fora"] else []
     extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
              f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
-    out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto))
+    out = [(cabecalho + extra, None)] + _sinais_para(u, top, len(top) + len(resto), hist)
     if resto and pref["fora"]:
-        out.append((f"➖ Ficaram de fora {len(resto)} com menos confiança: {nomes}.", None))
+        out.append((f"➖ Ficaram de fora {len(resto)} com menos retorno esperado: {nomes}.", None))
     return out
 
 
@@ -858,7 +898,7 @@ def proposta_troca(u: dict, s: dict, hist: pd.DataFrame | None, hoje: str) -> tu
     t = cart.tamanho(depois, s["ticker"], s["entrada"])
     if t["motivo"]:
         return None
-    rank = f"⭐ Confiança {_confianca(s):.0f}/100"
+    rank = linha_numeros(s, taxas_setup(hist))
     texto = (f"🔁 <b>Proposta de troca</b>\n"
              f"Vender <b>{fraca['ticker']}</b> a ~{cart.fmt(fraca['preco'])} ({cart.sinal_fmt(fraca['pct'], 1)}%).\n"
              f"📊 Um sinal como o novo costuma render <b>{_pct(modelo['media'][s['setup']])}</b>; "
@@ -1049,18 +1089,19 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     if isinstance(s.get("argumento_inv"), str) and s.get("argumento_inv"):
         icone = {"rejeitar": "🚩", "duvidoso": "⚠️", "manter": "✔️"}.get(s.get("veredicto_inv"), "🕵️")
         linhas.append(f"{icone} Advogado do diabo: {html.escape(s['argumento_inv'])}")
-    linhas.append(rank)
+    if rank:
+        linhas.append(rank)
     return "\n".join(linhas)
 
 
-def _sinais_para(u: dict, sinais: list[dict], total: int | None = None) -> list:
+def _sinais_para(u: dict, sinais: list[dict], total: int | None = None, hist: pd.DataFrame | None = None) -> list:
     """Texto e botões de cada sinal para este utilizador; o dinheiro vai sendo reservado pela ordem."""
-    out, reservado, ocupadas = [], 0.0, 0
+    out, reservado, ocupadas, taxas = [], 0.0, 0, taxas_setup(hist)
     for k, s in enumerate(sinais, start=1):
         t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
         if not t["motivo"]:
             reservado, ocupadas = reservado + t["valor"], ocupadas + 1
-        rank = f"⭐ Confiança {_confianca(s):.0f}/100 (n.º {k} de {total or len(sinais)})"
+        rank = linha_numeros(s, taxas, f"n.º {k} de {total or len(sinais)}")
         texto = sinal_simples(u, s, t, u["caixa"] - reservado, rank)
         b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
         if b and not t["motivo"]:
@@ -1091,9 +1132,12 @@ def porque(hist: pd.DataFrame, ticker: str, data: str) -> str:
     explic = PORQUE.get(s["setup"], telegram.SETUPS_PT.get(s["setup"], s["setup"]))
     regra = saidas.REGRAS.get(s.get("saida") or "")
     linhas = [f"ℹ️ <b>Porquê {ticker}?</b> (sinal de {data})", explic]
-    if _num(s.get("pontuacao")) is not None:
-        linhas.append(f"\n⭐ Confiança {_num(s['pontuacao']):.0f}/100: junta os resultados passados deste padrão "
-                      f"e desta ação. Quanto mais alta, melhor correram sinais parecidos.")
+    if _retorno(s) is not None:
+        linhas.append(f"\n📊 <b>Retorno esperado {_txt_ret(s)}</b>, já sem custos: a média do que este padrão "
+                      f"rendeu no passado, ajustada ao histórico desta ação. É o que ordena os sinais.")
+    n, taxa = taxas_setup(hist).get(s["setup"], (0, None))
+    if n >= 10:
+        linhas.append(f"✔️ Nos sinais reais deste tipo até hoje, {taxa * 100:.0f}% de {n} ganharam.")
     if regra and regra.sair_se:
         linhas.append(f"🚪 Regra de saída: {regra.texto_alerta()}.")
     linhas.append("\nNenhum sinal é garantia; o stop existe para a perda ficar pequena quando corre mal.")
@@ -1135,7 +1179,7 @@ def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
     else:
         cab = ("📋 <b>Sinais ainda em aberto</b>\nO preço é o do dia do sinal; "
                "confirma o preço atual na XTB antes de entrar.")
-    ronda = _ronda(u, sinais, cab)
+    ronda = _ronda(u, sinais, cab, hist)
     if not ronda:
         return [_msg(chat, "Não há sinais em aberto que ainda valham a pena agora. Aviso-te quando chegar o próximo.",
                      menu=True)]
