@@ -490,3 +490,44 @@ def test_cotacoes_guardam_preco_de_agora_e_velas():
     assert d["hora"] == "2026-10-29T15:10Z" and list(d["acoes"]) == ["PDS"]
     assert d["acoes"]["PDS"]["preco"] == 21.3 and d["acoes"]["PDS"]["velas"][0] == ["2026-10-28", 21.0, 19.5, 20.8]
     assert cotacoes.precos_agora(d, ["PDS", "XYZ"]) == {"PDS": 21.3}
+
+
+def test_resultados_mostram_placar_pessoal_e_os_sinais_do_periodo(monkeypatch):
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    u["desde"] = "2026-10-20"
+    cart.comprar(u, "AAA", 1, 10.0, "2026-10-21")
+    cart.vender(u, "AAA", None, 11.0, "2026-10-23")
+    cart.comprar(u, "BBB", 1, 20.0, "2026-10-22")
+    cart.vender(u, "BBB", None, 19.0, "2026-10-24")
+    cart.comprar(u, "CCC", 2, 5.0, "2026-10-27")
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"CCC": 5.5})
+    hist = _hist([{"data_sinal": "2026-10-21", "ticker": "AAA", "entrada": 10.0, "objetivo": 11.0, "stop": 9.0,
+                   "estado": "objetivo", "preco_fecho": 11.0},
+                  {"data_sinal": "2026-10-22", "ticker": "BBB", "entrada": 20.0, "objetivo": 22.0, "stop": 19.0,
+                   "estado": "stop", "preco_fecho": 19.0},
+                  {"data_sinal": "2026-10-10", "ticker": "VELHO", "entrada": 1.0, "objetivo": 2.0, "stop": 0.5,
+                   "estado": "objetivo", "preco_fecho": 2.0}])
+    texto = _textos(bot.processar(e, _txt(DONO, "📊 Resultados"), hist, HOJE, CFG))[0]
+    assert "Os teus resultados</b> (desde 20/10)" in texto
+    assert "Fechadas: <b>+0,00 USD</b> em 2 vendas · 1 ganhas (50%)" in texto
+    assert "melhor AAA +10,0% · pior BBB -5,0%" in texto and "Em aberto: +1,00 USD em 1 posições" in texto
+    assert "Carteira: <b>101,00 USD</b> (+1,0% desde o início)" in texto
+    assert "2 fechados, 50% a ganhar, +2,5% em média" in texto  # o sinal VELHO é de antes do início
+    # O botão antigo continua a funcionar.
+    assert "Os teus resultados" in _textos(bot.processar(e, _txt(DONO, "📜 Histórico"), hist, HOJE, CFG))[0]
+
+
+def test_resumo_semanal_so_para_quem_mexeu_na_carteira(monkeypatch):
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "AAA", 1, 10.0, "2026-10-27")
+    cart.vender(u, "AAA", None, 12.0, "2026-10-29")
+    cart.comprar(u, "CCC", 2, 5.0, "2026-10-30")
+    e["utilizadores"]["222"] = cart.novo_utilizador("Rui", CFG["regras_base"], "ativo", HOJE)
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"CCC": 4.5})
+    out = bot.resumos_semanais(e, "2026-10-30")
+    assert len(out) == 1 and out[0][1]["chat_id"] == DONO
+    t = out[0][1]["text"]
+    assert "A tua semana</b> (26/10 a hoje)" in t and "Compraste: AAA, CCC" in t
+    assert "Vendeste: AAA → <b>+2,00 USD</b> (1 de 1 a ganhar)" in t and "CCC -10,0%" in t
