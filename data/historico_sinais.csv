@@ -87,3 +87,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-28,CNXN,pullback,compra,86.5,,81.55682816003261,2.0,5,61.8,aberto,,,,sma5,duvidoso,4.0,apoia,0.6
 2026-10-28,AVTR,pullback,compra,16.690000534057617,,15.66300065816759,1.0,5,87.8,aberto,,,,sma5,manter,3.0,apoia,0.3
 2026-10-29,DGE.L,pullback,compra,1716.0,,1641.4395675873454,4.0,5,58.4,aberto,,,,sma5,manter,2.0,neutro,0.1
+2026-10-29,SGE.L,pullback,compra,1139.0,,1077.6817497847037,2.0,5,59.7,aberto,,,,sma5,manter,2.0,apoia,0.2
