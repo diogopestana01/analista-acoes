@@ -293,7 +293,7 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
     fracos = [{**n, "pontuacao": 60.0} for n in novos if n["ticker"] != "AAA"]
     msgs = bot.mensagens_sinais(e, fracos, "cab", DONO)
     assert len(msgs) == 1 and "carteira está cheia (1/1)" in msgs[0][1] and "Não entraram" in msgs[0][1]
-    assert "AAA (força 50)" in msgs[0][1] and "COMPRAR" not in msgs[0][1]
+    assert "Não proponho troca" in msgs[0][1] and "COMPRAR" not in msgs[0][1]
 
 
 def test_sinais_em_aberto_ao_preco_de_agora(monkeypatch):
@@ -368,7 +368,11 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     hist = _hist([{"data_sinal": "2026-10-22", "ticker": "VELHA", "entrada": 10.0, "objetivo": 11.0, "stop": 9.5,
                    "pontuacao": 55.0, "max_dias": 5},
                   {"data_sinal": HOJE, "ticker": "NOVA", "entrada": 20.0, "objetivo": 22.0, "stop": 19.0,
-                   "pontuacao": 77.0}])
+                   "pontuacao": 77.0, "setup": "semana_forte"}])
+    # Modelo de trocas de teste: sem tabela, o que falta a uma posição é a média do setup.
+    monkeypatch.setattr(bot, "MODELO_TROCAS", {"limites": [-1.0, -0.25, 0.25, 1.0, 2.0], "custo": 0.003,
+                                               "margem": 0.002, "tabela": {},
+                                               "media": {"rompimento": 0.004, "semana_forte": 0.012}})
     e = _estado()
     u = e["utilizadores"][DONO]
     bot.definir_posicoes(u, 1)
@@ -376,10 +380,11 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     monkeypatch.setattr(bot, "COTAR", lambda ts: {"VELHA": 10.5, "NOVA": 20.0})
     nova = {**hist.iloc[1].to_dict(), "data_sinal": HOJE}
     msgs = bot.mensagens_sinais(e, [nova], "cab", DONO, hist, HOJE)
-    # VELHA já usou 4 de 5 dias: força 55 x 1/5 = 11; NOVA tem 77 -> troca.
+    # NOVA costuma render +1,2%, VELHA ainda +0,4%: a diferença (0,8%) paga o custo (0,3%) e a margem (0,2%).
     assert "mas há um sinal melhor" in msgs[0][1]
     texto, botoes = msgs[1][1], msgs[1][2]
-    assert "Vender <b>VELHA</b>" in texto and "Força 11" in texto and "COMPRAR NOVA" in texto
+    assert "Vender <b>VELHA</b>" in texto and "COMPRAR NOVA" in texto
+    assert "costuma render <b>+1,2%</b>" in texto and "a VELHA ainda costuma dar <b>+0,4%</b>" in texto
     assert botoes[0][0][1] == f"s|VELHA|NOVA|{HOJE}"
     out = bot.processar(e, _cb(DONO, f"s|VELHA|NOVA|{HOJE}"), hist, HOJE, CFG)
     assert "Venda de <b>VELHA</b> (troca, passo 1 de 2)" in _textos(out)[0]
@@ -392,10 +397,13 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     # Desfazer anula a troca inteira.
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), hist, HOJE, CFG)
     assert "VELHA" in u["posicoes"] and "NOVA" not in u["posicoes"]
-    # Posição comprada hoje (força 55) contra um sinal de 65: diferença pequena, não troca.
+    # Sinal do mesmo setup: não rende mais do que a posição que já tem, não troca.
+    msgs = bot.mensagens_sinais(e, [{**nova, "setup": "rompimento", "pontuacao": 65.0}], "cab", DONO, hist, HOJE)
+    assert len(msgs) == 1 and "Não entraram: NOVA (65)" in msgs[0][1] and "ainda costuma dar +0,4%" in msgs[0][1]
+    # Posição comprada hoje: não se troca.
     u["posicoes"]["VELHA"]["data"] = HOJE
-    msgs = bot.mensagens_sinais(e, [{**nova, "pontuacao": 65.0}], "cab", DONO, hist, HOJE)
-    assert len(msgs) == 1 and "Não entraram: NOVA (65)" in msgs[0][1]
+    msgs = bot.mensagens_sinais(e, [nova], "cab", DONO, hist, HOJE)
+    assert len(msgs) == 1 and "Não proponho troca" in msgs[0][1]
 
 
 def test_ninguem_fica_sem_resposta_e_o_dono_ve_as_pessoas():

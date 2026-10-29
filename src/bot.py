@@ -9,6 +9,7 @@ import html
 import json
 import math
 import secrets
+from pathlib import Path
 
 import copy
 
@@ -16,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import cotacoes, saidas, telegram
+from . import cotacoes, saidas, telegram, trocas
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -26,7 +27,8 @@ FUGIU = 0.5   # já percorreu mais de metade do caminho até ao objetivo -> não
 USERNAME = None   # nome do bot no Telegram (para os links de convite); o bot_carteira.py preenche-o
 DONO = ""         # chat do dono, para lhe mostrar o botão 🎟️ Convidar no menu
 DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
-MARGEM_TROCA = 15  # só propõe trocar se o sinal novo tiver pelo menos mais estes pontos que a posição mais fraca
+CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
+MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (sem sinal)
 
 AJUDA = """<b>Como usar</b>
@@ -640,9 +642,11 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | Non
                                  f"uma das tuas posições.", None), troca]
         fraca = posicao_mais_fraca(u, hist, hoje)
         txt = (f"\n💼 A tua carteira está cheia ({ocupadas}). Não entraram: {nomes}.")
-        if fraca:
-            txt += (f"\nA tua posição mais fraca é {fraca['ticker']} (força {fraca['forca']:.0f}); "
-                    f"nenhum sinal novo a supera por {MARGEM_TROCA} pontos, por isso não proponho troca.")
+        if fraca and fraca["falta"] is not None:
+            txt += (f"\nA tua posição mais fraca é {fraca['ticker']} (ainda costuma dar {_pct(fraca['falta'])}); "
+                    f"nenhum sinal novo rende o suficiente a mais para pagar o spread da troca.")
+        else:
+            txt += "\nNão proponho troca: as tuas posições ainda são recentes ou não vêm de um sinal."
         return [(cabecalho + txt, None)]
     extra = (f"\nPara ti: {'o melhor' if len(top) == 1 else f'os {len(top)} melhores'} "
              f"(tens {livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}, carteira {ocupadas}).")
@@ -673,19 +677,53 @@ def _conf_prazo(t: str, p: dict, hist: pd.DataFrame | None) -> tuple[float, int]
     return CONF_SEM_SINAL, 5
 
 
+def _pct(x: float, sinal: bool = True) -> str:
+    return (cart.sinal_fmt if sinal else cart.fmt)(x * 100, 1) + "%"
+
+
+def _cfg_sinais() -> dict:
+    global CFG_SINAIS
+    if CFG_SINAIS is None:
+        import yaml
+        try:
+            CFG_SINAIS = yaml.safe_load((Path(__file__).resolve().parent.parent / "config.yaml").read_text())["sinais"]
+        except (OSError, KeyError, TypeError):
+            CFG_SINAIS = {}
+    return CFG_SINAIS
+
+
+def _modelo_trocas() -> dict | None:
+    global MODELO_TROCAS
+    if MODELO_TROCAS is None:
+        MODELO_TROCAS = trocas.carregar() or {}
+    return MODELO_TROCAS or None
+
+
+def _linha_sinal(t: str, p: dict, hist: pd.DataFrame | None) -> dict | None:
+    if hist is not None and p.get("sinal") and "|" in p["sinal"]:
+        h = hist[(hist["ticker"] == t) & (hist["data_sinal"].astype(str) == p["sinal"].split("|")[1])]
+        if not h.empty:
+            return h.iloc[-1].to_dict()
+    return None
+
+
 def forcas(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
-    """Força de cada posição aberta = confiança do sinal x parte do prazo que ainda falta.
-    Uma posição que já gastou o prazo quase todo vale pouco, mesmo que o sinal fosse bom."""
-    px = _cotacoes(list(u["posicoes"]))
+    """O que cada posição aberta ainda costuma render até à saída ("falta", src/trocas.py): posições
+    iguais (mesmo setup, dias já passados e ganho em ATR) no backtest. Da mais fraca para a mais forte;
+    sem dados (compra à mão, ou comprada hoje) fica no fim e não se troca."""
+    px, modelo = _cotacoes(list(u["posicoes"])), _modelo_trocas()
     out = []
     for t, p in u["posicoes"].items():
-        conf, prazo = _conf_prazo(t, p, hist)
         usados = int(np.busday_count(p.get("data") or hoje, hoje)) if hoje and p.get("data") else 0
-        falta = max(prazo - usados, 0)
         preco = px.get(t) or p["preco"]
-        out.append({"ticker": t, "conf": conf, "usados": usados, "prazo": prazo, "preco": preco,
-                    "pct": (preco / p["preco"] - 1) * 100, "forca": conf * falta / prazo})
-    return sorted(out, key=lambda x: (x["forca"], u["posicoes"][x["ticker"]].get("data", "")))
+        ganho = preco / p["preco"] - 1
+        sinal = _linha_sinal(t, p, hist)
+        falta = None
+        if modelo and sinal and isinstance(sinal.get("setup"), str):
+            atr = trocas.atr_pct(sinal["setup"], sinal.get("entrada"), sinal.get("stop"), _cfg_sinais())
+            falta = trocas.valor_que_falta(sinal["setup"], usados, ganho, atr, modelo)
+        out.append({"ticker": t, "usados": usados, "preco": preco, "pct": ganho * 100, "falta": falta})
+    return sorted(out, key=lambda x: (x["falta"] is None, x["falta"] or 0, u["posicoes"][x["ticker"]].get("data", "")))
 
 
 def _ler_cotacoes() -> dict:
@@ -723,7 +761,9 @@ def proposta_troca(u: dict, s: dict, hist: pd.DataFrame | None, hoje: str) -> tu
     fraca = posicao_mais_fraca(u, hist, hoje)
     if not fraca or not u["posicoes"][fraca["ticker"]].get("acompanhar", True):
         return None
-    if _confianca(s) < fraca["forca"] + MARGEM_TROCA:
+    modelo = _modelo_trocas()
+    trocar, _ = trocas.vale_trocar(s.get("setup"), fraca["falta"], modelo) if modelo else (False, None)
+    if not trocar:
         return None
     # Simular a carteira depois da venda para dizer quanto comprar do sinal novo.
     depois = copy.deepcopy(u)
@@ -734,9 +774,10 @@ def proposta_troca(u: dict, s: dict, hist: pd.DataFrame | None, hoje: str) -> tu
         return None
     rank = f"⭐ Confiança {_confianca(s):.0f}/100"
     texto = (f"🔁 <b>Proposta de troca</b>\n"
-             f"Vender <b>{fraca['ticker']}</b> a ~{cart.fmt(fraca['preco'])} ({cart.sinal_fmt(fraca['pct'], 1)}%). "
-             f"Força {fraca['forca']:.0f}: confiança {fraca['conf']:.0f}, já usou {fraca['usados']} de "
-             f"{fraca['prazo']} dias do prazo.\n"
+             f"Vender <b>{fraca['ticker']}</b> a ~{cart.fmt(fraca['preco'])} ({cart.sinal_fmt(fraca['pct'], 1)}%).\n"
+             f"📊 Um sinal como o novo costuma render <b>{_pct(modelo['media'][s['setup']])}</b>; "
+             f"a {fraca['ticker']} ainda costuma dar <b>{_pct(fraca['falta'])}</b> até à saída. "
+             f"A diferença paga o spread da troca (~{_pct(modelo['custo'], False)}).\n"
              f"Para comprar:\n\n" + sinal_simples(depois, s, t, depois["caixa"] - t["valor"], rank)
              + "\n\nFizeste a troca na XTB? Registo as duas operações ao preço de agora.")
     dados = f"s|{fraca['ticker']}|{s['ticker']}|{s['data_sinal']}"
