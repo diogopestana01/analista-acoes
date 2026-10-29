@@ -255,6 +255,7 @@ def test_recomecar_pergunta_capital_e_posicoes_e_mostra_sinais_abertos():
     assert any("COMPRAR GMAB" in t and "1,9997" in t for t in textos)
     # Desfazer volta a antes do recomeço.
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "un|sim"), HIST, HOJE, CFG)
     assert "GMAB" in u["posicoes"] and u["regras"]["capital_inicial"] == 100
 
 
@@ -290,7 +291,7 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
     msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
     textos = [m[1] for m in msgs]
     assert "os 2 melhores" in textos[0] and "2 lugares livres" in textos[0]
-    assert "COMPRAR FORTE" in textos[1] and "Retorno esperado <b>+1,5%</b> · n.º 1 de 3" in textos[1]
+    assert "COMPRAR FORTE" in textos[1] and "Retorno esperado <b>+1,5%</b> · o melhor desta ronda" in textos[1]
     assert "COMPRAR MEDIO" in textos[2]
     assert "Ficaram de fora 1" in textos[3] and "FRACO" in textos[3] and msgs[3][2] is None
     # Carteira cheia e nenhum sinal claramente melhor: só um aviso, sem sinais.
@@ -331,7 +332,8 @@ def test_convite_por_link_entra_sem_aprovacao_e_so_serve_uma_vez():
     assert link.startswith("https://t.me/AnalistaBot?start=")
     codigo = link.split("=")[1]
     # Só o dono vê o botão e só o dono cria convites.
-    assert "Convidar" in out[0][1]["reply_markup"]
+    mais = bot.processar(e, _txt(DONO, "⚙️ Mais"), HIST, HOJE, CFG)
+    assert "Convidar" in mais[0][1]["reply_markup"]
     out = bot.processar(e, _txt("222", f"/start {codigo}", "Rui"), HIST, HOJE, CFG)
     rui = e["utilizadores"]["222"]
     assert rui["estado"] == "ativo" and rui["convidado"]
@@ -401,6 +403,7 @@ def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
     assert u["posicoes"]["NOVA"]["stop"] == 19.0
     # Desfazer anula a troca inteira.
     bot.processar(e, _txt(DONO, "↩️ Desfazer"), hist, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "un|sim"), hist, HOJE, CFG)
     assert "VELHA" in u["posicoes"] and "NOVA" not in u["posicoes"]
     # Sinal do mesmo setup: não rende mais do que a posição que já tem, não troca.
     msgs = bot.mensagens_sinais(e, [{**nova, "setup": "rompimento", "retorno_esperado_liquido": 0.006}], "cab",
@@ -554,7 +557,7 @@ def test_resultados_mostram_placar_pessoal_e_os_sinais_do_periodo(monkeypatch):
     texto = _textos(bot.processar(e, _txt(DONO, "📊 Resultados"), hist, HOJE, CFG))[0]
     assert "Os teus resultados</b> (desde 20/10)" in texto
     assert "Fechadas: <b>+0,00 USD</b> em 2 vendas · 1 ganhas (50%)" in texto
-    assert "melhor AAA +10,0% · pior BBB -5,0%" in texto and "Em aberto: +1,00 USD em 1 posições" in texto
+    assert "melhor AAA +10,0% · pior BBB -5,0%" in texto and "Em aberto: +1,00 USD em 1 posição" in texto
     assert "Carteira: <b>101,00 USD</b> (+1,0% desde o início)" in texto
     assert "2 fechados, 50% a ganhar, +2,5% em média" in texto  # o sinal VELHO é de antes do início
     # O botão antigo continua a funcionar.
@@ -854,3 +857,30 @@ def test_pagina_do_talao_confirma_compra_e_venda(monkeypatch):
     assert botao["text"] == "🧾 Dizer o lucro" and "tipo=venda" in botao["web_app"]["url"]
     out = bot.processar(e, _formulario(DONO, {"id": u["talao"]["id"], "t": "GMAB", "l": -0.5}), HIST, HOJE, CFG)
     assert "GMAB" not in u["posicoes"] and cart.realizado(u)[0] == pytest.approx(-0.5, abs=0.005)
+
+
+def test_menu_curto_com_mais_sinais_e_desfazer_que_diz_o_que_desfaz(monkeypatch):
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    out = bot.processar(e, _txt(DONO, "💼 Carteira"), HIST, HOJE, CFG)
+    teclado = [[b["text"] for b in r] for r in json.loads(out[0][1]["reply_markup"])["keyboard"]]
+    assert teclado == [["💼 Carteira", "📈 Sinais"], ["🟢 Comprei", "🔴 Vendi"], ["⚙️ Mais"]]
+    out = bot.processar(e, _txt(DONO, "⚙️ Mais"), HIST, HOJE, CFG)
+    assert "mm|0|0" in out[0][1]["reply_markup"] and "mm|d|1" in out[0][1]["reply_markup"]
+    out = bot.processar(e, _cb(DONO, "mm|0|0"), HIST, HOJE, CFG)  # 📊 Resultados
+    assert "Os teus resultados" in _textos(out)[0]
+    # 📈 Sinais: os sinais em aberto ao preço de agora.
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {t: 50.5 for t in ts})
+    out = bot.processar(e, _txt(DONO, "📈 Sinais"), HIST, HOJE, CFG)
+    assert any("COMPRAR GMAB" in t and "Compra só até <b>53,00</b>" in t for t in _textos(out))
+    # Desfazer diz o que vai anular e pede confirmação.
+    cart.comprar(u, "GMAB", 0.4, 50.0, HOJE)
+    out = bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
+    assert "Desfazer a compra de GMAB (0,4 a 50,00)?" in _textos(out)[0] and "GMAB" in u["posicoes"]
+    out = bot.processar(e, _cb(DONO, "un|nao"), HIST, HOJE, CFG)
+    assert "GMAB" in u["posicoes"]
+    bot.processar(e, _txt(DONO, "↩️ Desfazer"), HIST, HOJE, CFG)
+    bot.processar(e, _cb(DONO, "un|sim"), HIST, HOJE, CFG)
+    assert "GMAB" not in u["posicoes"]
+    # Texto solto: sem falar de comandos.
+    assert "Usa os botões" in _textos(bot.processar(e, _txt(DONO, "olá"), HIST, HOJE, CFG))[0]

@@ -22,8 +22,8 @@ class Regra:
 
     def texto_alerta(self) -> str:
         """Como sair, em linguagem simples, para a mensagem do Telegram."""
-        regra = {"acima_sma5": "vende quando fechar acima da média de 5 dias",
-                 "rsi2_70": "vende quando o RSI de 2 dias passar 70"}.get(self.sair_se)
+        regra = {"acima_sma5": "vende quando o preço recuperar",
+                 "rsi2_70": "vende quando o preço ressaltar"}.get(self.sair_se)
         partes = [regra] if regra else []
         if not self.mult_objetivo and not regra:
             partes.append(f"vende ao fim de {self.max_dias} dias")

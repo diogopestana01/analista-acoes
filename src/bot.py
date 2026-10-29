@@ -35,16 +35,10 @@ MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (sem sinal)
 
 AJUDA = """<b>Como usar</b>
-Usa o menu de botões em baixo:
-💼 Carteira: posições ao preço de agora e dinheiro livre
-📊 Resultados: quanto ganhaste, % de vendas a ganhar e as últimas vendas
+💼 Carteira: as tuas posições ao preço de agora
+📈 Sinais: os sinais em aberto que ainda dá para comprar
 🟢 Comprei / 🔴 Vendi: registar uma compra ou venda feita fora dos botões dos sinais
-💵 Depositar / 🏧 Levantar: entradas e saídas de dinheiro
-⚙️ Regras: capital, número de posições e 🔔 avisos (som, retorno mínimo)
-↩️ Desfazer: anula a última operação
-🔄 Recomeçar: põe a carteira a zero e volta a perguntar o capital e as posições
-
-📸 Print da XTB: manda-me o ecrã da posição e eu preparo o talão (compra, venda ou correção) para confirmares
+⚙️ Mais: resultados, depositar e levantar, desfazer, regras e avisos, recomeçar
 
 Os sinais e os avisos de venda trazem os seus próprios botões.
 Se o menu desaparecer, envia /start.
@@ -63,7 +57,7 @@ O 📊 Retorno esperado é a média do que sinais parecidos renderam, já sem cu
 🛑 <b>Stop</b>: o preço a que vendes para a perda não crescer. Na XTB podes deixá-lo já marcado como ordem "stop loss".
 ⏳ <b>Prazo</b>: se nenhum dos dois acontecer, vendes ao fim desses dias.
 
-Alguns sinais não têm objetivo fixo: vendes quando o bot avisar (ex. "quando fechar acima da média de 5 dias"). O bot avisa-te sempre que for hora de vender."""),
+Alguns sinais não têm objetivo fixo: vendes quando o bot avisar (ex. "quando o preço recuperar"). O bot avisa-te sempre que for hora de vender."""),
     "carteira": ("💼 A carteira", """💼 <b>A carteira</b>
 A tua <b>carteira</b> tem só o que registaste: o que compraste (✅ Comprei), o que vendeste e o dinheiro livre. É o teu registo; ninguém mais o vê.
 
@@ -96,7 +90,7 @@ Chega assim:
 🛑 Vender para travar a perda a 226,00 (−1,7%)
 ⏳ Prazo: até 5 dias úteis
 
-Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde acertas, com setas, o preço e o valor pago que a XTB te mostra. Se não, ❌ <b>Ignorar</b>.""",
+Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde escreves o preço e o valor pago que a XTB te mostra. Se não, ❌ <b>Ignorar</b>.""",
     """💼 <b>Depois de comprar</b> (3 de 3)
 Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
 
@@ -113,11 +107,15 @@ def visita(chat: str, passo: int, origem: str) -> tuple[str, dict]:
     fim = ("Configurar a minha carteira ➡️", "t|fim|n") if origem == "n" else ("✅ Percebi", "t|fim|a")
     return _msg(chat, VISITA[-1], [[fim]])
 
-MENU = [["💼 Carteira", "📊 Resultados"], ["🟢 Comprei", "🔴 Vendi"], ["💵 Depositar", "🏧 Levantar"],
-        ["⚙️ Regras", "↩️ Desfazer"], ["🔄 Recomeçar", "❓ Ajuda"]]
-MENU_ACOES = {t for linha in MENU for t in linha} | {"📜 Histórico"}  # teclados antigos
+MENU = [["💼 Carteira", "📈 Sinais"], ["🟢 Comprei", "🔴 Vendi"], ["⚙️ Mais"]]
+# O que se usa pouco fica no ⚙️ Mais (botões na mensagem): Resultados, dinheiro, desfazer, regras, ajuda.
+MAIS = [["📊 Resultados", "⚙️ Regras"], ["💵 Depositar", "🏧 Levantar"], ["↩️ Desfazer", "🔄 Recomeçar"],
+        ["❓ Ajuda"]]
+ANTIGOS = {"📜 Histórico", "📊 Resultados", "💵 Depositar", "🏧 Levantar", "⚙️ Regras", "↩️ Desfazer",
+           "🔄 Recomeçar", "❓ Ajuda"}  # botões de teclados antigos continuam a funcionar
+MENU_ACOES = {t for linha in MENU for t in linha} | ANTIGOS
 CONVIDAR, PESSOAS = "🎟️ Convidar", "👥 Pessoas"
-MENU_DONO = MENU + [[CONVIDAR, PESSOAS]]
+MENU_DONO = MENU
 
 
 def _teclado_menu(menu: list) -> str:
@@ -398,6 +396,9 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
             op = BOTOES_TALAO[texto]
             return _callback_talao(chat, u, None, ["b", "ok"] if op == "ok" else ["b", "x"] if op == "x"
                                    else ["b", "e", op], hist, hoje)
+        if texto == "📈 Sinais":
+            u["aguarda"] = None
+            return sinais_abertos(chat, u, hist)
         if texto in MENU_ACOES:
             u["aguarda"] = None
             return [_menu(chat, u, texto, hist, hoje)]
@@ -455,7 +456,7 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
             return [_msg(chat, _resposta(u, partes, hist, hoje), menu=True)]
         return [_msg(chat, _comando(estado, chat, u, cmd, partes[1:], hist, hoje), menu=True)]
     except (ValueError, IndexError):
-        return [_msg(chat, "Não percebi os números. Exemplo: 51,20 0,4 (ou /ajuda).")]
+        return [_msg(chat, "Não percebi o número. Escreve só o número, por exemplo <code>51,20</code>.")]
 
 
 def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
@@ -463,6 +464,13 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     moeda = u["regras"]["moeda"]
     if botao == "💼 Carteira":
         return _msg(chat, carteira_agora(u, hist, hoje), menu=True)
+    if botao == "⚙️ Mais":
+        linhas = [[(x, f"mm|{i}|{j}") for j, x in enumerate(linha)] for i, linha in enumerate(MAIS)]
+        if DONO and chat == DONO:
+            linhas.append([(CONVIDAR, "mm|d|0"), (PESSOAS, "mm|d|1")])
+        return _msg(chat, "⚙️ <b>Mais</b>", linhas)
+    if botao == "📈 Sinais":
+        return None  # tratado em processar (pode ser mais de uma mensagem)
     if botao in ("📊 Resultados", "📜 Histórico"):
         return _msg(chat, resultados(u, hist), menu=True)
     if botao == "🔄 Recomeçar":
@@ -470,7 +478,10 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
                           f"{cart.fmt(u['regras']['capital_inicial'])} {moeda}. As regras ficam iguais.",
                     [[("✅ Sim, recomeçar", "z|sim"), ("❌ Cancelar", "z|nao")]])
     if botao == "↩️ Desfazer":
-        return _msg(chat, cart.desfazer(u), menu=True)
+        o = cart.ultima_operacao(u)
+        if not o:
+            return _msg(chat, "Não há nada para desfazer.", menu=True)
+        return _msg(chat, f"↩️ Desfazer {o}?", [[("✅ Sim, desfazer", "un|sim"), ("❌ Não", "un|nao")]])
     if botao == "❓ Ajuda":
         return _msg(chat, AJUDA, botoes_ajuda())
     if botao == "🟢 Comprei":
@@ -563,7 +574,7 @@ def _comando(estado, chat: str, u: dict, cmd: str, args: list, hist, hoje: str) 
         return f"Regras: {cart.fmt(r['pct'], 0)}% por sinal, máximo {r['max_posicoes']} posições."
     if cmd == "/utilizadores" and chat == estado.get("dono"):
         return "\n".join(f"• {x['nome']} ({c}): {x['estado']}" for c, x in estado["utilizadores"].items())
-    return "Não conheço esse comando. Envia /ajuda."
+    return "Não percebi. Usa os botões do menu aqui em baixo 👇 (em ⚙️ Mais está a ❓ Ajuda)."
 
 
 # ---------- print da XTB: o bot lê e prepara o talão ----------
@@ -668,6 +679,19 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
     if not u or u["estado"] != "ativo":
         return out + [_msg(chat, _sem_acesso(u))]
     ticker = partes[1] if len(partes) > 1 else ""
+    if acao == "mm":
+        if partes[1] == "d":
+            if chat != estado.get("dono"):
+                return out
+            return out + processar(estado, {"message": {"chat": {"id": chat}, "text": (CONVIDAR, PESSOAS)[int(partes[2])],
+                                                        "from": cq.get("from") or {}}}, hist, hoje, cfg)
+        botao = MAIS[int(partes[1])][int(partes[2])]
+        u["aguarda"] = None
+        return out + [_menu(chat, u, botao, hist, hoje)]
+    if acao == "un":
+        if partes[1] != "sim":
+            return out + [_editar(cq, "Ficou tudo como estava.", None)]
+        return out + [_editar(cq, cart.desfazer(u), None)]
     if acao == "pc":
         pr, u["print"] = u.get("print"), None
         if partes[2] != "sim" or not pr or pr["ticker"] != ticker or ticker not in u["posicoes"]:
@@ -1160,7 +1184,7 @@ def texto_talao(u: dict) -> str:
             linhas.append(f"Recebes: <b>{cart.fmt(total - taxa)} {moeda}</b>")
             lucro = qtd * (preco - p["preco"]) - taxa
             linhas.append(f"Resultado: <b>{cart.sinal_fmt(lucro)} {moeda}</b> "
-                          f"({cart.sinal_fmt((preco / p['preco'] - 1) * 100, 1)}%) · tens {cart.fmt_qtd(p['qtd'])}"
+                          f"({cart.sinal_fmt((preco / p['preco'] - 1) * 100, 1)}%)"
                           + (" ⚠️ mais do que tens" if qtd > p["qtd"] * 1.01 + 1e-9 else ""))
     if venda_lucro:
         linhas.append("\nDiz-me o lucro (ou prejuízo) que a XTB te deu: eu calculo o resto. Depois ✅ Confirmar.")
@@ -1351,11 +1375,23 @@ def _num(x) -> float | None:
     return None if pd.isna(v) else v
 
 
+def limite_compra(s: dict) -> float | None:
+    """Preço máximo a que ainda vale a pena entrar: o mesmo corte que tira dos sinais em aberto os que
+    já fizeram mais de metade do caminho até ao objetivo (FUGIU)."""
+    e = _num(s.get("entrada_sinal")) or _num(s.get("entrada"))
+    o, st = _num(s.get("objetivo")), _num(s.get("stop"))
+    alvo = o or (e + (e - st) if e and st else None)
+    return round(e + FUGIU * (alvo - e), 2) if e and alvo and alvo > e else None
+
+
 def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
     moeda, e = u["regras"]["moeda"], s["entrada"]
     obj, stop = _num(s.get("objetivo")), _num(s.get("stop"))
     linhas = [f"🟢 <b>COMPRAR {s['ticker']}</b> a ~{cart.fmt(e)}"]
+    limite = limite_compra(s)
+    if limite and limite > e:
+        linhas.append(f"🔒 Compra só até <b>{cart.fmt(limite)}</b>: acima disso já não compensa")
     if t["motivo"]:
         linhas.append(f"💵 {cart.MOTIVOS[t['motivo']].format(mercados=', '.join(m.upper() for m in u['regras']['mercados']), max=u['regras']['max_posicoes'])}")
     else:
@@ -1391,7 +1427,9 @@ def _sinais_para(u: dict, sinais: list[dict], total: int | None = None, hist: pd
         t = cart.tamanho(u, s["ticker"], s["entrada"], reservado, ocupadas)
         if not t["motivo"]:
             reservado, ocupadas = reservado + t["valor"], ocupadas + 1
-        rank = linha_numeros(s, taxas, f"n.º {k} de {total or len(sinais)}")
+        n_total = total or len(sinais)
+        rank = linha_numeros(s, taxas, "" if n_total == 1 else
+                             "o melhor desta ronda" if k == 1 else f"{k}.º melhor de {n_total}")
         texto = sinal_simples(u, s, t, u["caixa"] - reservado, rank)
         b = None if t["motivo"] in ("fora_mercado", "ja_tem") else botoes_sinal(s["ticker"], s["data_sinal"])
         if b and not t["motivo"]:
