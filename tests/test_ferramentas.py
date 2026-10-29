@@ -300,3 +300,14 @@ def test_trocas_atr_do_stop():
     # stop = entrada - 1,5 x ATR  ->  ATR = 3 / 1,5 = 2 em 100 = 2%.
     assert abs(trocas.atr_pct("rompimento", 100, 97, cfg) - 0.02) < 1e-9
     assert trocas.atr_pct("rompimento", 100, None, cfg) is None
+
+
+def test_noticias_em_modo_sombra_nao_apagam_nem_reordenam():
+    tec = pd.DataFrame({"ticker": ["A", "B"], "setup": "pullback", "direcao": "compra",
+                        "pont_tecnica": 60.0, "retorno_esperado_liquido": [0.02, 0.01]})
+    av = {"A": sentimento.Avaliacao(sentimento=-0.9, impacto="contraria", risco_evento=True, resumo="x"),
+          "B": sentimento.Avaliacao(sentimento=0.9, impacto="apoia", risco_evento=False, resumo="y")}
+    out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15})
+    assert list(out["ticker"]) == ["A", "B"] and list(out["pontuacao"]) == [60.0, 60.0]
+    out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15, "noticias_decidem": True})
+    assert list(out["ticker"]) == ["B"]

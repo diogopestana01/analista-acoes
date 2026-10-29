@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, investigador, tendencias, noticias, precos, resultados, sentimento, sinais
+from src import acompanhamento, investigador, saude, tendencias, noticias, precos, resultados, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -18,22 +18,29 @@ DADOS = RAIZ / "data"
 
 
 def combinar(tecnico: pd.DataFrame, avaliacoes: dict, cfg: dict) -> pd.DataFrame:
+    """Junta a leitura das notícias aos sinais técnicos. Em modo sombra (por defeito) a leitura só anota:
+    não muda a pontuação, a ordem nem apaga sinais, até o registo em papel mostrar que acerta."""
     s = tecnico.copy()
-    s["sentimento"] = s["ticker"].map(lambda t: avaliacoes[t].sentimento if t in avaliacoes else 0.0)
-    s["impacto_noticias"] = s["ticker"].map(lambda t: avaliacoes[t].impacto if t in avaliacoes else "neutro")
-    s["risco_evento"] = s["ticker"].map(lambda t: avaliacoes[t].risco_evento if t in avaliacoes else False)
-    s["resumo_noticias"] = s["ticker"].map(lambda t: avaliacoes[t].resumo if t in avaliacoes else "")
-    s["causa_fundamental"] = s["ticker"].map(lambda t: avaliacoes[t].causa_fundamental if t in avaliacoes else False)
+    av = lambda campo, vazio: s["ticker"].map(lambda t: getattr(avaliacoes[t], campo) if t in avaliacoes else vazio)
+    s["sentimento"] = av("sentimento", 0.0)
+    s["impacto_noticias"] = av("impacto", "neutro")
+    s["risco_evento"] = av("risco_evento", False)
+    s["resumo_noticias"] = av("resumo", "")
+    s["causa_fundamental"] = av("causa_fundamental", False)
+    s["verif_noticias"] = av("verificacao", "")
     direcao = s["direcao"].map({"compra": 1, "venda": -1})
-    s["pontuacao"] = (s["pont_tecnica"] + cfg["peso_noticias"] * s["sentimento"] * direcao).round(1)
-    s.loc[s["risco_evento"], "pontuacao"] -= 10
-    s = s[s["impacto_noticias"] != "contraria"]  # notícias contra o sinal eliminam-no
+    s["pontuacao"] = s["pont_tecnica"].round(1)
+    if cfg.get("noticias_decidem", False):   # só depois de medido: as notícias passam a contar
+        s["pontuacao"] = (s["pont_tecnica"] + cfg["peso_noticias"] * s["sentimento"] * direcao).round(1)
+        s.loc[s["risco_evento"], "pontuacao"] -= 10
+        s = s[s["impacto_noticias"] != "contraria"]
     # Opcional: pullback só para quedas sem notícia. Desligado por defeito porque no backtest
     # (2024-26) os pullbacks depois de um choque de baixa com volume renderam mais, não menos.
     if cfg.get("filtro_queda_com_noticia"):
         s = s[~((s["setup"] == "pullback") & s["causa_fundamental"])]
     s["noticia_forte"] = (s["impacto_noticias"] == "apoia") & (s["sentimento"] * direcao >= 0.5)
-    return s.sort_values(["noticia_forte", "retorno_esperado_liquido"], ascending=False).reset_index(drop=True)
+    # Ordem: retorno esperado da ação (estudo passo3f_forca.py: é o que melhor escolhe entre sinais do mesmo dia).
+    return s.sort_values("retorno_esperado_liquido", ascending=False).reset_index(drop=True)
 
 
 def avisar_resultados(s: pd.DataFrame, datas_res: dict) -> pd.DataFrame:
@@ -70,7 +77,7 @@ def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news:
     """Investigador advogado do diabo: uma vez por dia e sinal (cache), só nos sinais finais."""
     if final.empty or not cfg_inv.get("ativo", False):
         return final
-    chave = lambda s: f"inv2|{s['ticker']}|{s['setup']}|{dia}"
+    chave = lambda s: f"inv3|{s['ticker']}|{s['setup']}|{dia}"
     falta = [s for s in final.to_dict("records") if chave(s) not in cache]
     sem_news = [s["ticker"] for s in falta if news is None or s["ticker"] not in set(news["ticker"])]
     if sem_news:
@@ -80,16 +87,30 @@ def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news:
         riscos = investigador.pesquisar_riscos(s["ticker"], nomes.get(s["ticker"], ""))
         c = investigador.contestar(s, news[news["ticker"] == s["ticker"]] if news is not None else pd.DataFrame(),
                                    riscos)
-        cache[chave(s)] = c.model_dump() if c else {"veredicto": "", "argumento": "", "risco": None}
+        cache[chave(s)] = c.model_dump() if c else {"veredicto": "", "argumento": "", "risco": None,
+                                                      "verificacao": "falhou"}
     f = final.copy()
     f["veredicto_inv"] = [cache[chave(s)]["veredicto"] for s in f.to_dict("records")]
     f["argumento_inv"] = [cache[chave(s)]["argumento"] for s in f.to_dict("records")]
     f["risco_inv"] = [cache[chave(s)].get("risco") for s in f.to_dict("records")]
+    f["verif_inv"] = [cache[chave(s)].get("verificacao", "") for s in f.to_dict("records")]
     logging.info("Investigador: %d analisados agora; veredictos %s", len(falta),
                  f["veredicto_inv"].value_counts().to_dict())
     if cfg_inv.get("bloquear"):
         f = f[f["veredicto_inv"] != "rejeitar"].reset_index(drop=True)
     return f
+
+
+def _saude_precos(ultimo_dia) -> None:
+    """Preços velhos com a bolsa aberta: avisa o dono (uma vez por dia)."""
+    caminho = DADOS / "avaliacoes_cache.json"
+    try:
+        cache = json.loads(caminho.read_text())
+    except (FileNotFoundError, ValueError):
+        cache = {}
+    agora = pd.Timestamp.now(tz="UTC")
+    if saude.avisar(saude.problemas(ultimo_dia, [], agora), cache, f"{agora:%Y-%m-%d}"):
+        caminho.write_text(json.dumps(cache))
 
 
 def main() -> Path:
@@ -102,6 +123,7 @@ def main() -> Path:
     hist = precos.projetar_volume_hoje(hist, pd.Timestamp.now(tz="UTC"))
     ultimo_dia = hist["data"].max()
     hist = hist[hist.groupby("ticker")["data"].transform("max") == ultimo_dia]  # só ações com dados de hoje
+    _saude_precos(ultimo_dia)
 
     # O peso de cada setup ajusta-se sozinho aos resultados reais em papel (sinais.base_ajustada).
     reais = acompanhamento.resultados_reais(acompanhamento.carregar(DADOS / "historico_sinais.csv"))
@@ -135,7 +157,8 @@ def main() -> Path:
         pd.DataFrame().to_csv(saida, index=False)
         return saida
 
-    candidatos = tecnico.head(cfg["max_candidatos_noticias"])
+    candidatos = tecnico.head(cfg["max_candidatos_noticias"]).copy()
+    candidatos["resultados_em"] = candidatos["ticker"].map(datas_res)   # o Claude recebe a data já contada
     # Cada ação só é analisada uma vez por dia e setup, para não repetir custos de hora a hora.
     cache_path = DADOS / "avaliacoes_cache.json"
     dia = f"{pd.Timestamp(ultimo_dia):%Y-%m-%d}"
@@ -143,7 +166,7 @@ def main() -> Path:
         cache = {k: v for k, v in json.loads(cache_path.read_text()).items() if k.endswith(dia)}
     except (FileNotFoundError, ValueError):
         cache = {}
-    chave = lambda s: f"v3|{s['ticker']}|{s['setup']}|{dia}"
+    chave = lambda s: f"v4|{s['ticker']}|{s['setup']}|{dia}"
     falta = [s for s in candidatos.to_dict("records") if chave(s) not in cache]
     nomes = filtrado.set_index("ticker")["nome"].fillna("").to_dict()
     news = noticias.recolher({s["ticker"]: nomes.get(s["ticker"], "") for s in falta}) if falta else None
@@ -152,7 +175,11 @@ def main() -> Path:
         cache[chave(sinal)] = av.model_dump()
     cache_path.write_text(json.dumps(cache))
     avaliacoes = {s["ticker"]: sentimento.Avaliacao(**cache[chave(s)]) for s in candidatos.to_dict("records")}
-    logging.info("Notícias analisadas agora: %d (resto vem da cache)", len(falta))
+    agora = pd.Timestamp.now(tz="UTC")
+    saude.avisar(saude.problemas(ultimo_dia, [cache[chave(s)].get("verificacao", "") for s in falta], agora),
+                 cache, f"{agora:%Y-%m-%d}")
+    logging.info("Notícias analisadas agora: %d (resto vem da cache); verificação %s", len(falta),
+                 pd.Series([a.verificacao for a in avaliacoes.values()]).value_counts().to_dict())
 
     final = avisar_resultados(combinar(candidatos, avaliacoes, cfg), datas_res).head(cfg["max_alertas"])
     final = contraditorio(final, cache, dia, nomes, news, config.get("investigador", {}))

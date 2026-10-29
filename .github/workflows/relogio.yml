@@ -1,6 +1,7 @@
 name: Relógio
 
 # O agendamento (cron) do GitHub falha ou atrasa muito em repositórios novos.
+# Também avisa o dono se os sinais falharem ou pararem (às :20 e :50).
 # Este "relógio" fica ligado e lança os sinais (diario.yml) de 10 em 10 min (:05, :15, ... :55) das 07 às 21 UTC
 # e os resumos (resumos.yml) às 06:35, 20:35 e 21:35 UTC, nos dias úteis.
 # Um job só pode durar 6 h, por isso ao fim de ~5h40 relança-se a si próprio.
@@ -25,14 +26,38 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       REPO: ${{ github.repository }}
-      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}     # só para avisar o dono quando relança o bot da Carteira
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}     # só para avisar o dono (bot da Carteira relançado, sinais parados)
       TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
       - name: Lançar o analista de 10 em 10 minutos
         run: |
           fim=$(( $(date +%s) + 340*60 ))
           ultimo=""
+          avisado=""
+          # Vigilante: às :20 e :50 vê se os sinais estão a correr (parados há 35 min ou 2 falhas seguidas); avisa só o dono, no máximo 1 vez por hora.
+          avisar() {
+            [ -n "$TELEGRAM_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ] || return 0
+            curl -s -o /dev/null "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "parse_mode=HTML" \
+              --data-urlencode "text=⚠️ <b>Aviso do sistema</b>
+          $1" || true
+          }
+          vigiar() {
+            linha=$(gh run list -R "$REPO" -w diario.yml -L 5 --json status,conclusion,createdAt \
+              -q '[.[] | select(.status == "completed")] | "\(.[0].conclusion)\(if .[1].conclusion == "failure" then "" else "-1" end) \(.[0].createdAt)"' 2>/dev/null) || return 0
+            [ -n "$linha" ] || return 0
+            conclusao=${linha%% *}; criada=${linha#* }
+            idade=$(( ( $(date +%s) - $(date -d "$criada" +%s) ) / 60 ))
+            if [ "$idade" -gt 35 ]; then
+              avisar "Os sinais não terminam uma corrida há ${idade} min. O relógio continua a lançá-los; vê o separador Actions no GitHub."
+              avisado=$(date -u +%Y%m%d%H)
+            elif [ "$conclusao" = "failure" ]; then
+              avisar "As duas últimas corridas dos sinais falharam. O relógio continua a tentar de 10 em 10 min; se continuar, vê o separador Actions no GitHub."
+              avisado=$(date -u +%Y%m%d%H)
+            fi
+          }
           ultimo_vigia=""
+          ultimo_v=""
           while [ "$(date +%s)" -lt "$fim" ]; do
             dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
             slot="$(date -u +%Y%m%d%H)-$m"
@@ -50,6 +75,11 @@ jobs:
               if { [ "$h" -eq 20 ] || [ "$h" -eq 21 ]; } && [ "$m" -eq 35 ]; then
                 gh workflow run resumos.yml -R "$REPO" --ref main -f tipo=fecho || echo "falhou o resumo do fecho"
               fi
+            fi
+            if [ "$dia" -le 5 ] && { [ "$m" -eq 20 ] || [ "$m" -eq 50 ]; } && [ "$h" -ge 8 ] && [ "$h" -le 21 ] \
+               && [ "$(date -u +%Y%m%d%H)" != "$avisado" ] && [ "$slot" != "$ultimo_v" ]; then
+              ultimo_v=$slot
+              vigiar
             fi
             # Vigia: de 10 em 10 min, a qualquer hora, confirma que o bot da Carteira está ligado.
             # O cron do GitHub não dispara neste repositório: se o bot cair, só isto o volta a ligar.
