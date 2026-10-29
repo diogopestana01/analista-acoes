@@ -58,3 +58,6 @@ investigador:            # "advogado do diabo": um segundo Claude procura razõe
 
 vigia:                   # notícias de risco novas sobre posições abertas (src/vigia.py), uma vez por hora
   ativo: true            # o alerta "vende já" vai só para o dono enquanto o bot não o encaminhar a cada pessoa
+
+tendencias:              # Reddit (ApeWisdom) e StockTwits no alerta, só como informação (src/tendencias.py)
+  ativo: true

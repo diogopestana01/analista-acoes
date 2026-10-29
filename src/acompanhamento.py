@@ -13,7 +13,8 @@ from . import indicadores, saidas
 
 COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "stop",
            "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
-           "veredicto_inv", "risco_inv", "impacto_noticias", "sentimento"]
+           "veredicto_inv", "risco_inv", "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
+           "st_otimismo"]
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
@@ -30,7 +31,8 @@ def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int) 
         return hist
     n = novos.reindex(columns=["ticker", "setup", "direcao", "entrada", "objetivo", "stop", "dias_estimados",
                                 "pontuacao", "saida", "max_dias", "veredicto_inv", "risco_inv",
-                                "impacto_noticias", "sentimento"]).copy()
+                                "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
+                                "st_otimismo"]).copy()
     n.insert(0, "data_sinal", data)
     n["max_dias"] = n["max_dias"].fillna(max_dias)
     n["estado"] = "aberto"

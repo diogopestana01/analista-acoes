@@ -14,7 +14,7 @@ from urllib.parse import quote_plus
 
 import pandas as pd
 
-from . import noticias, resultados
+from . import noticias, resultados, tendencias
 
 log = logging.getLogger(__name__)
 
@@ -126,8 +126,14 @@ def resumo_manha(hoje: pd.Timestamp, filtrado: pd.DataFrame, cfg: dict) -> str:
               "e que resultados vale a pena acompanhar.")
     texto = escrever(pedido)
     corpo = html.escape(texto) if texto else "\n".join(f"• {html.escape(t)}" for t in titulos[:8])
+    try:
+        redes = tendencias.em_alta(no_universo)
+    except Exception:  # noqa: BLE001
+        redes = []
     return (f"🌅 <b>Abertura {hoje:%d/%m}</b>\n{html.escape(_linha_mercados(m))}\n\n{corpo}"
-            + (f"\n\n<b>Resultados hoje:</b> {html.escape(', '.join(linhas_res))}" if linhas_res else ""))[:4000]
+            + (f"\n\n<b>Resultados hoje:</b> {html.escape(', '.join(linhas_res))}" if linhas_res else "")
+            + (f"\n\n📣 <b>A ganhar atenção no Reddit</b> (menções nas últimas 24 h): {html.escape(', '.join(redes))}"
+               if redes else ""))[:4000]
 
 
 def resumo_fecho(hoje: pd.Timestamp, precos: pd.DataFrame, filtrado: pd.DataFrame, carteira: str,

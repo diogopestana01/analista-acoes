@@ -56,6 +56,9 @@ def formatar_sinal(s: dict) -> str:
         linhas.append(f"Histórico nesta ação: {acerto}")
     if s.get("resumo_noticias"):
         linhas.append(f"Notícias: {html.escape(str(s['resumo_noticias']))}")
+    from .tendencias import linha_alerta
+    if (redes := linha_alerta(s)):
+        linhas.append(redes)
     if s.get("argumento_inv") and isinstance(s.get("argumento_inv"), str):
         icone = {"rejeitar": "🚩", "duvidoso": "⚠️", "manter": "✔️"}.get(s.get("veredicto_inv"), "🕵️")
         linhas.append(f"{icone} Advogado do diabo ({html.escape(str(s.get('veredicto_inv')))}): "

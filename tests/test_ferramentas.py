@@ -251,3 +251,24 @@ def test_vigia_so_pergunta_com_manchetes_novas_e_uma_vez():
     assert [x["ticker"] for x in a] == ["A"] and perguntas == [("A", ["A announces stock offering"])]
     assert vigia.vigiar(abertos, {}, cache, "2026-10-28", pesquisar=lambda t, n: riscos[t], rever=rever) == []
     assert len(perguntas) == 1 and "Notícia nova sobre A" in vigia.formatar(a[0])
+
+
+def test_tendencias_no_alerta_e_resumo(monkeypatch):
+    from src import telegram, tendencias
+    rd = pd.DataFrame({"ticker": ["AAA", "BBB"], "rank": [3, 40], "mentions": [120, 25],
+                       "mentions_24h_ago": [30, 25], "upvotes": [500, 10]})
+    rd["variacao"] = rd["mentions"] / rd["mentions_24h_ago"]
+    monkeypatch.setattr(tendencias, "reddit", lambda: rd.set_index("ticker"))
+    monkeypatch.setattr(tendencias, "stocktwits_destaque", lambda: frozenset({"AAA"}))
+    monkeypatch.setattr(tendencias, "stocktwits", lambda t: {"msgs": 30, "otimistas": 14, "pessimistas": 6,
+                                                            "otimismo": 0.7})
+    cache = {}
+    s = tendencias.para_sinal("AAA", cache, "st1|AAA|14|2026-10-29")
+    assert s["reddit_rank"] == 3 and s["st_otimismo"] == 0.7 and "st1|AAA|14|2026-10-29" in cache
+    assert tendencias.para_sinal("SAP.DE") == {}
+    linha = tendencias.linha_alerta(s)
+    assert "#3 mais falada" in linha and "4.0x" in linha and "70% otimistas" in linha
+    m = telegram.formatar_sinal({"ticker": "AAA", "direcao": "compra", "entrada": 10.0, "objetivo": 11.0,
+                                 "stop": 9.5, "dias_estimados": 3, "setup": "pullback", **s})
+    assert "📣 Redes" in m
+    assert tendencias.em_alta({"AAA", "BBB"}) == ["AAA (120 menções, 4.0x)", "BBB (25 menções, 1.0x)"]

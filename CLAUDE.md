@@ -9,6 +9,7 @@ Modelo de sinais de curto prazo (1 dia a 1 semana) com alertas no Telegram. O do
   - Relógio: `.github/workflows/relogio.yml` lança os dois (o cron do GitHub não dispara neste repo). Desliga-se desativando o workflow "Relógio".
 - Código partilhado em `src/` (notícias, preços, Telegram, calendário de resultados).
 - Notícias em dois papéis: analista (`src/sentimento.py`, lê Google Notícias + Nasdaq de `src/noticias.py`) e advogado do diabo (`src/investigador.py`, faz a sua própria pesquisa de risco). O Yahoo e a SEC bloqueiam os servidores do GitHub. Para ver as fontes e os dois papéis sem enviar nada: workflow "Teste das notícias".
+- Tendências nas redes (`src/tendencias.py`): Reddit via ApeWisdom e StockTwits, só informação no alerta e no resumo da manhã; guardadas no histórico para medir antes de mexerem na pontuação.
 - Setups em `src/sinais.py` (`SETUPS` + `detetar`).
 - Novo setup: adicionar a `SETUPS`, a regra em `detetar`, o nome em `config.yaml`, e um teste em `tests/`.
 - Antes de mudar regras, correr o backtest (`passo3_backtest.py`, ou "Run workflow" no Actions) e comparar com `data/historico_sinais.csv` (resultados reais em papel).

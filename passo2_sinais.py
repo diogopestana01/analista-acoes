@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, investigador, noticias, precos, resultados, sentimento, sinais
+from src import acompanhamento, investigador, tendencias, noticias, precos, resultados, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -46,6 +46,23 @@ def avisar_resultados(s: pd.DataFrame, datas_res: dict) -> pd.DataFrame:
     s.loc[tem & ~s["risco_evento"].astype(bool), "pontuacao"] -= 10   # quem já tinha aviso já perdeu os 10
     s["risco_evento"] = s["risco_evento"].astype(bool) | tem
     return s
+
+
+def redes(final: pd.DataFrame, cache: dict, dia: str) -> pd.DataFrame:
+    """Reddit e StockTwits por sinal (só informação). StockTwits guardado 1 hora por ação."""
+    if final.empty:
+        return final
+    hora = f"{pd.Timestamp.now(tz='UTC'):%H}"
+    try:
+        extra = [tendencias.para_sinal(t, cache, f"st1|{t}|{hora}|{dia}") for t in final["ticker"]]
+    except Exception as e:  # noqa: BLE001 — as redes nunca podem parar os sinais
+        logging.warning("Tendências falharam: %s", e)
+        return final
+    f = pd.concat([final.reset_index(drop=True), pd.DataFrame(extra)], axis=1)
+    logging.info("Redes: %d sinais com dados do Reddit, %d do StockTwits",
+                 f.get("reddit_rank", pd.Series(dtype=float)).notna().sum(),
+                 f.get("st_msgs", pd.Series(dtype=float)).notna().sum())
+    return f
 
 
 def contraditorio(final: pd.DataFrame, cache: dict, dia: str, nomes: dict, news: pd.DataFrame | None,
@@ -139,6 +156,8 @@ def main() -> Path:
 
     final = avisar_resultados(combinar(candidatos, avaliacoes, cfg), datas_res).head(cfg["max_alertas"])
     final = contraditorio(final, cache, dia, nomes, news, config.get("investigador", {}))
+    if config.get("tendencias", {}).get("ativo", False):
+        final = redes(final, cache, dia)
     cache_path.write_text(json.dumps(cache))
     final.to_csv(saida, index=False)
     logging.info("Alertas finais: %d -> %s", len(final), saida)
