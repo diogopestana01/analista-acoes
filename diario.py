@@ -343,6 +343,7 @@ def main() -> None:
     # cada posição é comparada com o seu stop e objetivo a cada corrida.
     dados = guardar_cotacoes(precos, hist, estado)
     bot.COTAR = lambda ts: cotacoes.precos_agora(dados, ts)
+    bot.SPREADS = SPREADS  # spread normal de cada ação: conselho de esperar (src/momento.py)
     try:  # nome da empresa ao lado do ticker nos sinais
         bot.NOMES = pd.read_csv(DADOS / "universo_filtrado.csv").set_index("ticker")["nome"].fillna("").to_dict()
     except (OSError, KeyError, ValueError) as e:
