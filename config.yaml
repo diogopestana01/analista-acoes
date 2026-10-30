@@ -69,3 +69,9 @@ vigia:                   # notícias de risco novas sobre posições abertas (sr
 
 tendencias:              # Reddit (ApeWisdom) e StockTwits no alerta, só como informação (src/tendencias.py)
   ativo: true
+
+# Gestão das posições de cada pessoa (avisos de stop/objetivo, saídas do registo, resultados, trocas).
+# false: os sinais (diario.py) também a fazem. true: só a Carteira (bot sempre ligado), que lê
+# data/lista_sinais.json; assim os avisos não dependem das notícias nem do tempo de cada corrida.
+gestao:
+  no_bot: false

@@ -14,7 +14,8 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import acompanhamento, bot, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados, telegram, vigia
+from src import (acompanhamento, bot, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
+                 telegram, trocas, vigia)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -170,6 +171,22 @@ def enviar_sinais(msgs: list, registos: list[dict], precos: pd.DataFrame, estado
 
 
 PENDENTES = DADOS / "sinais_pendentes.json"
+LISTA = DADOS / "lista_sinais.json"
+
+
+def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Timestamp) -> None:
+    """A lista de sinais, reavaliada nesta corrida com o preço de agora: um só sítio que a calcula,
+    e o bot, os alertas e os resumos leem-na (data/lista_sinais.json)."""
+    try:
+        abertos = hist.loc[hist["estado"] == "aberto", "ticker"].tolist()
+        itens = lista_sinais.avaliar(hist, cotacoes.precos_agora(dados, abertos), f"{agora:%Y-%m-%d}",
+                                     trocas.carregar(), config["sinais"])
+        LISTA.write_text(json.dumps({"gerada_em": agora.isoformat(), "itens": itens}, ensure_ascii=False,
+                                    default=str))
+        logging.info("Lista de sinais: %d (%d para comprar)", len(itens),
+                     sum(s["estado_lista"] == "comprar" for s in itens))
+    except Exception as e:  # noqa: BLE001 — a lista nunca pode parar os sinais
+        logging.warning("Lista de sinais não guardada: %s", e)
 
 
 def guardar_pendentes(sinais: pd.DataFrame) -> None:
@@ -238,12 +255,17 @@ def main() -> None:
     # já enviados serve aos dois, para ninguém ficar sem aviso nem recebê-lo duas vezes.
     # inclui os avisos que o bot da Carteira já deu na vigia de 2 em 2 min
     avisados = set(_ler_cache().get("saidas_avisadas", [])) | set((estado or {}).get("saidas_avisadas", []))
-    avisar_saidas(estado, dados, avisados)
+    # Gestão das posições de cada pessoa (stop/objetivo, saídas do registo, resultados, trocas): passa
+    # para a Carteira, que está sempre ligada. Enquanto config gestao.no_bot for false, faz-se também aqui.
+    gestao_aqui = not config.get("gestao", {}).get("no_bot", False)
+    if gestao_aqui:
+        avisar_saidas(estado, dados, avisados)
     hist, fechos = acompanhamento.atualizar(hist, precos)
-    for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono, avisados):
-        telegram.enviar(texto, chat, botoes)
-    _guardar_avisados(avisados)
-    avisar_resultados(estado)
+    if gestao_aqui:
+        for chat, texto, botoes in bot.mensagens_fechos(estado, fechos, dono, avisados):
+            telegram.enviar(texto, chat, botoes)
+        _guardar_avisados(avisados)
+        avisar_resultados(estado)
 
     try:
         sinais = pd.read_csv(saida)
@@ -271,7 +293,7 @@ def main() -> None:
                       registos, precos, estado)
     # Os sinais de dias anteriores são reavaliados a cada corrida: se uma posição já deu o que tinha a dar
     # e um sinal que ainda dá para comprar rende mais, propõe a troca (uma vez, só com a bolsa de NY aberta).
-    if acompanhamento.bolsa_aberta("SPY", agora):
+    if gestao_aqui and acompanhamento.bolsa_aberta("SPY", agora):
         for chat, texto, botoes in bot.mensagens_trocas(estado, hist, f"{agora:%Y-%m-%d}", trocas_avisadas):
             telegram.enviar(texto, chat, botoes)
     _guardar_trocas(trocas_avisadas)
@@ -283,6 +305,7 @@ def main() -> None:
     enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
     _guardar_trocas(trocas_avisadas)
     hist.to_csv(HIST, index=False)
+    guardar_lista(hist, dados, config, agora)
 
 
 if __name__ == "__main__":
