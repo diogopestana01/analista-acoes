@@ -11,13 +11,14 @@ name: Backtest intradiário
 #   risco        que sinais perdem mais quando correm mal? (passo3i_risco.py)
 #   ordem        ordem dos sinais: ganho esperado ou ajustado ao risco? (passo3j_ordem.py)
 #   saidas_risco prazo mais curto e stop que sobe para a entrada (passo3k_saidas_risco.py)
+#   spread       spread estimado: cortar ou reordenar sinais caros de entrar? (passo3l_spread.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread]
         default: rompimentos
 
 permissions:
@@ -65,6 +66,8 @@ jobs:
         if: inputs.estudo == 'ordem'
       - run: python passo3k_saidas_risco.py
         if: inputs.estudo == 'saidas_risco'
+      - run: python passo3l_spread.py
+        if: inputs.estudo == 'spread'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
