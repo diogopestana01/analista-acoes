@@ -269,7 +269,6 @@ def main() -> None:
         registos = [{**s, "data_sinal": data} for s in agora_ja.to_dict("records")]
         enviar_sinais(bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data, trocas_avisadas),
                       registos, precos, estado)
-    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
     # Os sinais de dias anteriores são reavaliados a cada corrida: se uma posição já deu o que tinha a dar
     # e um sinal que ainda dá para comprar rende mais, propõe a troca (uma vez, só com a bolsa de NY aberta).
     if acompanhamento.bolsa_aberta("SPY", agora):
@@ -279,6 +278,10 @@ def main() -> None:
 
     vigiar_posicoes(hist, data, dono, config)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"], agora)
+    # Depois de registar: os sinais da noite guardados nesta corrida já estão no registo (antes, eram
+    # tomados por fechados e apagados da lista de espera sem nunca serem enviados).
+    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
+    _guardar_trocas(trocas_avisadas)
     hist.to_csv(HIST, index=False)
 
 
