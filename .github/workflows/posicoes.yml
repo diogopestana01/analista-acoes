@@ -1,0 +1,49 @@
+name: Estudo das posições
+
+# Quantas posições ter: o modelo com 1, 2, 3, 5, 8 e 10 lugares no histórico (passo3n_posicoes.py).
+# Grava data/estudo_posicoes.json, que o bot mostra em ⚙️ Regras. O Relógio lança-o ao sábado.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: posicoes
+  cancel-in-progress: true
+
+jobs:
+  estudo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Ler os preços guardados pelos sinais
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/precos.parquet
+            data/universo.csv
+            data/universo_filtrado.csv
+            data/universo_atualizado_em.txt
+            data/avaliacoes_cache.json
+          key: dados-nenhum
+          restore-keys: dados-
+      - run: python passo3n_posicoes.py
+      - name: Guardar o resultado
+        run: |
+          git config user.name "analista-bot"
+          git config user.email "analista-bot@users.noreply.github.com"
+          git add data/estudo_posicoes.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Estudo das posições atualizado"
+          for i in 1 2 3 4; do
+            git pull --rebase origin main && git push origin HEAD:main && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

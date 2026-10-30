@@ -58,6 +58,7 @@ jobs:
           }
           ultimo_vigia=""
           ultimo_v=""
+          ultimo_pos=""
           while [ "$(date +%s)" -lt "$fim" ]; do
             dia=$(date -u +%u); h=$(date -u +%-H); m=$(date -u +%-M)
             slot="$(date -u +%Y%m%d%H)-$m"
@@ -76,6 +77,11 @@ jobs:
               if { [ "$h" -eq 20 ] || [ "$h" -eq 21 ]; } && [ "$m" -eq 35 ]; then
                 gh workflow run resumos.yml -R "$REPO" --ref main -f tipo=fecho || echo "falhou o resumo do fecho"
               fi
+            fi
+            # Sábado às 08:05 UTC: estudo das posições (histórico de 1 a 10 lugares, mostrado em ⚙️ Regras)
+            if [ "$dia" -eq 6 ] && [ "$h" -eq 8 ] && [ "$m" -eq 5 ] && [ "$slot" != "$ultimo_pos" ]; then
+              ultimo_pos=$slot
+              gh workflow run posicoes.yml -R "$REPO" --ref main || echo "falhou o estudo das posições"
             fi
             if [ "$dia" -le 5 ] && { [ "$m" -eq 20 ] || [ "$m" -eq 50 ]; } && [ "$h" -ge 8 ] && [ "$h" -le 21 ] \
                && [ "$(date -u +%Y%m%d%H)" != "$avisado" ] && [ "$slot" != "$ultimo_v" ]; then
