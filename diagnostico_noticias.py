@@ -48,6 +48,20 @@ def comparar_tempo_real(tickers: list[str]) -> None:
         print(linha)
 
 
+def sonda_insiders(requests) -> None:
+    """Mostra o que a Nasdaq devolve sobre compras de insiders e short interest (para src/insiders.py)."""
+    from src.resultados import CABECALHOS
+    for t in ("AAPL", "DVA", "KPLT"):
+        for nome, url in (("insiders", f"https://api.nasdaq.com/api/company/{t}/insider-trades"
+                                       "?limit=15&type=ALL&sortColumn=lastDate&sortOrder=DESC"),
+                          ("short", f"https://api.nasdaq.com/api/quote/{t}/short-interest?assetClass=stocks")):
+            try:
+                r = requests.get(url, headers=CABECALHOS, timeout=15)
+                print(f"SONDA {nome} {t}: {r.status_code} {r.text[:2500]}")
+            except Exception as e:  # noqa: BLE001
+                print(f"SONDA {nome} {t}: falhou {e}")
+
+
 def main(data: str | None = None) -> None:
     ficheiro = DADOS / f"sinais_{data}.csv" if data else sorted(DADOS.glob("sinais_*.csv"))[-1]
     sinais = pd.read_csv(ficheiro)
@@ -57,6 +71,7 @@ def main(data: str | None = None) -> None:
         nomes = {}
     print(f"Sinais de {ficheiro.name}: {len(sinais)}")
     import requests
+    sonda_insiders(requests)
     for nome_url, url, cab in (("yahoo rss", noticias.YAHOO_RSS.format(t="AAPL"), noticias.NAVEGADOR),
                                ("sec", noticias.SEC_ATOM.format(t="AAPL", tipo="8-K"), noticias.SEC_UA),
                                ("sec tickers", "https://www.sec.gov/files/company_tickers.json",
