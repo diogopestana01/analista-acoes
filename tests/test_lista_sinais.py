@@ -61,6 +61,8 @@ def test_lista_mostra_lugares_comprar_e_andamento(monkeypatch):
     assert "já não está para comprar" in _textos(out)[0]
     out = bot.processar(e, _cb(DONO, f"ls|CEDO|2026-10-27"), HIST, HOJE, CFG)
     assert "COMPRAR CEDO</b> a ~50,50" in _textos(out)[0] and u["precos_mostrados"]["CEDO|2026-10-27"] == 50.5
+    # Risco: ATR 3,3% -> num dia mau perde ~7% (src/risco.py).
+    assert "🟡 Risco médio: num dia mau (1 em 10) perde ~7%" in _textos(out)[0]
 
 
 def test_reage_quando_a_posicao_ja_deu_o_que_tinha_a_dar(monkeypatch):

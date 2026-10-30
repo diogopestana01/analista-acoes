@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import acompanhamento, cotacoes, lista_sinais, saidas, telegram, trocas
+from . import acompanhamento, cotacoes, lista_sinais, risco, saidas, telegram, trocas
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -1413,6 +1413,17 @@ def limite_compra(s: dict) -> float | None:
                                s.get("stop"), s.get("setup"), _cfg_sinais(), s.get("preco_sinal"))
 
 
+def _atr_sinal(s: dict) -> float | None:
+    """ATR em % do preço no dia do sinal: o do sinal (atr_pct) ou, nos do registo, a partir do stop."""
+    a = _num(s.get("atr_pct"))
+    if a:
+        return a / 100 if a > 1 else a
+    e = _num(s.get("entrada_sinal")) or _num(s.get("entrada"))
+    if not e or not isinstance(s.get("setup"), str) or _num(s.get("stop")) is None:
+        return None
+    return trocas.atr_pct(s["setup"], e, s["stop"], _cfg_sinais())
+
+
 def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
     moeda, e = u["regras"]["moeda"], s["entrada"]
@@ -1433,6 +1444,9 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         linhas.append(f"🎯 Vender: {regra.texto_alerta()} (eu aviso-te)")
     if stop:
         linhas.append(f"🛑 Vender para travar a perda a <b>{cart.fmt(stop)}</b> ({cart.sinal_fmt((stop / e - 1) * 100, 1)}%)")
+    r_txt = risco.texto(_atr_sinal(s))
+    if r_txt:
+        linhas.append(r_txt)
     dias = int(round(_num(s.get("max_dias")) or _num(s.get("dias_estimados")) or 5))
     linhas.append(f"⏳ Prazo: até {dias} dia{'s' if dias != 1 else ''} út{'eis' if dias != 1 else 'il'}")
     if isinstance(s.get("resultados_em"), str):
@@ -1583,9 +1597,15 @@ def _dia(s: dict) -> str:
     return f"dia {s['dias_usados'] + 1} de {s['max_dias']}"
 
 
+RISCO_COR = {"baixo": "🟢", "médio": "🟡", "alto": "🔴"}
+
+
 def _esperado(s: dict) -> str:
-    """Retorno esperado do sinal; nos antigos sem ele, o que ainda costuma render."""
-    return f"esperado <b>{_txt_ret(s)}</b>" if _retorno(s) is not None else _ainda(s["forca"])
+    """Retorno esperado do sinal (nos antigos sem ele, o que ainda costuma render) e o risco."""
+    txt = f"esperado <b>{_txt_ret(s)}</b>" if _retorno(s) is not None else _ainda(s["forca"])
+    if s.get("risco") and s.get("perda_dia_mau"):
+        txt += f" · {RISCO_COR[s['risco']]} risco {s['risco']} (dia mau −{s['perda_dia_mau'] * 100:.0f}%)"
+    return txt
 
 
 def _ainda(x: float | None) -> str:
