@@ -118,9 +118,9 @@ def main() -> None:
     print(f"Spread estimado (todos): mediana {todos['spread'].median()*100:.2f}% | quartis "
           f"{todos['spread'].quantile(.25)*100:.2f}%-{todos['spread'].quantile(.75)*100:.2f}% | "
           f"90% {todos['spread'].quantile(.9)*100:.2f}%")
-    print(f"Correlação (postos) com o preço {todos['spread'].corr(todos['preco'], method='spearman'):+.2f}, "
-          f"com os dólares negociados {todos['spread'].corr(todos['dolares'], method='spearman'):+.2f}, "
-          f"com o ATR {todos['spread'].corr(todos['atr_pct'], method='spearman'):+.2f}")
+    print(f"Correlação (postos) com o preço {todos['spread'].rank().corr(todos['preco'].rank()):+.2f}, "
+          f"com os dólares negociados {todos['spread'].rank().corr(todos['dolares'].rank()):+.2f}, "
+          f"com o ATR {todos['spread'].rank().corr(todos['atr_pct'].rank()):+.2f}")
 
     print("\n### 1. Retorno por quinto do spread estimado (todos os trades; antes | depois do spread)")
     todos["q"] = pd.qcut(todos["spread"], 5, labels=False)
