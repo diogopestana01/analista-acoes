@@ -147,3 +147,5 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-30,SMWB,pullback,compra,8.654999732971191,,7.820927628792613,3.0,5,60.0,aberto,,,,sma5,manter,2.0,neutro,0.2,,,1.0,0.020919177015489905,ok,ok,False,,1.0,3.0,0.0,,0.00347
 2026-10-30,NUTX,pullback,compra,197.6199951171875,,176.13109084762803,2.5,5,42.9,aberto,,,,sma5,duvidoso,5.0,apoia,0.6,,,1.0,0.023601419497439304,ok,ok,False,,0.7692307692307693,13.0,0.0,7.563533,0.00399
 2026-10-30,TWFG,pullback,compra,26.579999923706055,,24.054959684253244,2.0,5,63.0,aberto,,,,sma5,duvidoso,6.0,contraria,-0.4,,,1.0,0.0163428810852676,ok,ok,False,,1.0,5.0,0.0,7.950542,0.009
+2026-10-30,FET,pullback,compra,83.31500244140625,,74.70832751994439,3.0,5,57.9,aberto,,,,sma5,manter,2.0,apoia,0.8,,,0.95,0.0394140614231757,ok,ok,False,,0.9166666666666666,12.0,0.0,,0.00441
+2026-10-30,SAIL,pullback,compra,20.75,,18.491487105459942,2.0,5,52.8,aberto,,,,sma5,duvidoso,4.0,contraria,-0.2,,,1.0,0.025307295741246575,ok,ok,False,,1.0,3.0,0.0,4.818427,0.00144
