@@ -935,6 +935,10 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | Non
     ocupadas = f"{len(u['posicoes'])}/{r['max_posicoes']}"
     nomes = ", ".join(f"{s['ticker']} ({_txt_ret(s)})" for s in resto[:8])
     nomes += f" e mais {len(resto) - 8}" if len(resto) > 8 else ""
+    if not top and _gestao_no_bot():
+        # As trocas são propostas pela Carteira (bot_carteira.gerir), que guarda as já feitas.
+        txt = f"\n💼 A tua carteira está cheia ({ocupadas}). Não entraram: {nomes}. Se compensar trocar, aviso-te à parte."
+        return [(cabecalho + txt, None)] if pref["fora"] else []
     if not top:
         troca = proposta_troca(u, resto[0], hist, hoje)
         if troca:
@@ -993,6 +997,16 @@ def _cfg_sinais() -> dict:
         except (OSError, KeyError, TypeError):
             CFG_SINAIS = {}
     return CFG_SINAIS
+
+
+def _gestao_no_bot() -> bool:
+    """config.yaml gestao.no_bot: a gestão das posições (trocas, saídas, resultados) é feita pela Carteira."""
+    import yaml
+    try:
+        cfg = yaml.safe_load((Path(__file__).resolve().parent.parent / "config.yaml").read_text()) or {}
+    except (OSError, yaml.YAMLError):
+        return False
+    return bool((cfg.get("gestao") or {}).get("no_bot"))
 
 
 def _modelo_trocas() -> dict | None:

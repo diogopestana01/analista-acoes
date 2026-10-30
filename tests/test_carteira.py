@@ -908,3 +908,21 @@ def test_recomecar_como_pessoa_nova():
     # ↩️ Desfazer volta à carteira de antes.
     bot.processar(e, _cb(DONO, "un|sim"), HIST, HOJE, CFG)
     assert "GMAB" in u["posicoes"] and u["regras"]["max_posicoes"] == 2
+
+
+def test_com_a_gestao_no_bot_os_sinais_nao_propoem_trocas(monkeypatch):
+    hist = _hist([{"data_sinal": "2026-10-22", "ticker": "VELHA", "entrada": 10.0, "objetivo": 11.0, "stop": 9.5},
+                  {"data_sinal": HOJE, "ticker": "NOVA", "entrada": 20.0, "objetivo": 22.0, "stop": 19.0,
+                   "setup": "semana_forte"}])
+    monkeypatch.setattr(bot, "MODELO_TROCAS", {"limites": [-1.0, -0.25, 0.25, 1.0, 2.0], "custo": 0.003,
+                                               "margem": 0.002, "tabela": {},
+                                               "media": {"rompimento": 0.004, "semana_forte": 0.012}})
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"VELHA": 10.5, "NOVA": 20.0})
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.definir_posicoes(u, 1)
+    cart.comprar(u, "VELHA", 2, 10.0, "2026-10-22", bot._sinal(hist, "VELHA"))
+    nova = {**hist.iloc[1].to_dict(), "data_sinal": HOJE}
+    monkeypatch.setattr(bot, "_gestao_no_bot", lambda: True)
+    msgs = bot.mensagens_sinais(e, [nova], "cab", DONO, hist, HOJE)
+    assert len(msgs) == 1 and "aviso-te à parte" in msgs[0][1] and "Proposta de troca" not in msgs[0][1]
