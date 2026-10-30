@@ -7,13 +7,14 @@ name: Backtest intradiário
 #   trocas       vale a pena trocar uma posição por um sinal novo? (passo3e_trocas.py)
 #   forca        o que deve ditar a força/ordem dos sinais? (passo3f_forca.py)
 #   reavaliar    força de um sinal com o passar dos dias e do preço (passo3g_reavaliar.py)
+#   abertura     sinais da noite: comprar à abertura seguinte com salto (passo3h_abertura.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura]
         default: rompimentos
 
 permissions:
@@ -53,6 +54,8 @@ jobs:
         if: inputs.estudo == 'forca'
       - run: python passo3g_reavaliar.py
         if: inputs.estudo == 'reavaliar'
+      - run: python passo3h_abertura.py
+        if: inputs.estudo == 'abertura'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
