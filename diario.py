@@ -16,6 +16,7 @@ import yaml
 import passo1_universo
 import passo2_sinais
 from src import (acompanhamento, bot, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
+                 spread as spread_mod,
                  insiders, telegram, trocas, vigia)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -191,6 +192,7 @@ def enviar_sinais(msgs: list, registos: list[dict], precos: pd.DataFrame, estado
 PENDENTES = DADOS / "sinais_pendentes.json"
 LISTA = DADOS / "lista_sinais.json"
 INSIDERS = DADOS / "insiders.json"
+SPREADS = DADOS / "spreads.csv"
 
 
 def enriquecer_insiders(hist: pd.DataFrame, agora: pd.Timestamp) -> tuple[pd.DataFrame, dict]:
@@ -224,15 +226,30 @@ def enriquecer_insiders(hist: pd.DataFrame, agora: pd.Timestamp) -> tuple[pd.Dat
     return hist, do_dia
 
 
+def medir_spreads(hist: pd.DataFrame, agora: pd.Timestamp) -> tuple[pd.DataFrame, dict]:
+    """Bid/ask de agora dos sinais de compra em aberto (só com a bolsa de NY aberta): o registo guarda o
+    primeiro spread de cada sinal e data/spreads.csv o de cada corrida dos que ainda dão para comprar."""
+    try:
+        if hist.empty or not acompanhamento.bolsa_aberta("SPY", agora):
+            return hist, {}
+        abertos = hist.loc[(hist["estado"] == "aberto") & (hist["direcao"] == "compra"), "ticker"].tolist()
+        medidos = spread_mod.medir(abertos)
+        spread_mod.guardar_historico(SPREADS, agora, medidos, abertos)
+        return spread_mod.registar(hist, medidos), medidos
+    except Exception as e:  # noqa: BLE001 — o spread nunca pode parar os sinais
+        logging.warning("Spread não medido: %s", e)
+        return hist, {}
+
+
 def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Timestamp,
-                  extra: dict | None = None) -> None:
+                  extra: dict | None = None, spreads: dict | None = None) -> None:
     """A lista de sinais, reavaliada nesta corrida com o preço de agora: um só sítio que a calcula,
     e o bot, os alertas e os resumos leem-na (data/lista_sinais.json)."""
     try:
         abertos = hist.loc[hist["estado"] == "aberto", "ticker"].tolist()
         hist = acompanhamento.completar_taxas(hist, DADOS)
         itens = lista_sinais.avaliar(hist, cotacoes.precos_agora(dados, abertos), f"{agora:%Y-%m-%d}",
-                                     trocas.carregar(), config["sinais"])
+                                     trocas.carregar(), config["sinais"], spreads)
         for s in itens:   # insiders e short interest (só informação)
             info = (extra or {}).get(s["ticker"]) or {}
             s["insiders"], s["short"], s["insiders_texto"] = info.get("insiders"), info.get("short"), info.get("texto", "")
@@ -386,8 +403,9 @@ def main() -> None:
     enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
     _guardar_trocas(trocas_avisadas)
     hist, info_insiders = enriquecer_insiders(hist, agora)
+    hist, spreads = medir_spreads(hist, agora)
     hist.to_csv(HIST, index=False)
-    guardar_lista(hist, dados, config, agora, info_insiders)
+    guardar_lista(hist, dados, config, agora, info_insiders, spreads)
     tempos["registo, lista e avisos"] = time.monotonic() - t0 - sum(tempos.values())
     avisar_se_lenta(tempos, config.get("saude", {}).get("corrida_max_min", 8))
 

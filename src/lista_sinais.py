@@ -93,10 +93,13 @@ def ordenar(itens: list[dict], cfg: dict | None) -> list[dict]:
     return itens
 
 
-def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: dict) -> dict | None:
+def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: dict, *,
+               ask: float | None = None, spread: float | None = None) -> dict | None:
     """Um sinal em aberto (linha do registo) ao preço `p`: estado, limite e força. None se já tocou no stop
     ou no objetivo. Serve também para reavaliar um item já avaliado com um preço mais recente (o bot, ao
-    abrir a lista): usa "entrada_sinal" se existir, porque "entrada" passa a ser o preço de agora."""
+    abrir a lista): usa "entrada_sinal" se existir, porque "entrada" passa a ser o preço de agora.
+    Com o bid/ask de agora (src/spread.py): compra-se ao `ask`, por isso é o ask que tem de estar abaixo
+    do limite; e o que o sinal ainda costuma render tem de pagar o `spread` medido (em vez dos 0,3% fixos)."""
     t, data = r["ticker"], str(r["data_sinal"])[:10]
     e = _num(r.get("entrada_sinal")) or _num(r.get("entrada"))
     o, st = _num(r.get("objetivo")), _num(r.get("stop"))
@@ -118,24 +121,32 @@ def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: di
         else:
             atr = trocas.atr_pct(setup, e, st, cfg) if st else None
             forca = trocas.valor_que_falta(setup, dias, preco / e - 1, atr, modelo)
-    paga = forca is None or not modelo or forca > modelo.get("custo", 0.0)
-    estado = "comprar" if (lim is None or preco <= lim) and dias < max_dias and paga else "andamento"
+    ask, spread = _num(ask), _num(spread)
+    custo = max(modelo.get("custo", 0.0), spread or 0.0) if modelo else (spread or 0.0)
+    paga = forca is None or forca > custo
+    compra = ask or preco
+    estado = "comprar" if (lim is None or compra <= lim) and dias < max_dias and paga else "andamento"
     atr_sinal = trocas.atr_pct(setup, e, st, cfg) if st and setup else None
     return {**r, "ticker": t, "data_sinal": data, "entrada_sinal": e, "entrada": preco, "preco": preco,
             "risco": risco.nivel(atr_sinal), "perda_dia_mau": risco.perda_dia_mau(atr_sinal),
             "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,
-            "limite": lim, "estado_lista": estado, "forca": forca}
+            "limite": lim, "estado_lista": estado, "forca": forca, "ask": ask, "spread_pct": spread,
+            "esperado_sem_spread": (retorno(r) - spread) if spread is not None and retorno(r) is not None else None}
 
 
-def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | None, cfg: dict) -> list[dict]:
-    """Sinais de compra em aberto, cada um com o preço de agora, estado e força; por retorno esperado."""
+def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | None, cfg: dict,
+            spreads: dict | None = None) -> list[dict]:
+    """Sinais de compra em aberto, cada um com o preço de agora, estado e força, por ordem equilibrada.
+    `spreads`: {ticker: {bid, ask, spread_pct}} de src/spread.medir (só com a bolsa aberta)."""
     if hist is None or hist.empty:
         return []
     h = hist[(hist["estado"] == "aberto") & (hist["direcao"] == "compra")]
     out = []
     for r in h.to_dict("records"):
         r = {k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in r.items()}
-        item = avaliar_um(r, _num(precos.get(r["ticker"])), hoje, modelo, cfg)
+        q = (spreads or {}).get(r["ticker"]) or {}
+        item = avaliar_um(r, _num(precos.get(r["ticker"])), hoje, modelo, cfg,
+                          ask=q.get("ask"), spread=q.get("spread_pct"))
         if item:
             out.append(item)
     return ordenar(out, cfg)
