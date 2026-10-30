@@ -19,6 +19,7 @@ import pandas as pd
 
 from . import carteira as cart
 from . import acompanhamento, cotacoes, diario_trades, lista_sinais, risco, saidas, telegram, tendencias, trocas
+from . import spread as spread_mod
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -1594,6 +1595,11 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         modelo.append(f"confiança <b>{taxa * 100:.0f}%</b>")
     if modelo:
         linhas.append("📊 " + " · ".join(modelo))
+    sp = _num(s.get("spread_pct"))
+    if sp is not None:
+        linhas.append(f"↔️ Spread agora {cart.fmt(sp * 100, 2)}%: começas a perder isto ao comprar"
+                      + (f"; sem ele, o esperado é <b>{_pct(s['esperado_sem_spread'])}</b>"
+                         if _num(s.get("esperado_sem_spread")) is not None else ""))
     if isinstance(s.get("setup"), str):
         linhas.append(f"🧭 Tipo de sinal: {acompanhamento.SETUPS_PT.get(s['setup'], s['setup'])}")
     if isinstance(s.get("resumo_noticias"), str) and s["resumo_noticias"].strip():
@@ -1757,11 +1763,19 @@ def _ao_vivo(itens: list[dict], hist: pd.DataFrame | None, hoje: str) -> list[di
     if not vivos:
         return itens
     modelo, cfg, out = _modelo_trocas(), _cfg_sinais(), []
+    try:  # bid/ask deste momento: compra-se ao ask e o sinal tem de pagar o spread (src/spread.py)
+        bids = (COTAR_LADO(list(vivos), "venda") or {}) if COTAR_LADO else {}
+        asks = (COTAR_LADO(list(vivos), "compra") or {}) if COTAR_LADO else {}
+    except Exception:  # noqa: BLE001
+        bids, asks = {}, {}
     for s in itens:  # a ordem fica a da lista (depende do retorno esperado e da taxa, não do preço)
-        if s["ticker"] not in vivos:
+        t = s["ticker"]
+        if t not in vivos:
             out.append(s)
             continue
-        novo = lista_sinais.avaliar_um(s, vivos[s["ticker"]], hoje, modelo, cfg)
+        ask = asks.get(t)
+        spread = spread_mod.pct(bids.get(t), ask) if t in bids and ask else s.get("spread_pct")
+        novo = lista_sinais.avaliar_um(s, vivos[t], hoje, modelo, cfg, ask=ask or s.get("ask"), spread=spread)
         if novo:  # None: tocou no stop ou no objetivo neste momento
             out.append({**novo, "ao_vivo": True})
     return out
@@ -1861,6 +1875,8 @@ def _cartao_ranking(k: int, s: dict) -> str:
         modelo.append(f"lucro esperado <b>{_txt_ret(s)}</b>")
     if _num(s.get("taxa")):
         modelo.append(f"confiança <b>{s['taxa'] * 100:.0f}%</b>")
+    if _num(s.get("spread_pct")) is not None:
+        modelo.append(f"spread {cart.fmt(s['spread_pct'] * 100, 1)}%")
     linhas = [cab, "    " + " · ".join(p for p in precos if p)]
     if modelo:
         linhas.append("    📊 " + " · ".join(modelo))

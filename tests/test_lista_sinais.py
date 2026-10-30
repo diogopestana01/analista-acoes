@@ -255,3 +255,19 @@ def test_restantes_sinais_numa_lista_recolhida(monkeypatch):
     assert "O outro sinal" in txt and "<blockquote expandable>2. <b>CEDO</b> até 52,50 · +1,0%" in txt
     assert "mm|0|1" in out[0][1]["reply_markup"]                 # atalho para mudar o número de posições
     assert f"ls|CEDO|2026-10-27" in out[0][1]["reply_markup"]    # reserva: também tem botão
+
+
+def test_lista_compra_ao_ask_e_paga_o_spread(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    agora = pd.Timestamp.now(tz="UTC")
+    itens = lista_sinais.avaliar(HIST, PRECOS, HOJE, MODELO, CFG_S)
+    monkeypatch.setattr(bot, "LER_LISTA", lambda: {"gerada_em": agora.isoformat(), "itens": itens})
+    monkeypatch.setattr(bot, "COTAR_VIVO", lambda ts: {"NOVO": 20.9, "CEDO": 50.2})
+    # NOVO: último negócio 20,90 abaixo do limite (21), mas o ask é 21,10: já não dá para comprar.
+    lados = {"venda": {"NOVO": 20.8, "CEDO": 50.1}, "compra": {"NOVO": 21.1, "CEDO": 50.3}}
+    monkeypatch.setattr(bot, "COTAR_LADO", lambda ts, lado: {t: lados[lado][t] for t in ts if t in lados[lado]})
+    av = {s["ticker"]: s for s in bot._avaliados(u, HIST, HOJE)}
+    assert av["NOVO"]["estado_lista"] == "andamento" and av["CEDO"]["estado_lista"] == "comprar"
+    assert av["CEDO"]["spread_pct"] == pytest.approx(0.2 / 50.2, rel=1e-3)
+    out = bot.processar(e, _cb(DONO, f"ls|CEDO|2026-10-27"), HIST, HOJE, CFG)
+    assert "↔️ Spread agora 0,40%" in _textos(out)[0]

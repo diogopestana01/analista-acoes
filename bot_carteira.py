@@ -74,8 +74,6 @@ def cotar_vivo(tickers: list[str]) -> dict:
                 for t, v in (q or {}).items():
                     _guardar_vivo(t, v)
                     out[t] = v["preco"]
-    # quem compra paga o ask: é com ele que se vê se ainda dá para comprar
-    out.update(cotar_lado(list(out), "compra"))
     return out
 
 
