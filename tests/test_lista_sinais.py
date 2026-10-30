@@ -54,10 +54,10 @@ def test_lista_mostra_lugares_comprar_e_andamento(monkeypatch):
     out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
                         HIST, HOJE, CFG)
     txt = _textos(out)[0]
-    assert "Os teus 5 lugares" in txt and "1. 🟢 <b>NOVO</b> esperado <b>+2,0%</b>" in txt
-    assert "Em andamento" in txt and "<b>SUBIU</b> +7,0% desde o sinal" in txt
-    assert "<b>FIM</b> +2,0% desde o sinal · último dia, sai ao fecho" in txt
-    assert "STOP" not in txt
+    # Só a classificação para comprar: sem os números do modelo nem os que já não dá para comprar.
+    assert "Para comprar agora</b> (5 lugares livres)" in txt
+    assert "1. <b>NOVO</b> até 21,00 · 🎯 22,00 · 🛑 19,00" in txt and "2. <b>CEDO</b>" in txt
+    assert all(x not in txt for x in ("SUBIU", "FIM", "STOP", "esperado", "risco"))
     out = bot.processar(e, _cb(DONO, f"ls|SUBIU|2026-10-27"), HIST, HOJE, CFG)
     assert "já não está para comprar" in _textos(out)[0]
     out = bot.processar(e, _cb(DONO, f"ls|CEDO|2026-10-27"), HIST, HOJE, CFG)
@@ -115,10 +115,10 @@ def test_resumo_da_manha_por_pessoa(monkeypatch):
     txt = msgs[0][1]["text"]
     assert "Bom dia" in txt and "Nova Iorque abre às 14:30" in txt
     assert "<b>FIM</b> +2,0% · ⏳ último dia" in txt and "Hoje acaba o prazo de <b>FIM</b>" in txt
-    assert "Para hoje</b> (1 lugar livre)" in txt and "🟢 <b>NOVO</b>" in txt
+    assert "Para hoje</b> (1 lugar livre)" in txt and "1. <b>NOVO</b> até 21,00" in txt
     assert "lst|" in msgs[0][1]["reply_markup"]
     out = bot.processar(e, _cb(DONO, "lst|"), HIST, HOJE, CFG)
-    assert "Sinais agora" in _textos(out)[0]
+    assert "Para comprar agora" in _textos(out)[0]
     # Quem desliga em 🔔 Avisos deixa de receber.
     bot.processar(e, _cb(DONO, "g|manha"), HIST, HOJE, CFG)
     assert bot.resumos_manha(e, HIST, HOJE) == []
