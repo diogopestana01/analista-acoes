@@ -247,12 +247,18 @@ def sinais_parados(agora: pd.Timestamp, ultimo_commit: pd.Timestamp | None, minu
 
 
 def ultimo_commit_sinais() -> pd.Timestamp | None:
-    r = subprocess.run(["git", "log", "-1", "--grep=^Sinais de", "--format=%ct", "origin/main"],
-                       cwd=RAIZ, capture_output=True, text=True)
-    try:
-        return pd.Timestamp(int(r.stdout.strip()), unit="s", tz="UTC")
-    except ValueError:
-        return None
+    """Hora do último commit "Sinais de ...". O checkout do Actions só traz o último commit: se não o
+    encontrar, vai buscar mais história uma vez (senão, logo a seguir a um reinício, parecia que os sinais
+    tinham parado e o dono recebia um falso alarme)."""
+    for tentativa in range(2):
+        r = subprocess.run(["git", "log", "-1", "--grep=^Sinais de", "--format=%ct", "origin/main"],
+                           cwd=RAIZ, capture_output=True, text=True)
+        try:
+            return pd.Timestamp(int(r.stdout.strip()), unit="s", tz="UTC")
+        except ValueError:
+            if tentativa == 0:
+                git("fetch", "-q", "--deepen=200", "origin", "main")
+    return None
 
 
 def executar(chamadas: list) -> None:
