@@ -77,4 +77,4 @@ tendencias:              # Reddit (ApeWisdom) e StockTwits no alerta, só como i
 # false: os sinais (diario.py) também a fazem. true: só a Carteira (bot sempre ligado), que lê
 # data/lista_sinais.json; assim os avisos não dependem das notícias nem do tempo de cada corrida.
 gestao:
-  no_bot: false
+  no_bot: true
