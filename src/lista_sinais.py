@@ -93,6 +93,40 @@ def ordenar(itens: list[dict], cfg: dict | None) -> list[dict]:
     return itens
 
 
+def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: dict) -> dict | None:
+    """Um sinal em aberto (linha do registo) ao preço `p`: estado, limite e força. None se já tocou no stop
+    ou no objetivo. Serve também para reavaliar um item já avaliado com um preço mais recente (o bot, ao
+    abrir a lista): usa "entrada_sinal" se existir, porque "entrada" passa a ser o preço de agora."""
+    t, data = r["ticker"], str(r["data_sinal"])[:10]
+    e = _num(r.get("entrada_sinal")) or _num(r.get("entrada"))
+    o, st = _num(r.get("objetivo")), _num(r.get("stop"))
+    if not e:
+        return None
+    if (p is not None and st and p <= st) or (p is not None and o and p >= o):
+        return None
+    preco = p or e
+    dias = int(np.busday_count(data, hoje)) if hoje >= data else 0
+    max_dias = int(_num(r.get("max_dias")) or 5)
+    setup = r.get("setup") if isinstance(r.get("setup"), str) else ""
+    lim = limite(e, o, st, setup, cfg, r.get("preco_sinal"))
+    forca = None
+    if modelo:
+        if dias >= max_dias:
+            forca = 0.0   # último dia do prazo: sai ao fecho de hoje
+        elif dias < 1:
+            forca = modelo["media"].get(setup)
+        else:
+            atr = trocas.atr_pct(setup, e, st, cfg) if st else None
+            forca = trocas.valor_que_falta(setup, dias, preco / e - 1, atr, modelo)
+    paga = forca is None or not modelo or forca > modelo.get("custo", 0.0)
+    estado = "comprar" if (lim is None or preco <= lim) and dias < max_dias and paga else "andamento"
+    atr_sinal = trocas.atr_pct(setup, e, st, cfg) if st and setup else None
+    return {**r, "ticker": t, "data_sinal": data, "entrada_sinal": e, "entrada": preco, "preco": preco,
+            "risco": risco.nivel(atr_sinal), "perda_dia_mau": risco.perda_dia_mau(atr_sinal),
+            "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,
+            "limite": lim, "estado_lista": estado, "forca": forca}
+
+
 def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | None, cfg: dict) -> list[dict]:
     """Sinais de compra em aberto, cada um com o preço de agora, estado e força; por retorno esperado."""
     if hist is None or hist.empty:
@@ -101,32 +135,7 @@ def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | N
     out = []
     for r in h.to_dict("records"):
         r = {k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in r.items()}
-        t, data = r["ticker"], str(r["data_sinal"])[:10]
-        e, o, st = _num(r.get("entrada")), _num(r.get("objetivo")), _num(r.get("stop"))
-        if not e:
-            continue
-        p = _num(precos.get(t))
-        if (p is not None and st and p <= st) or (p is not None and o and p >= o):
-            continue
-        preco = p or e
-        dias = int(np.busday_count(data, hoje)) if hoje >= data else 0
-        max_dias = int(_num(r.get("max_dias")) or 5)
-        setup = r.get("setup") if isinstance(r.get("setup"), str) else ""
-        lim = limite(e, o, st, setup, cfg, r.get("preco_sinal"))
-        forca = None
-        if modelo:
-            if dias >= max_dias:
-                forca = 0.0   # último dia do prazo: sai ao fecho de hoje
-            elif dias < 1:
-                forca = modelo["media"].get(setup)
-            else:
-                atr = trocas.atr_pct(setup, e, st, cfg) if st else None
-                forca = trocas.valor_que_falta(setup, dias, preco / e - 1, atr, modelo)
-        paga = forca is None or not modelo or forca > modelo.get("custo", 0.0)
-        estado = "comprar" if (lim is None or preco <= lim) and dias < max_dias and paga else "andamento"
-        atr_sinal = trocas.atr_pct(setup, e, st, cfg) if st and setup else None
-        out.append({**r, "ticker": t, "data_sinal": data, "entrada_sinal": e, "entrada": preco, "preco": preco,
-                    "risco": risco.nivel(atr_sinal), "perda_dia_mau": risco.perda_dia_mau(atr_sinal),
-                    "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,
-                    "limite": lim, "estado_lista": estado, "forca": forca})
+        item = avaliar_um(r, _num(precos.get(r["ticker"])), hoje, modelo, cfg)
+        if item:
+            out.append(item)
     return ordenar(out, cfg)

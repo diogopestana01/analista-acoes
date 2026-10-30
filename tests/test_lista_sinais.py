@@ -190,3 +190,26 @@ def test_insiders_no_cartao_do_sinal(monkeypatch):
     # Sinal acabado de chegar (sem o campo): vai buscar à lista.
     assert bot._insiders_texto({"ticker": "GRAV", "data_sinal": HOJE}).startswith("👔")
     assert bot._insiders_texto({"ticker": "OUTRO", "data_sinal": HOJE}) == ""
+
+
+def test_lista_ao_preco_deste_momento(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    agora = pd.Timestamp.now(tz="UTC")
+    itens = lista_sinais.avaliar(HIST, PRECOS, HOJE, MODELO, CFG_S)
+    for s in itens:
+        s["insiders_texto"] = "👔 x" if s["ticker"] == "CEDO" else ""
+    monkeypatch.setattr(bot, "LER_LISTA", lambda: {"gerada_em": agora.isoformat(), "itens": itens})
+    # Agora: NOVO subiu para cima do limite (21) e CEDO desceu.
+    monkeypatch.setattr(bot, "COTAR_VIVO", lambda ts: {"NOVO": 21.5, "CEDO": 50.2})
+    av = {s["ticker"]: s for s in bot._avaliados(u, HIST, HOJE)}
+    assert av["NOVO"]["estado_lista"] == "andamento" and av["NOVO"]["preco"] == 21.5 and av["NOVO"]["ao_vivo"]
+    assert av["CEDO"]["preco"] == 50.2 and av["CEDO"]["entrada_sinal"] == 50.0 and av["CEDO"]["insiders_texto"] == "👔 x"
+    out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    txt = _textos(out)[0]
+    assert "NOVO" not in txt and "🥇 <b>CEDO</b>" in txt and "Preços deste momento" in txt
+    # Tocou no stop neste momento: sai da lista. Sem tempo real (bolsa fechada): fica a gravada.
+    monkeypatch.setattr(bot, "COTAR_VIVO", lambda ts: {"CEDO": 47.0})
+    assert "CEDO" not in [s["ticker"] for s in bot._avaliados(u, HIST, HOJE)]
+    monkeypatch.setattr(bot, "COTAR_VIVO", lambda ts: {})
+    assert {s["ticker"]: s["preco"] for s in bot._avaliados(u, HIST, HOJE)}["NOVO"] == 20.1
