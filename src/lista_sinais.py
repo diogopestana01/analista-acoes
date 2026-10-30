@@ -11,9 +11,10 @@ subiu e os dias que já passaram ("valor que falta", src/trocas.py, medido no ba
 subiu 3% de 5% vale menos do que quando apareceu. No dia do sinal é a média do setup; no último dia
 do prazo é zero (sai ao fecho).
 
-A força serve de filtro (comprar só se pagar o spread), não para ordenar. A ordem é pelo retorno esperado
-da ação: no estudo passo3g_reavaliar.py (40 711 sinais vivos de 0 a 4 dias), os 3 primeiros do dia por
-retorno esperado bateram a média em +1,3 pontos nas duas metades; pelo valor que falta, não.
+A força serve de filtro (comprar só se pagar o spread), não para ordenar. A ordem é equilibrada entre o
+retorno esperado da ação e a probabilidade de ganhar (ver `ordenar`). O retorno esperado sozinho escolhe
+os que mais rendem (passo3g_reavaliar.py: +1,3 pontos nos 3 primeiros do dia), mas com mais perdas
+grandes; o valor que falta não serve para ordenar.
 """
 from __future__ import annotations
 
@@ -62,6 +63,36 @@ def retorno(s: dict) -> float | None:
     return None
 
 
+def taxa_ganhar(s: dict, cfg: dict | None) -> float | None:
+    """Probabilidade de ganhar: taxa de acerto da própria ação neste setup, puxada para a do setup
+    (sinais.ganha_setup) com o peso de 10 casos. Sem histórico, a do setup."""
+    base = _num(((cfg or {}).get("ganha_setup") or {}).get(s.get("setup")))
+    taxa, n = _num(s.get("taxa_acerto")), _num(s.get("n_historico")) or 0.0
+    if base is None:
+        return taxa
+    return (taxa * n + base * 10) / (n + 10) if taxa is not None else base
+
+
+def _percentil(valores: list) -> callable:
+    v = sorted(x for x in valores if x is not None)
+    return lambda x: 0.0 if x is None or not v else (sum(y < x for y in v) + 0.5 * sum(y == x for y in v)) / len(v)
+
+
+def ordenar(itens: list[dict], cfg: dict | None) -> list[dict]:
+    """Ordem equilibrada: soma da posição (0 a 1) por ganho esperado e por probabilidade de ganhar.
+    Estudo passo3j_ordem.py (carteira de 5 lugares, nas duas metades do teste): +27,5% e +14,1% com
+    pior descida -6,9% e -10,3%, contra +19,5% e -2,3% (descidas -15,7% e -18,1%) só pelo ganho
+    esperado; perde em 34% dos trades contra 43%. Escreve em cada item "taxa" e "ordem" (0 a 2)."""
+    for s in itens:
+        s["taxa"] = taxa_ganhar(s, cfg)
+    p_ret = _percentil([retorno(s) for s in itens])
+    p_taxa = _percentil([s["taxa"] for s in itens])
+    for s in itens:
+        s["ordem"] = round(p_ret(retorno(s)) + p_taxa(s["taxa"]), 4)
+    itens.sort(key=lambda s: (-s["ordem"], -(retorno(s) or 0.0)))
+    return itens
+
+
 def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | None, cfg: dict) -> list[dict]:
     """Sinais de compra em aberto, cada um com o preço de agora, estado e força; por retorno esperado."""
     if hist is None or hist.empty:
@@ -98,5 +129,4 @@ def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | N
                     "risco": risco.nivel(atr_sinal), "perda_dia_mau": risco.perda_dia_mau(atr_sinal),
                     "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,
                     "limite": lim, "estado_lista": estado, "forca": forca})
-    out.sort(key=lambda s: (retorno(s) is None, -(retorno(s) or 0.0), -(s["forca"] or 0.0)))
-    return out
+    return ordenar(out, cfg)

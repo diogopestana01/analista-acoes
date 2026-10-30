@@ -164,3 +164,13 @@ def test_gestao_no_bot_avisa_fechos_uma_vez(monkeypatch):
     assert len(enviados) == 1 and "Prazo terminou" in enviados[0][1]["text"] and "Tens 1" in enviados[0][1]["text"]
     bc.gerir(e, fechado, agora, DONO, False)
     assert len(enviados) == 1
+
+def test_ordem_equilibrada_entre_ganho_e_probabilidade():
+    cfg = {"ganha_setup": {"pullback": 0.66, "rompimento": 0.47}}
+    itens = [{"ticker": "MUITO", "setup": "rompimento", "retorno_esperado": 0.030, "taxa_acerto": 0.3, "n_historico": 10},
+             {"ticker": "EQUIL", "setup": "pullback", "retorno_esperado": 0.020, "taxa_acerto": 0.8, "n_historico": 10},
+             {"ticker": "FRACO", "setup": "pullback", "retorno_esperado": 0.005}]
+    ordem = [s["ticker"] for s in lista_sinais.ordenar(itens, cfg)]
+    assert ordem == ["EQUIL", "MUITO", "FRACO"]   # o que dá mais mas perde muitas vezes já não vem 1.º
+    assert lista_sinais.taxa_ganhar({"setup": "pullback"}, cfg) == 0.66
+    assert round(lista_sinais.taxa_ganhar({"setup": "pullback", "taxa_acerto": 0.8, "n_historico": 10}, cfg), 2) == 0.73

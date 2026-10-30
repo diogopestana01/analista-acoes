@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "stop",
            "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
            "veredicto_inv", "risco_inv", "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
-           "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv", "entrada_na_abertura", "preco_sinal"]
+           "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv", "entrada_na_abertura", "preco_sinal",
+           "taxa_acerto", "n_historico"]
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
@@ -60,7 +61,8 @@ def registar(hist: pd.DataFrame, novos: pd.DataFrame, data: str, max_dias: int,
     n = novos.reindex(columns=["ticker", "setup", "direcao", "entrada", "objetivo", "stop", "dias_estimados",
                                 "pontuacao", "saida", "max_dias", "veredicto_inv", "risco_inv",
                                 "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
-                                "st_otimismo", "retorno_esperado_liquido", "verif_noticias", "verif_inv"]) \
+                                "st_otimismo", "retorno_esperado_liquido", "verif_noticias", "verif_inv",
+                                "taxa_acerto", "n_historico"]) \
         .rename(columns={"retorno_esperado_liquido": "retorno_esperado"}).copy()
     n.insert(0, "data_sinal", data)
     n["max_dias"] = n["max_dias"].fillna(max_dias)
