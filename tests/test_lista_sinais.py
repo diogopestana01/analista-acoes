@@ -213,3 +213,15 @@ def test_lista_ao_preco_deste_momento(monkeypatch):
     assert "CEDO" not in [s["ticker"] for s in bot._avaliados(u, HIST, HOJE)]
     monkeypatch.setattr(bot, "COTAR_VIVO", lambda ts: {})
     assert {s["ticker"]: s["preco"] for s in bot._avaliados(u, HIST, HOJE)}["NOVO"] == 20.1
+
+
+def test_nome_da_empresa_no_sinal_e_na_lista(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    monkeypatch.setattr(bot, "NOMES", {"NOVO": "Novo Banco Corp. - Class A Common Stock", "CEDO": "Cedo & Filhos, Inc."})
+    assert bot.nome_empresa("NOVO") == "Novo Banco Corp." and bot.nome_empresa("XYZ") == ""
+    out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    assert "🥇 <b>NOVO</b> <i>Novo Banco Corp.</i>" in _textos(out)[0] and "Cedo &amp; Filhos" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, f"ls|NOVO|{HOJE}"), HIST, HOJE, CFG)
+    txt = _textos(out)[0]
+    assert "🏢 Novo Banco Corp." in txt and "📊 lucro esperado <b>+2,0%</b>" in txt and "🧭 Tipo de sinal" in txt

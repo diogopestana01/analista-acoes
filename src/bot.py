@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import math
 import secrets
 from pathlib import Path
@@ -17,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import acompanhamento, cotacoes, diario_trades, lista_sinais, risco, saidas, telegram, trocas
+from . import acompanhamento, cotacoes, diario_trades, lista_sinais, risco, saidas, telegram, tendencias, trocas
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -882,14 +883,14 @@ def taxas_setup(hist: pd.DataFrame | None) -> dict:
 
 
 def linha_numeros(s: dict, taxas: dict, extra: str = "") -> str:
-    """📊 Retorno esperado +1,2% · este tipo de sinal ganhou 64% de 45 vezes."""
+    """📋 Este tipo de sinal ganhou 64% de 45 vezes · dia 1 de 5. O lucro esperado e a confiança já estão
+    na linha 📊 do sinal (sinal_simples)."""
     partes = []
-    if _retorno(s) is not None:
-        partes.append(f"Retorno esperado <b>{_txt_ret(s)}</b>")
     n, taxa = taxas.get(s.get("setup"), (0, None))
     if n >= 10:
         partes.append(f"este tipo de sinal ganhou {taxa * 100:.0f}% de {n} vezes")
-    return "📊 " + " · ".join(partes + ([extra] if extra else [])) if partes or extra else ""
+    txt = " · ".join(partes + ([extra] if extra else []))
+    return "📋 " + txt[:1].upper() + txt[1:] if txt else ""
 
 
 def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
@@ -1508,6 +1509,17 @@ def _atr_sinal(s: dict) -> float | None:
     return trocas.atr_pct(s["setup"], e, s["stop"], _cfg_sinais())
 
 
+LIXO_NOME = re.compile(r"\s*[-,]?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary"
+                       r" Shares.*|Depositary Shares.*|Units?|Warrants?)$", re.I)
+
+
+def nome_empresa(t: str, s: dict | None = None) -> str:
+    """Nome da empresa para mostrar ao lado do ticker (listas da Nasdaq), sem "Common Stock" e afins."""
+    n = (s or {}).get("nome") if isinstance((s or {}).get("nome"), str) else NOMES.get(t, "")
+    n = LIXO_NOME.sub("", str(n or "").split(" - ")[0]).strip(" ,-")
+    return n if len(n) <= 40 else n[:38].rstrip() + "…"
+
+
 def _insiders_texto(s: dict) -> str:
     """Compras de insiders e vendas a descoberto (só informação, não mexe na ordem): o texto pronto que os
     sinais gravam em cada item da lista; nos sinais acabados de chegar, vai-se buscar à lista."""
@@ -1523,7 +1535,8 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
     moeda, e = u["regras"]["moeda"], s["entrada"]
     obj, stop = _num(s.get("objetivo")), _num(s.get("stop"))
-    linhas = [f"🟢 <b>COMPRAR {s['ticker']}</b> a ~{cart.fmt(e)}"]
+    nome = nome_empresa(s["ticker"], s)
+    linhas = [f"🟢 <b>COMPRAR {s['ticker']}</b> a ~{cart.fmt(e)}" + (f"\n🏢 {html.escape(nome)}" if nome else "")]
     limite = limite_compra(s)
     if limite and limite > e:
         linhas.append(f"🔒 Compra só até <b>{cart.fmt(limite)}</b>: acima disso já não compensa")
@@ -1542,6 +1555,21 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     r_txt = risco.texto(_atr_sinal(s))
     if r_txt:
         linhas.append(r_txt)
+    modelo = []
+    if _retorno(s) is not None:
+        modelo.append(f"lucro esperado <b>{_txt_ret(s)}</b>")
+    taxa = _num(s.get("taxa")) or lista_sinais.taxa_ganhar(s, _cfg_sinais())
+    if taxa:
+        modelo.append(f"confiança <b>{taxa * 100:.0f}%</b>")
+    if modelo:
+        linhas.append("📊 " + " · ".join(modelo))
+    if isinstance(s.get("setup"), str):
+        linhas.append(f"🧭 Tipo de sinal: {acompanhamento.SETUPS_PT.get(s['setup'], s['setup'])}")
+    if isinstance(s.get("resumo_noticias"), str) and s["resumo_noticias"].strip():
+        linhas.append(f"📰 Notícias: {html.escape(s['resumo_noticias'].strip())}")
+    redes = tendencias.linha_alerta(s)
+    if redes:
+        linhas.append(html.escape(redes))
     ins = _insiders_texto(s)
     if ins:
         linhas.append(html.escape(ins))
@@ -1779,6 +1807,9 @@ def _cartao_ranking(k: int, s: dict) -> str:
        💵 até 13,01 · 🎯 15,47 (+19%) · 🛑 11,05 (−15%)
        📊 lucro esperado +1,4% · confiança 68%"""
     cab = f"{MEDALHAS.get(k, f'{k}.')} <b>{s['ticker']}</b>"
+    nome = nome_empresa(s["ticker"], s)
+    if nome:
+        cab += f" <i>{html.escape(nome)}</i>"
     if s.get("risco") in RISCO_COR:
         cab += f" · {RISCO_COR[s['risco']]} risco {s['risco']}"
     if _a_espera_da_abertura(s):

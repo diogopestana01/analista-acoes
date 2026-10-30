@@ -288,6 +288,10 @@ def main() -> None:
     # cada posição é comparada com o seu stop e objetivo a cada corrida.
     dados = guardar_cotacoes(precos, hist, estado)
     bot.COTAR = lambda ts: cotacoes.precos_agora(dados, ts)
+    try:  # nome da empresa ao lado do ticker nos sinais
+        bot.NOMES = pd.read_csv(DADOS / "universo_filtrado.csv").set_index("ticker")["nome"].fillna("").to_dict()
+    except (OSError, KeyError, ValueError) as e:
+        logging.warning("Nomes das empresas indisponíveis: %s", e)
     # Stop/objetivo: pela posição de cada pessoa e pelo fecho do sinal no registo; a mesma lista de avisos
     # já enviados serve aos dois, para ninguém ficar sem aviso nem recebê-lo duas vezes.
     # inclui os avisos que o bot da Carteira já deu na vigia de 2 em 2 min
