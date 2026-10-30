@@ -85,6 +85,7 @@ Tu decides se compras, e compras tu na tua corretora (ex. XTB). O bot não mexe 
 Chega assim:
 
 🟢 <b>COMPRAR AAPL</b> a ~230,00
+🔒 Compra só até 231,50: acima disso já não compensa
 💵 Quanto: 0,0869 ações (~20,00 USD)
 🎯 Vender com lucro a 236,00 (+2,6%)
 🛑 Vender para travar a perda a 226,00 (−1,7%)
@@ -94,7 +95,7 @@ Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde escreves o preço 
     """💼 <b>Depois de comprar</b> (3 de 3)
 Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
 
-Em 💼 <b>Carteira</b> vês as tuas posições, o dinheiro livre e o resultado. O menu em baixo tem tudo; ❓ <b>Ajuda</b> explica cada tema.
+Em 💼 <b>Carteira</b> vês as tuas posições, o dinheiro livre e o resultado. Em 📈 <b>Sinais</b> vês a lista dos sinais de agora: os que ainda dá para comprar e os que estão em andamento. O resto (resultados, regras, ajuda) está em ⚙️ <b>Mais</b>.
 
 ⚠️ Nenhum sinal é garantia. Investe só dinheiro que podes perder.""",
 ]
@@ -474,9 +475,14 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     if botao in ("📊 Resultados", "📜 Histórico"):
         return _msg(chat, resultados(u, hist), menu=True)
     if botao == "🔄 Recomeçar":
-        return _msg(chat, f"🔄 Recomeçar a carteira do zero? Apaga posições e operações e volta a "
-                          f"{cart.fmt(u['regras']['capital_inicial'])} {moeda}. As regras ficam iguais.",
-                    [[("✅ Sim, recomeçar", "z|sim"), ("❌ Cancelar", "z|nao")]])
+        return _msg(chat, "🔄 <b>Recomeçar do zero?</b> Apaga as posições e as operações. Escolhe:\n"
+                          f"🧹 <b>Só a carteira</b>: volta a {cart.fmt(u['regras']['capital_inicial'])} {moeda} "
+                          "e escolhes o capital e as posições.\n"
+                          "👤 <b>Como pessoa nova</b>: tudo como no primeiro dia (boas-vindas, visita guiada, "
+                          "configuração e avisos de origem).\n"
+                          "Se te enganares, ↩️ Desfazer volta atrás.",
+                    [[("🧹 Só a carteira", "z|sim")], [("👤 Como pessoa nova", "z|novo")],
+                     [("❌ Cancelar", "z|nao")]])
     if botao == "↩️ Desfazer":
         o = cart.ultima_operacao(u)
         if not o:
@@ -747,9 +753,15 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, f"⚙️ Feito: {cart.fmt(r['pct'], 0)}% por sinal, máximo {r['max_posicoes']} posições.",
                                                menu=True)]
     if acao == "z":
-        if ticker != "sim":
+        if ticker not in ("sim", "novo"):
             return out + [_tirar_botoes(cq), _msg(chat, "Ficou tudo como estava.", menu=True)]
         cart.recomecar(u, hoje)
+        if ticker == "novo":  # como no primeiro dia: regras e avisos de origem, boas-vindas e visita guiada
+            u["regras"] = {**cart.REGRAS_BASE, **(cfg.get("regras_base") or {})}
+            u["caixa"] = float(u["regras"]["capital_inicial"])
+            for k in ("avisos", "precos_mostrados", "talao", "print"):
+                u.pop(k, None)
+            return out + [_tirar_botoes(cq)] + _boas_vindas(chat, u["nome"], cfg.get("aviso", ""))
         return out + [_tirar_botoes(cq), pergunta_capital(chat, u, "🔄 Carteira a zero (se foi engano, carrega em "
                                                                      "↩️ Desfazer).\n\n")]
     if acao == "cap":
