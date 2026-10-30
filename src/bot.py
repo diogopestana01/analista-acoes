@@ -33,6 +33,8 @@ DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
 MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 LER_LISTA = None  # () -> dict: data/lista_sinais.json, gravada pelos sinais a cada corrida
+COTAR_VIVO = None  # (tickers) -> {ticker: preço} em tempo real (Nasdaq), só com a bolsa aberta; o bot_carteira preenche
+VIVO_MAX = 12      # quantos sinais da lista vão buscar o preço do momento quando alguém a abre
 LISTA_MAX_MIN = 20  # mais velha do que isto (ex. os sinais pararam), o bot calcula a lista ele próprio
 CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (sem sinal)
 
@@ -1678,7 +1680,32 @@ def _avaliados(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
             return []
         abertos = sorted(set(hist.loc[hist["estado"] == "aberto", "ticker"]))
         itens = lista_sinais.avaliar(hist, _cotacoes(abertos), hoje, _modelo_trocas(), _cfg_sinais())
+    else:
+        itens = _ao_vivo(itens, hist, hoje)
     return [s for s in itens if cart.mercado(s["ticker"]) in u["regras"]["mercados"]]
+
+
+def _ao_vivo(itens: list[dict], hist: pd.DataFrame | None, hoje: str) -> list[dict]:
+    """Com a bolsa aberta, os primeiros sinais da lista ao preço deste momento (a lista gravada pode ter
+    até 10 min): volta a avaliar estado, limite e força com esse preço. Sem preço vivo, fica a gravada."""
+    if COTAR_VIVO is None:
+        return itens
+    quais = [s["ticker"] for s in itens if s.get("estado_lista") == "comprar"][:VIVO_MAX]
+    try:
+        vivos = COTAR_VIVO(quais) if quais else {}
+    except Exception:  # noqa: BLE001  sem tempo real, serve a lista dos sinais
+        vivos = {}
+    if not vivos:
+        return itens
+    modelo, cfg, out = _modelo_trocas(), _cfg_sinais(), []
+    for s in itens:  # a ordem fica a da lista (depende do retorno esperado e da taxa, não do preço)
+        if s["ticker"] not in vivos:
+            out.append(s)
+            continue
+        novo = lista_sinais.avaliar_um(s, vivos[s["ticker"]], hoje, modelo, cfg)
+        if novo:  # None: tocou no stop ou no objetivo neste momento
+            out.append({**novo, "ao_vivo": True})
+    return out
 
 
 def _a_espera_da_abertura(s: dict) -> bool:
@@ -1808,7 +1835,9 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
                    else "🔒 Nenhuma troca compensa agora.", ""]
     rodape = ("Lucro esperado: média de sinais iguais no passado, já com custos e contando os que perdem. "
               "Confiança: hipótese de acabar a ganhar.")
-    linhas.append(f"<i>{rodape}" + (f" Preços das {hora}." if hora else "") + "</i>")
+    vivo = all(s.get("ao_vivo") for s in mostrar[:max(livres, 1)])
+    linhas.append(f"<i>{rodape}" + (" Preços deste momento." if vivo else f" Preços das {hora}." if hora else "")
+                  + "</i>")
     linhas.append("👇 Toca num sinal para ver quanto comprar.")
     botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}", f"ls|{s['ticker']}|{s['data_sinal']}")
                for k, s in list(enumerate(mostrar, start=1))[i:i + 3]] for i in range(0, len(mostrar), 3)]

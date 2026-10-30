@@ -42,6 +42,27 @@ def cotar(tickers: list[str]) -> dict:
     return {**(precos.atuais(falta) if falta else {}), **px}
 
 
+VIVO_SEG = 90  # cache do preço em tempo real dos sinais da lista
+
+
+def cotar_vivo(tickers: list[str]) -> dict:
+    """Preço deste momento (Nasdaq, Yahoo de reserva) para a lista de sinais, só com a bolsa aberta.
+    Usa o que a vigia ou outra pessoa leu há menos de VIVO_SEG; o resto vai buscar em paralelo."""
+    if not bolsa_eua_aberta(pd.Timestamp.now(tz="UTC")):
+        return {}
+    agora = time.time()
+    out = {t: VIVOS[t][0] for t in tickers if t in VIVOS and agora - VIVOS[t][1] < VIVO_SEG}
+    falta = [t for t in tickers if t not in out]
+    if falta:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            for q in ex.map(lambda t: precos_agora.agora([t]), falta):
+                for t, v in (q or {}).items():
+                    VIVOS[t] = (v["preco"], time.time())
+                    out[t] = v["preco"]
+    return out
+
+
 def ler_print(file_id: str, tipo: str) -> dict | None:
     """Descarrega a imagem do Telegram e lê os números (o Claude lê, o código confere)."""
     info = telegram.api("getFile", file_id=file_id) or {}
@@ -243,6 +264,7 @@ def main(minutos: float) -> None:
     cfg = yaml.safe_load((RAIZ / "config_carteira.yaml").read_text())
     k = cofre.chave()
     bot.COTAR = cotar  # carteira e sinais em aberto ao preço de agora
+    bot.COTAR_VIVO = cotar_vivo  # 📈 Sinais e cartão do sinal ao preço deste momento
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
     bot.LER_LISTA = lambda: _json(LISTA)  # a lista de sinais que os sinais gravam a cada corrida
     bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
