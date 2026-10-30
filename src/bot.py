@@ -1506,6 +1506,17 @@ def _atr_sinal(s: dict) -> float | None:
     return trocas.atr_pct(s["setup"], e, s["stop"], _cfg_sinais())
 
 
+def _insiders_texto(s: dict) -> str:
+    """Compras de insiders e vendas a descoberto (só informação, não mexe na ordem): o texto pronto que os
+    sinais gravam em cada item da lista; nos sinais acabados de chegar, vai-se buscar à lista."""
+    txt = s.get("insiders_texto")
+    if not isinstance(txt, str):
+        item = next((x for x in lista_guardada() or [] if x.get("ticker") == s.get("ticker")
+                     and str(x.get("data_sinal", ""))[:10] == str(s.get("data_sinal", ""))[:10]), None)
+        txt = (item or {}).get("insiders_texto")
+    return txt.strip() if isinstance(txt, str) else ""
+
+
 def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
     moeda, e = u["regras"]["moeda"], s["entrada"]
@@ -1529,6 +1540,9 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     r_txt = risco.texto(_atr_sinal(s))
     if r_txt:
         linhas.append(r_txt)
+    ins = _insiders_texto(s)
+    if ins:
+        linhas.append(html.escape(ins))
     dias = int(round(_num(s.get("max_dias")) or _num(s.get("dias_estimados")) or 5))
     linhas.append(f"⏳ Prazo: até {dias} dia{'s' if dias != 1 else ''} út{'eis' if dias != 1 else 'il'}")
     if isinstance(s.get("resultados_em"), str):
