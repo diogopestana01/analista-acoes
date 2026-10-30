@@ -1,4 +1,5 @@
 """Lista de sinais reavaliada a cada corrida: estado (comprar / em andamento), força e trocas."""
+import pandas as pd
 import pytest
 
 from src import bot, carteira as cart, lista_sinais
@@ -121,3 +122,45 @@ def test_resumo_da_manha_por_pessoa(monkeypatch):
     # Quem desliga em 🔔 Avisos deixa de receber.
     bot.processar(e, _cb(DONO, "g|manha"), HIST, HOJE, CFG)
     assert bot.resumos_manha(e, HIST, HOJE) == []
+
+
+def test_bot_le_a_lista_gravada_pelos_sinais_se_for_recente(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    agora = pd.Timestamp.now(tz="UTC")
+    item = {"ticker": "GRAV", "data_sinal": HOJE, "estado_lista": "comprar", "forca": 0.01, "limite": 11.0,
+            "preco": 10.0, "entrada": 10.0, "entrada_sinal": 10.0, "dias_usados": 0, "max_dias": 5,
+            "retorno_esperado": float("nan"), "risco": "baixo", "perda_dia_mau": 0.03, "setup": "pullback"}
+    monkeypatch.setattr(bot, "LER_LISTA", lambda: {"gerada_em": agora.isoformat(), "itens": [item]})
+    assert [s["ticker"] for s in bot._avaliados(u, HIST, HOJE)] == ["GRAV"]
+    assert bot._avaliados(u, HIST, HOJE)[0]["retorno_esperado"] is None
+    velha = (agora - pd.Timedelta(minutes=30)).isoformat()
+    monkeypatch.setattr(bot, "LER_LISTA", lambda: {"gerada_em": velha, "itens": [item]})
+    assert "GRAV" not in [s["ticker"] for s in bot._avaliados(u, HIST, HOJE)]  # velha: calcula-se
+
+
+def test_gestao_no_bot_avisa_fechos_uma_vez(monkeypatch):
+    import bot_carteira as bc
+    e, u = _preparar(monkeypatch)
+    enviados = []
+    monkeypatch.setattr(bc, "executar", lambda ch: enviados.extend(ch))
+    monkeypatch.setattr(bc, "CACHE_SINAIS", bc.RAIZ / "nao_existe.json")
+    monkeypatch.setattr(bc.resultados, "agenda", lambda *a: {})
+    cart.comprar(u, "CEDO", 1, 50.0, "2026-10-27", bot._sinal(HIST, "CEDO"))
+    agora = pd.Timestamp("2026-10-29 15:00", tz="UTC")
+    # 1.ª vez: só marca o que já estava fechado, sem avisar.
+    monkeypatch.setattr(bc, "gestao_no_bot", lambda: True)
+    assert bc.gerir(e, HIST, agora, DONO, False) and enviados == []
+    fechado = HIST.copy()
+    i = fechado.index[fechado["ticker"] == "CEDO"][0]
+    fechado.loc[i, ["estado", "data_fecho", "preco_fecho"]] = ["expirou", HOJE, 51.0]
+    # Desligado (o diario.py ainda avisa): marca como visto e não envia.
+    monkeypatch.setattr(bc, "gestao_no_bot", lambda: False)
+    bc.gerir(e, fechado, agora, DONO, False)
+    assert enviados == [] and "CEDO|2026-10-27|expirou" in e["fechos_vistos"]
+    # Ligado: um fecho novo avisa quem tem a posição, uma vez.
+    e["fechos_vistos"] = []
+    monkeypatch.setattr(bc, "gestao_no_bot", lambda: True)
+    bc.gerir(e, fechado, agora, DONO, False)
+    assert len(enviados) == 1 and "Prazo terminou" in enviados[0][1]["text"] and "Tens 1" in enviados[0][1]["text"]
+    bc.gerir(e, fechado, agora, DONO, False)
+    assert len(enviados) == 1

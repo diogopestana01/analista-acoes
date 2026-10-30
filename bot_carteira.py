@@ -17,7 +17,8 @@ import yaml
 
 import requests
 
-from src import acompanhamento, bot, carteira, cofre, cotacoes, leitor_print, precos, precos_agora, telegram
+from src import (acompanhamento, bot, carteira, cofre, cotacoes, leitor_print, precos, precos_agora, resultados,
+                 telegram)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("carteira")
@@ -25,6 +26,8 @@ RAIZ = Path(__file__).parent
 ESTADO = RAIZ / "data" / "carteira.enc"
 HIST = RAIZ / "data" / "historico_sinais.csv"
 COTACOES = RAIZ / "data" / "cotacoes.json"
+LISTA = RAIZ / "data" / "lista_sinais.json"
+CACHE_SINAIS = RAIZ / "data" / "avaliacoes_cache.json"  # avisos já dados pelos sinais (diario.py)
 
 
 VIVOS: dict[str, tuple[float, float]] = {}  # ticker -> (preço de agora, quando foi lido)
@@ -92,6 +95,73 @@ def vigiar_posicoes(estado: dict, agora: pd.Timestamp) -> bool:
         estado["saidas_avisadas"] = sorted(avisados)[-500:]
     log.info("Vigia de 2 em 2 min: %d preços de %d ações, %d avisos", len(vivos), len(tickers), len(msgs))
     return bool(msgs)
+
+
+# ---------- gestão das posições (passou do diario.py para aqui: config.yaml gestao.no_bot) ----------
+
+AGENDA = {"dia": "", "agenda": {}, "vistos": set()}  # calendário de resultados, pedido uma vez por dia
+
+
+def gestao_no_bot() -> bool:
+    try:
+        return bool((yaml.safe_load((RAIZ / "config.yaml").read_text()).get("gestao") or {}).get("no_bot"))
+    except (OSError, yaml.YAMLError, AttributeError):
+        return False
+
+
+def _json(caminho: Path) -> dict:
+    try:
+        return json.loads(caminho.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def _avisados(estado: dict, nome: str) -> set:
+    """Avisos já dados pelo bot e pelos sinais: ninguém recebe o mesmo duas vezes na passagem."""
+    return set(estado.get(nome) or []) | set(_json(CACHE_SINAIS).get(nome) or [])
+
+
+def gerir(estado: dict, hist: pd.DataFrame, agora: pd.Timestamp, dono: str | None, trocas_agora: bool) -> bool:
+    """Saídas do registo (prazo, regra, stop/objetivo ao fecho), resultados e trocas, a quem tem a posição.
+    Os fechos são sempre marcados como vistos; só se avisa com gestao.no_bot ligado (senão é o diario.py)."""
+    ativo, mudou = gestao_no_bot(), False
+    desde = (agora - pd.Timedelta(days=7)).strftime("%Y-%m-%d")
+    primeira = "fechos_vistos" not in estado
+    novos, chaves = bot.fechos_do_registo(hist, set(estado.get("fechos_vistos") or []), desde)
+    if novos and ativo and not primeira:
+        avisados = _avisados(estado, "saidas_avisadas")
+        msgs = bot.mensagens_fechos(estado, novos, dono, avisados)
+        executar([("sendMessage", bot._msg(c, t, b)[1]) for c, t, b in msgs])
+        estado["saidas_avisadas"] = sorted(avisados)[-500:]
+        log.info("Saídas do registo: %d fechos, %d avisos", len(novos), len(msgs))
+    if primeira or novos or set(estado.get("fechos_vistos") or []) != chaves:
+        estado["fechos_vistos"], mudou = sorted(chaves), True
+    if not ativo:
+        return mudou
+    hoje = agora.strftime("%Y-%m-%d")
+    em_carteira = sorted({t for u in carteira.ativos(estado).values() for t in u["posicoes"]})
+    if AGENDA["dia"] != hoje:
+        AGENDA.update(dia=hoje, agenda={}, vistos=set())
+    falta = [t for t in em_carteira if t not in AGENDA["vistos"]]
+    if falta:
+        try:
+            AGENDA["agenda"].update(resultados.agenda(agora, falta, 1))
+            AGENDA["vistos"] |= set(falta)
+        except Exception:  # noqa: BLE001  sem calendário, tenta-se na volta seguinte
+            log.warning("Calendário de resultados falhou")
+    avisados = _avisados(estado, "resultados_avisados")
+    msgs = bot.mensagens_resultados(estado, AGENDA["agenda"], avisados, hoje)
+    if msgs:
+        executar([("sendMessage", bot._msg(c, t, b)[1]) for c, t, b in msgs])
+        estado["resultados_avisados"], mudou = sorted(avisados)[-500:], True
+    if trocas_agora:
+        avisados = _avisados(estado, "trocas_avisadas")
+        msgs = bot.mensagens_trocas(estado, hist, hoje, avisados)
+        if msgs:
+            executar([("sendMessage", bot._msg(c, t, b)[1]) for c, t, b in msgs])
+            estado["trocas_avisadas"] = sorted(avisados, key=lambda k: k.rsplit("|", 1)[-1])[-300:]
+            mudou = True
+    return mudou
 
 
 def git(*args: str) -> bool:
@@ -174,6 +244,7 @@ def main(minutos: float) -> None:
     k = cofre.chave()
     bot.COTAR = cotar  # carteira e sinais em aberto ao preço de agora
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
+    bot.LER_LISTA = lambda: _json(LISTA)  # a lista de sinais que os sinais gravam a cada corrida
     bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
     bot.TALAO_URL = cfg.get("talao_url", "")
     eu = telegram.api("getMe") or {}
@@ -190,7 +261,7 @@ def main(minutos: float) -> None:
         {"command": "carteira", "description": "Ver a carteira"},
         {"command": "ajuda", "description": "Como usar"}]))
     hist, ultimo_pull, ultima_vigia, ultimo_aviso_sinais = acompanhamento.carregar(HIST), 0.0, 0.0, 0.0
-    ultima_vigia_precos = 0.0
+    ultima_vigia_precos, ultima_gestao, ultimas_trocas = 0.0, 0.0, 0.0
     fim = time.time() + minutos * 60
     while time.time() < fim:
         upds = telegram.api("getUpdates", espera=60, timeout=40, offset=estado["offset"],
@@ -236,6 +307,14 @@ def main(minutos: float) -> None:
                 mudou |= vigiar_posicoes(estado, agora)
             except Exception:  # noqa: BLE001  a vigia nunca pode parar o bot
                 log.exception("Vigia dos preços falhou")
+        if time.time() - ultima_gestao > 60:
+            ultima_gestao = time.time()
+            trocas_agora = bolsa_eua_aberta(agora) and time.time() - ultimas_trocas > 600
+            ultimas_trocas = time.time() if trocas_agora else ultimas_trocas
+            try:
+                mudou |= gerir(estado, hist, agora, os.environ.get("TELEGRAM_CHAT_ID"), trocas_agora)
+            except Exception:  # noqa: BLE001  a gestão nunca pode parar o bot
+                log.exception("Gestão das posições falhou")
         if mudou:
             guardar_e_enviar(estado, k, com_git)
         if com_git and time.time() - ultima_vigia > 600:
