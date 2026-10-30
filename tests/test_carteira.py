@@ -292,7 +292,7 @@ def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira(monkeypa
     msgs = bot.mensagens_sinais(e, novos, "cab", DONO)
     textos = [m[1] for m in msgs]
     assert "os 2 melhores" in textos[0] and "2 lugares livres" in textos[0]
-    assert "COMPRAR FORTE" in textos[1] and "Retorno esperado <b>+1,5%</b> · o melhor desta ronda" in textos[1]
+    assert "COMPRAR FORTE" in textos[1] and "lucro esperado <b>+1,5%</b>" in textos[1] and "📋 O melhor desta ronda" in textos[1]
     assert "COMPRAR MEDIO" in textos[2]
     assert "Ficaram de fora 1" in textos[3] and "FRACO" in textos[3] and msgs[3][2] is None
     # Carteira cheia e nenhum sinal claramente melhor: só um aviso, sem sinais.
@@ -675,7 +675,7 @@ def test_numeros_do_sinal_retorno_esperado_e_taxa_real_do_setup():
     taxas = bot.taxas_setup(_hist(linhas))
     assert taxas["pullback"] == (12, 8 / 12)
     s = {"setup": "pullback", "retorno_esperado_liquido": 0.0123}
-    assert bot.linha_numeros(s, taxas) == "📊 Retorno esperado <b>+1,2%</b> · este tipo de sinal ganhou 67% de 12 vezes"
+    assert bot.linha_numeros(s, taxas) == "📋 Este tipo de sinal ganhou 67% de 12 vezes"
     assert bot.linha_numeros({"setup": "rompimento"}, taxas) == ""  # sem números, sem linha
 
 
