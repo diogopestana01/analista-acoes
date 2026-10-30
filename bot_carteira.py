@@ -289,6 +289,7 @@ def main(minutos: float) -> None:
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
     bot.LER_LISTA = lambda: _json(LISTA)  # a lista de sinais que os sinais gravam a cada corrida
     bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
+    bot.LER_AGENDA = lambda: AGENDA["agenda"]  # resultados das posições: avaliação da 💼 Carteira
     bot.SPREADS = RAIZ / "data" / "spreads.csv"  # spread normal de cada ação (src/momento.py)
     bot.TALAO_URL = cfg.get("talao_url", "")
     eu = telegram.api("getMe") or {}

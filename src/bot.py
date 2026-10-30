@@ -35,6 +35,7 @@ DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
 MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 LER_LISTA = None  # () -> dict: data/lista_sinais.json, gravada pelos sinais a cada corrida
+LER_AGENDA = None  # () -> {ticker: {"data", "quando"}}: resultados de hoje ao próximo dia útil (bot_carteira)
 SPREADS = None  # Path de data/spreads.csv (spread de cada corrida), para o spread normal de cada ação
 COTAR_LADO = None  # (tickers, "compra"|"venda") -> {ticker: ask|bid} em tempo real; o bot_carteira preenche
 COTAR_VIVO = None  # (tickers) -> {ticker: preço} em tempo real (Nasdaq), só com a bolsa aberta; o bot_carteira preenche
@@ -408,6 +409,9 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
         if texto == "📈 Sinais":
             u["aguarda"] = None
             return lista_sinais_msg(chat, u, hist, hoje)
+        if texto == "💼 Carteira":
+            u["aguarda"] = None
+            return carteira_msgs(chat, u, hist, hoje)
         if texto in MENU_ACOES:
             u["aguarda"] = None
             return [_menu(chat, u, texto, hist, hoje)]
@@ -740,7 +744,7 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
     if acao == "lst":
         return out + lista_sinais_msg(chat, u, hist, hoje)
     if acao == "car":
-        return out + [_msg(chat, carteira_agora(u, hist, hoje), menu=True)]
+        return out + carteira_msgs(chat, u, hist, hoje)
     if acao == "ls":
         return out + [ver_sinal(chat, u, ticker, partes[2], hist, hoje)]
     if acao == "g":
@@ -1087,8 +1091,81 @@ def _hora_lisboa(iso: str) -> str:
         return ""
 
 
-def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str) -> str:
-    """💼 Carteira com as posições ao preço de agora, o prazo de cada sinal e o stop/objetivo já tocado."""
+def _agenda() -> dict:
+    try:
+        return (LER_AGENDA() if LER_AGENDA else None) or {}
+    except Exception:  # noqa: BLE001
+        return {}
+
+
+VEREDICTO_ORDEM = {"vender": 0, "trocar": 1, "pouco": 2, "manter": 3}
+
+
+def avaliar_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str, saidas_: dict | None = None,
+                     troca: tuple | None = None) -> dict[str, dict]:
+    """Veredicto de cada posição aberta, só com regras do modelo:
+    vender   tocou no stop/objetivo, último dia do prazo, ou resultados até ao próximo dia útil
+    trocar   com a carteira cheia, o melhor sinal que dá para comprar rende mais do que ela ainda dá
+             (src/trocas.py, já com o spread e a margem; estudo passo3e_trocas.py)
+    pouco    o que costuma render daqui à saída é ~0 ou negativo, sem troca que compense
+    manter   o resto. Estar a perder NÃO é razão para vender (passo3e: a perder >1 ATR no dia 1 ainda rende)."""
+    saidas_ = saidas_ or {}
+    agenda = _agenda()
+    out = {}
+    for f in forcas(u, hist, hoje):
+        t, p = f["ticker"], u["posicoes"][f["ticker"]]
+        prazo = _conf_prazo(t, p, hist)[1]
+        sx, a = saidas_.get(t), agenda.get(t)
+        if sx:
+            v = ("vender", "")  # a carteira já mostra "tocou no stop/chegou ao objetivo: vende"
+        elif a:
+            quando = "hoje" if a["data"] == hoje else f"a {cart._dm(a['data'])}"
+            v = ("vender", f"📅 <b>Vender antes dos resultados</b> ({quando}): o preço pode saltar muito e passar o stop")
+        elif p.get("sinal") and f["usados"] + 1 >= prazo:
+            v = ("vender", "⏱ <b>Vender ao fecho</b>: último dia do prazo do sinal")
+        elif troca and troca[1] == t:
+            v = ("trocar", f"🔁 <b>Trocar pela {troca[0]['ticker']}</b>: o sinal novo rende mais do que esta "
+                           f"ainda dá ({_pct(f['falta'])}), já contando o spread. Proposta a seguir")
+        elif f["falta"] is not None and f["falta"] <= 0.003:
+            v = ("pouco", f"⏳ <b>Manter, mas já deu quase tudo</b>: daqui à saída costuma dar {_pct(f['falta'])}; "
+                          f"se aparecer um sinal melhor, troca")
+        elif f["falta"] is not None:
+            v = ("manter", f"🔒 <b>Manter</b>: ainda costuma dar {_pct(f['falta'])} até à saída")
+        elif p.get("sinal"):
+            v = ("manter", "🔒 <b>Manter</b>: segue o plano do sinal (stop e objetivo)")
+        else:
+            continue  # comprada fora de um sinal: o modelo não tem opinião
+        out[t] = {"tipo": v[0], "texto": v[1]}
+    return out
+
+
+def _resumo_veredictos(v: dict) -> str:
+    if not v:
+        return ""
+    n = {k: sum(x["tipo"] == k for x in v.values()) for k in VEREDICTO_ORDEM}
+    partes = [f"{n['vender']} vender"] if n["vender"] else []
+    partes += [f"{n['trocar']} trocar"] if n["trocar"] else []
+    partes += [f"{n['manter'] + n['pouco']} manter"] if n["manter"] + n["pouco"] else []
+    return "🧭 <b>Avaliação do modelo</b>: " + " · ".join(partes)
+
+
+def carteira_msgs(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -> list:
+    """💼 Carteira com a avaliação de cada posição; se compensa trocar, a proposta vem a seguir."""
+    troca = None
+    if u["posicoes"] and len(u["posicoes"]) >= u["regras"]["max_posicoes"]:
+        try:
+            troca = _melhor_troca(u, _avaliados(u, hist, hoje), hist, hoje)
+        except Exception:  # noqa: BLE001  sem lista, a carteira mostra-se na mesma
+            troca = None
+    out = [_msg(chat, carteira_agora(u, hist, hoje, troca), menu=True)]
+    if troca:
+        out.append(_msg(chat, *troca[2]))
+    return out
+
+
+def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str, troca: tuple | None = None) -> str:
+    """💼 Carteira com as posições ao preço de agora, o prazo de cada sinal, o stop/objetivo já tocado
+    e a avaliação do modelo (manter, trocar ou vender) de cada uma."""
     prazos = {t: _conf_prazo(t, p, hist)[1] for t, p in u["posicoes"].items()}
     dados = _ler_cotacoes()
     velas = dados.get("acoes", {})
@@ -1103,7 +1180,12 @@ def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str) -> str:
         ao_bid = False
     if ao_bid:  # tempo real, ao preço a que se vende (bid), como a XTB mostra as posições
         hora = "deste momento, ao preço de venda (bid) como na XTB"
-    return cart.formatar_carteira(u, _cotacoes(list(u["posicoes"]), "venda"), hoje, prazos, saidas, hora, alvos)
+    try:
+        veredictos = avaliar_posicoes(u, hist, hoje, saidas, troca)
+    except Exception:  # noqa: BLE001  a avaliação nunca pode esconder a carteira
+        veredictos = {}
+    return cart.formatar_carteira(u, _cotacoes(list(u["posicoes"]), "venda"), hoje, prazos, saidas, hora, alvos,
+                                  {t: v["texto"] for t, v in veredictos.items() if v["texto"]}, _resumo_veredictos(veredictos))
 
 
 def _alvo_movel(t: str, saida, hoje: str, velas: dict | None = None) -> float | None:

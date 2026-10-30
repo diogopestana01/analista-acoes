@@ -17,7 +17,7 @@ Modelo de sinais de curto prazo (1 dia a 1 semana) com alertas no Telegram. O do
 - Europa (`sinais.europa`, estudo `passo3m_europa.py`): só ações em EUR e só rompimentos (câmbio de 0,5%/lado da XTB mata Londres/Estocolmo/Suíça).
 - Risco (`src/risco.py`, estudo `passo3i_risco.py`): perda num dia mau ≈ 2,2 x ATR; nível baixo/médio/alto. Ganho esperado, confiança e risco são três coisas diferentes.
 - Diário de trades (`src/diario_trades.py`): o bot pergunta porque vendeu (botões), regista sozinho compra acima do limite e venda antes do modelo; "tu vs modelo" no resumo de sexta e em 📊 Resultados.
-- Gestão das posições (stops, saídas, resultados, trocas): passa para a Carteira; `config.yaml` `gestao.no_bot: true` desliga-a no `diario.py`.
+- Gestão das posições (stops, saídas, resultados, trocas): passa para a Carteira; 💼 Carteira mostra a avaliação de cada posição (`bot.avaliar_posicoes`: vender, trocar ou manter, só com regras do modelo; estar a perder não é razão para vender); `config.yaml` `gestao.no_bot: true` desliga-a no `diario.py`.
 - Saúde: `src/saude.py` avisa o dono (preços velhos, Claude a falhar); o Relógio avisa se os sinais pararem ou falharem 2 vezes seguidas.
 - Insiders e short interest (`src/insiders.py`, Nasdaq): compras de diretores em 90 dias e dias para cobrir, uma vez por dia por ação (`data/insiders.json`); só informação na lista e no registo, para medir.
 - Tendências nas redes (`src/tendencias.py`): Reddit via ApeWisdom e StockTwits, só informação no alerta e no resumo da manhã; guardadas no histórico para medir antes de mexerem na pontuação.

@@ -298,9 +298,11 @@ def _barra(px: float, stop: float, obj: float, n: int = 9, movel: bool = False) 
 
 
 def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: dict | None = None,
-                      saidas: dict | None = None, hora: str = "", alvos: dict | None = None) -> str:
+                      saidas: dict | None = None, hora: str = "", alvos: dict | None = None,
+                      veredictos: dict | None = None, resumo: str = "") -> str:
     """Carteira ao preço de agora (`cot`): valor total e, por posição, ganho, prazo e onde está o preço
-    entre o stop e o objetivo. `saidas[t]` = stop/objetivo já atingido (cotacoes.saida_atingida)."""
+    entre o stop e o objetivo. `saidas[t]` = stop/objetivo já atingido (cotacoes.saida_atingida).
+    `veredictos[t]` = linha da avaliação do modelo (manter/trocar/vender); `resumo` = contagem no topo."""
     r, moeda = u["regras"], u["regras"]["moeda"]
     cot, prazos, saidas, alvos = cot or {}, prazos or {}, saidas or {}, alvos or {}
     blocos, em_acoes, moveis = [], 0.0, False
@@ -337,6 +339,8 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
             linhas.append(f"🛑 {fmt(stop)} (a {sinal_fmt((stop / px - 1) * 100, 1)}%) · sai quando o bot avisar")
         elif not obj:
             linhas.append("⚠️ Sem stop: comprada fora de um sinal aberto, não te consigo avisar de quando vender")
+        if (veredictos or {}).get(t):
+            linhas.append(veredictos[t])
         if not p.get("acompanhar", True):
             linhas.append("🔕 sem avisos de venda")
         blocos.append("\n".join(linhas))
@@ -346,6 +350,8 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
     out = [f"💼 <b>A tua carteira</b>",
            f"<b>{fmt(total)} {moeda}</b>   {'🟢' if ganho >= 0 else '🔴'} {sinal_fmt(ganho)} ({sinal_fmt(ganho_pct, 1)}%)",
            f"Em ações {fmt(em_acoes)} · Livre {fmt(u['caixa'])} · {len(u['posicoes'])}/{r['max_posicoes']} lugares"]
+    if resumo:
+        out.append(resumo)
     if blocos:
         out += ["", "\n\n".join(blocos)]
     else:
