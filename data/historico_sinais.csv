@@ -144,3 +144,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-10-30,TMV.DE,pullback,compra,7.309999942779541,,6.7968841277845495,2.5,5,63.3,aberto,,,,sma5,manter,2.0,apoia,0.3,,,,0.014764717794329611,ok,ok,False,,1.0,4.0,,,
 2026-10-30,RNG,pullback,compra,80.61000061035156,,71.49193736398689,3.0,5,43.0,aberto,,,,sma5,duvidoso,4.0,apoia,0.6,,,0.7142857142857143,0.016009115266549103,ok,ok,False,,0.5,12.0,0.0,,0.00445
 2026-10-30,MSBI,pullback,compra,33.060001373291016,,31.370102163425894,2.0,5,59.8,aberto,,,,sma5,manter,2.0,apoia,0.6,,,,0.01891272606654494,ok,ok,False,,1.0,10.0,0.0,7.774212,0.00061
+2026-10-30,SMWB,pullback,compra,8.654999732971191,,7.820927628792613,3.0,5,60.0,aberto,,,,sma5,manter,2.0,neutro,0.2,,,1.0,0.020919177015489905,ok,ok,False,,1.0,3.0,0.0,,0.00347
