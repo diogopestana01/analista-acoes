@@ -1663,9 +1663,46 @@ def _linha_compra(k: int, s: dict) -> str:
     return f"{cab} " + " · ".join(resto) if resto else cab
 
 
+MEDALHAS = {1: "🥇", 2: "🥈", 3: "🥉"}
+LISTA_MAX = 10   # quantos sinais o ranking mostra no máximo
+
+
+def _cartao_ranking(k: int, s: dict) -> str:
+    """Um sinal no ranking, em três linhas: posição e risco; preços para a ordem; o que o modelo espera.
+    1. <b>KPLT</b> · 🟢 risco baixo
+       💵 até 13,01 · 🎯 15,47 (+19%) · 🛑 11,05 (−15%)
+       📊 lucro esperado +1,4% · confiança 68%"""
+    cab = f"{MEDALHAS.get(k, f'{k}.')} <b>{s['ticker']}</b>"
+    if s.get("risco") in RISCO_COR:
+        cab += f" · {RISCO_COR[s['risco']]} risco {s['risco']}"
+    if _a_espera_da_abertura(s):
+        cab += " · ⏰ à abertura"
+    base = _num(s.get("preco")) or _num(s.get("entrada"))
+    o, st = _num(s.get("objetivo")), _num(s.get("stop"))
+    regra = saidas.REGRAS.get(s.get("saida") or "")
+    precos = [f"💵 até {cart.fmt(s['limite'])}" if s.get("limite") else ""]
+    if o:
+        precos.append(f"🎯 {cart.fmt(o)}" + (f" ({cart.sinal_fmt((o / base - 1) * 100, 0)}%)" if base else ""))
+    elif regra and regra.sair_se:
+        precos.append("🎯 aviso quando vender")
+    if st:
+        precos.append(f"🛑 {cart.fmt(st)}" + (f" ({cart.sinal_fmt((st / base - 1) * 100, 0)}%)" if base else ""))
+    modelo = []
+    if _retorno(s) is not None:
+        modelo.append(f"lucro esperado <b>{_txt_ret(s)}</b>")
+    if _num(s.get("taxa")):
+        modelo.append(f"confiança <b>{s['taxa'] * 100:.0f}%</b>")
+    linhas = [cab, "    " + " · ".join(p for p in precos if p)]
+    if modelo:
+        linhas.append("    📊 " + " · ".join(modelo))
+    return "\n".join(linhas)
+
+
 def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -> list:
-    """📈 Sinais: a classificação de agora dos sinais que dá para comprar, para os lugares livres.
-    Os números do modelo (ordem, força, risco) ficam por trás; o detalhe está no botão de cada sinal."""
+    """📈 Sinais: o ranking de agora dos sinais que ainda dá para comprar, do melhor para o pior segundo o
+    modelo (lista_sinais.ordenar: equilibra o lucro esperado e a probabilidade de ganhar). Cada sinal com o
+    preço máximo de compra, objetivo, stop, lucro esperado, confiança e risco; o detalhe (quanto comprar)
+    está no botão de cada um."""
     itens = _avaliados(u, hist, hoje)
     comprar = _compraveis(u, itens)
     r = u["regras"]
@@ -1674,22 +1711,28 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     if not comprar:
         return [_msg(chat, "📈 Agora não há sinais para comprar. Aviso-te quando houver.", menu=True)]
     troca = _melhor_troca(u, itens, hist, hoje) if not livres else None
-    mostrar = comprar[:max(livres, 3)] if livres else comprar[:3]
+    mostrar = comprar[:LISTA_MAX]
     if livres:
-        cab = (f"📈 <b>Para comprar agora</b> ({livres} lugar{'es' if livres != 1 else ''} "
-               f"livre{'s' if livres != 1 else ''})")
+        lug = f"{livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}"
+        cab = f"📈 <b>Ranking de agora</b> · {lug}"
     else:
-        cab = f"📈 <b>Os melhores agora</b> (a tua carteira está cheia, {len(u['posicoes'])}/{r['max_posicoes']})"
-    linhas = [cab] + [_linha_compra(k, s) for k, s in enumerate(mostrar, start=1)]
-    if livres and len(comprar) > len(mostrar):
-        linhas.append(f"<i>e mais {len(comprar) - len(mostrar)} abaixo destes</i>")
+        cab = f"📈 <b>Ranking de agora</b> · carteira cheia ({len(u['posicoes'])}/{r['max_posicoes']})"
+    linhas = [cab, "<i>Do melhor para o pior, segundo o modelo.</i>", ""]
+    for k, s in enumerate(mostrar, start=1):
+        linhas += [_cartao_ranking(k, s), ""]
+        if livres and k == livres and len(mostrar) > k:
+            linhas += ["<i>— abaixo daqui já não cabem na tua carteira —</i>", ""]
+    if len(comprar) > len(mostrar):
+        linhas += [f"<i>e mais {len(comprar) - len(mostrar)} abaixo destes</i>", ""]
     if not livres:
-        linhas.append(f"\n🔁 Compensa trocar a {troca[1]} pela {troca[0]['ticker']}: proposta a seguir." if troca
-                      else "\n🔒 Nenhuma troca compensa agora.")
-    linhas.append(f"\n<i>Preços das {hora}. Carrega num sinal para ver quanto comprar.</i>" if hora
-                  else "\n<i>Carrega num sinal para ver quanto comprar.</i>")
-    botoes = [[(f"🟢 {s['ticker']}", f"ls|{s['ticker']}|{s['data_sinal']}") for s in mostrar[i:i + 3]]
-              for i in range(0, min(len(mostrar), 6), 3)]
+        linhas += [f"🔁 Compensa trocar a {troca[1]} pela {troca[0]['ticker']}: proposta a seguir." if troca
+                   else "🔒 Nenhuma troca compensa agora.", ""]
+    rodape = ("Lucro esperado: média de sinais iguais no passado, já com custos e contando os que perdem. "
+              "Confiança: hipótese de acabar a ganhar.")
+    linhas.append(f"<i>{rodape}" + (f" Preços das {hora}." if hora else "") + "</i>")
+    linhas.append("👇 Toca num sinal para ver quanto comprar.")
+    botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}", f"ls|{s['ticker']}|{s['data_sinal']}")
+               for k, s in list(enumerate(mostrar, start=1))[i:i + 3]] for i in range(0, len(mostrar), 3)]
     out = [_msg(chat, "\n".join(linhas), botoes)]
     if troca:
         out.append(_msg(chat, *troca[2]))
