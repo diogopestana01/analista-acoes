@@ -18,7 +18,7 @@ COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "s
            "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
            "veredicto_inv", "risco_inv", "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
            "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv", "entrada_na_abertura", "preco_sinal",
-           "taxa_acerto", "n_historico", "insiders_compradores", "short_dias"]
+           "taxa_acerto", "n_historico", "insiders_compradores", "short_dias", "spread_sinal"]
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
