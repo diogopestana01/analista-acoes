@@ -289,3 +289,23 @@ def test_spread_alto_tira_da_compra_e_diz_porque(monkeypatch):
     assert "Fora da compra por spread alto</b> (acima de 1%, entrar sai caro): CEDO 1,6%" in _textos(out)[0]
     out = bot.processar(e, _cb(DONO, "ls|CEDO|2026-10-27"), HIST, HOJE, CFG)
     assert "CEDO saiu da compra: o spread agora é 1,6%" in _textos(out)[0]
+
+
+def test_carteira_avalia_cada_posicao(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    bot.definir_posicoes(u, 2)
+    cart.comprar(u, "SUBIU", 0.1, 100.0, "2026-10-27", bot._sinal(HIST, "SUBIU"))
+    menu = {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "💼 Carteira"}}
+    txt = _textos(bot.processar(e, menu, HIST, HOJE, CFG))[0]
+    assert "🧭 <b>Avaliação do modelo</b>: 1 manter" in txt
+    assert "⏳ <b>Manter, mas já deu quase tudo</b>: daqui à saída costuma dar +0,1%" in txt
+    # Carteira cheia: a posição fraca passa a "trocar" e a proposta vem a seguir.
+    bot.definir_posicoes(u, 1)
+    out = bot.processar(e, menu, HIST, HOJE, CFG)
+    txt = _textos(out)
+    assert "1 trocar" in txt[0] and "🔁 <b>Trocar pela NOVO</b>" in txt[0]
+    assert "Proposta de troca" in txt[1]
+    # Resultados amanhã: vender antes.
+    monkeypatch.setattr(bot, "LER_AGENDA", lambda: {"SUBIU": {"data": "2026-11-02", "quando": "antes da abertura"}})
+    txt = _textos(bot.processar(e, menu, HIST, HOJE, CFG))[0]
+    assert "1 vender" in txt and "📅 <b>Vender antes dos resultados</b> (a 02/11)" in txt
