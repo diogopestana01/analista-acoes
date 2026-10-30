@@ -78,3 +78,7 @@ tendencias:              # Reddit (ApeWisdom) e StockTwits no alerta, só como i
 # data/lista_sinais.json; assim os avisos não dependem das notícias nem do tempo de cada corrida.
 gestao:
   no_bot: true
+
+# Saúde: avisa o dono se uma corrida dos sinais passar deste tempo (o ciclo é de 10 min).
+saude:
+  corrida_max_min: 8

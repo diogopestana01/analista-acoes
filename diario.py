@@ -276,10 +276,30 @@ def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | Non
                       prontos, precos, estado)
 
 
+def avisar_se_lenta(tempos: dict, limite_min: float) -> None:
+    """Uma corrida tem de acabar bem antes da seguinte (10 min). Se passar do limite, avisa o dono
+    uma vez por dia, com o tempo de cada parte para se ver onde está a demora."""
+    total = sum(tempos.values())
+    partes = ", ".join(f"{k} {v / 60:.1f} min" for k, v in tempos.items())
+    logging.info("Tempo da corrida: %.1f min (%s)", total / 60, partes)
+    if total <= limite_min * 60:
+        return
+    from src import saude
+    cache = _ler_cache()
+    saude.avisar([("corrida_lenta", f"A corrida dos sinais demorou {total / 60:.1f} min (limite {limite_min:g}; "
+                                    f"o ciclo é de 10). Partes: {partes}.")], cache, f"{pd.Timestamp.now(tz='UTC'):%Y-%m-%d}")
+    (DADOS / "avaliacoes_cache.json").write_text(json.dumps(cache))
+
+
 def main() -> None:
+    import time
+    t0 = time.monotonic()
+    tempos = {}
     config = yaml.safe_load((RAIZ / "config.yaml").read_text())
     passo1_universo.main()
+    tempos["preços"] = time.monotonic() - t0
     saida = passo2_sinais.main()
+    tempos["sinais e notícias"] = time.monotonic() - t0 - tempos["preços"]
 
     precos = pd.read_parquet(DADOS / "precos.parquet")
     hist = acompanhamento.carregar(HIST)
@@ -348,6 +368,8 @@ def main() -> None:
     hist, info_insiders = enriquecer_insiders(hist, agora)
     hist.to_csv(HIST, index=False)
     guardar_lista(hist, dados, config, agora, info_insiders)
+    tempos["registo, lista e avisos"] = time.monotonic() - t0 - sum(tempos.values())
+    avisar_se_lenta(tempos, config.get("saude", {}).get("corrida_max_min", 8))
 
 
 if __name__ == "__main__":
