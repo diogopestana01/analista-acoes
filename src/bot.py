@@ -35,6 +35,8 @@ DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
 MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 LER_LISTA = None  # () -> dict: data/lista_sinais.json, gravada pelos sinais a cada corrida
+ESTUDO_POSICOES = None  # Path de data/estudo_posicoes.json (histórico com 1 a 10 posições)
+SIMULADAS = None  # Path de data/simuladas.json (carteiras simuladas ao vivo, src/simuladas.py)
 LER_AGENDA = None  # () -> {ticker: {"data", "quando"}}: resultados de hoje ao próximo dia útil (bot_carteira)
 SPREADS = None  # Path de data/spreads.csv (spread de cada corrida), para o spread normal de cada ação
 COTAR_LADO = None  # (tickers, "compra"|"venda") -> {ticker: ask|bid} em tempo real; o bot_carteira preenche
@@ -199,6 +201,40 @@ def pergunta_capital(chat: str, u: dict, intro: str = "") -> tuple[str, dict]:
                  [(f"{v} {moeda}", f"cap|{v}") for v in (1000, 2500)] + [("✏️ Outro valor", "cap|outro")]])
 
 
+def _ler_json(caminho) -> dict:
+    try:
+        return json.loads(Path(caminho).read_text()) if caminho else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def texto_numero_posicoes(u: dict) -> str:
+    """O que o número de posições mudou: no histórico (passo3n_posicoes.py, data/estudo_posicoes.json)
+    e nas carteiras simuladas ao vivo (src/simuladas.py, data/simuladas.json). Vazio sem dados."""
+    agora_n, linhas = u["regras"]["max_posicoes"], []
+    est = _ler_json(ESTUDO_POSICOES)
+    if est.get("por_n"):
+        linhas.append(f"📚 <b>No histórico</b> ({cart._dm(est['desde'])}/{est['desde'][2:4]} a "
+                      f"{cart._dm(est['ate'])}/{est['ate'][2:4]}, {est['meses']} meses, as mesmas regras):")
+        for n, r in sorted(est["por_n"].items(), key=lambda x: int(x[0])):
+            linhas.append(f"• <b>{n}</b> posiç{'ões' if n != '1' else 'ão'}: <b>{cart.sinal_fmt(r['total'] * 100, 0)}%</b>"
+                          f" · pior descida {cart.sinal_fmt(r['descida'] * 100, 0)}%"
+                          f" · {r['trades']} trades" + (" ← a tua" if int(n) == agora_n else ""))
+        linhas.append("<i>Pior descida: o máximo que a carteira chegou a cair desde o ponto mais alto.</i>")
+    sim = _ler_json(SIMULADAS)
+    if sim.get("carteiras"):
+        from . import simuladas  # aqui dentro: simuladas usa o bot
+        res = simuladas.resultados(sim)
+        linhas.append(f"\n🧪 <b>Carteiras simuladas</b> (desde {cart._dm(sim['desde'])}, fazem sozinhas tudo o "
+                      f"que o bot aconselha):")
+        for r in res:
+            linhas.append(f"• <b>{r['n']}</b> posições: <b>{cart.sinal_fmt(r['pct'] * 100, 1)}%</b> · "
+                          f"{r['vendas']} venda{'s' if r['vendas'] != 1 else ''}"
+                          + (f" ({r['ganhas']} a ganhar)" if r["vendas"] else "")
+                          + f" · {r['abertas']} abertas" + (" ← a tua" if r["n"] == agora_n else ""))
+    return "\n".join(linhas)
+
+
 def pergunta_posicoes(chat: str, u: dict) -> tuple[str, dict]:
     cap, moeda = u["regras"]["capital_inicial"], u["regras"]["moeda"]
 
@@ -212,6 +248,9 @@ def pergunta_posicoes(chat: str, u: dict) -> tuple[str, dict]:
              f"<b>Mais posições</b> (ex. 10, ~{por(10)} cada): o risco fica mais espalhado e apanhas mais sinais, "
              f"mas cada ganho conta menos e, com pouco capital, as ordens ficam muito pequenas.\n\n"
              f"<b>5</b> é o meio-termo que recomendo para começar.")
+    dados = texto_numero_posicoes(u)
+    if dados:
+        texto += "\n\n" + dados
     return _msg(chat, texto, [[(f"{n} posições", f"pos|{n}") for n in (3, 5)],
                               [(f"{n} posições", f"pos|{n}") for n in (8, 10)]])
 
@@ -486,9 +525,17 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
         return _msg(chat, carteira_agora(u, hist, hoje), menu=True)
     if botao == "⚙️ Mais":
         linhas = [[(x, f"mm|{i}|{j}") for j, x in enumerate(linha)] for i, linha in enumerate(MAIS)]
+        texto_mais = ("⚙️ <b>Mais</b>\n"
+                      "📊 <b>Resultados</b>: o que já ganhaste, por venda, e tu vs modelo\n"
+                      "⚙️ <b>Regras</b>: número de posições, capital e avisos\n"
+                      "💵 <b>Depositar</b> / 🏧 <b>Levantar</b>: quando metes ou tiras dinheiro da conta\n"
+                      "↩️ <b>Desfazer</b>: anula a última operação registada\n"
+                      "🔄 <b>Recomeçar</b>: carteira nova, do zero\n"
+                      "❓ <b>Ajuda</b>: como funciona o bot")
         if DONO and chat == DONO:
             linhas.append([(CONVIDAR, "mm|d|0"), (PESSOAS, "mm|d|1")])
-        return _msg(chat, "⚙️ <b>Mais</b>", linhas)
+            texto_mais += "\n🎟️ <b>Convidar</b> / 👥 <b>Pessoas</b>: quem usa o bot (só tu vês)"
+        return _msg(chat, texto_mais, linhas)
     if botao == "📈 Sinais":
         return None  # tratado em processar (pode ser mais de uma mensagem)
     if botao in ("📊 Resultados", "📜 Histórico"):
@@ -510,8 +557,20 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     if botao == "❓ Ajuda":
         return _msg(chat, AJUDA, botoes_ajuda())
     if botao == "🟢 Comprei":
-        u["aguarda"] = {"tipo": "ticker"}
-        return _msg(chat, "🟢 Que ação compraste? Escreve o ticker (ex. <code>NVDA</code>).")
+        try:
+            sinais_ja = _compraveis(u, _avaliados(u, hist, hoje))[:8]
+        except Exception:  # noqa: BLE001  sem lista, pede-se o ticker
+            sinais_ja = []
+        if not sinais_ja:
+            u["aguarda"] = {"tipo": "ticker"}
+            return _msg(chat, "🟢 Que ação compraste? Escreve o ticker (ex. <code>NVDA</code>).")
+        botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}" + (f" · {nome_empresa(s['ticker'], s)[:18]}"
+                                                                  if nome_empresa(s['ticker'], s) else ""),
+                    f"c|{s['ticker']}|{s['data_sinal']}")] for k, s in enumerate(sinais_ja, start=1)]
+        botoes.append([("✍️ Outra ação (escrever o ticker)", "ct|")])
+        u["aguarda"] = {"tipo": "ticker"}  # escrever o ticker também funciona
+        return _msg(chat, "🟢 <b>Que ação compraste?</b> Estes são os sinais que dá para comprar agora, "
+                          "pela ordem do modelo. Se foi outra, escreve o ticker.", botoes)
     if botao == "🔴 Vendi":
         if not u["posicoes"]:
             return _msg(chat, "Não tens posições abertas.", menu=True)
@@ -526,7 +585,9 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     return _msg(chat, f"⚙️ Agora: capital <b>{cart.fmt(r['capital_inicial'])} {moeda}</b>, até "
                       f"<b>{r['max_posicoes']}</b> posições ({cart.fmt(r['pct'], 0)}% por sinal).\n"
                       f"Menos posições = mais dinheiro em cada sinal e mais risco por trade; "
-                      f"mais posições = risco mais espalhado, ordens mais pequenas. Escolhe para mudar:",
+                      f"mais posições = risco mais espalhado, ordens mais pequenas."
+                      + (f"\n\n{dados}" if (dados := texto_numero_posicoes(u)) else "")
+                      + "\n\nEscolhe para mudar:",
                 [[(f"{n} posições", f"x|{n}") for n in (3, 5, 8, 10)],
                  [("💰 Mudar capital", "k|"), ("🔔 Avisos", "g|ver")]])
 
@@ -741,6 +802,9 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
             return out + [_editar(cq, f"✍️ Escreve numa mensagem porque vendeste {partes[2]}.", None)]
         op["motivo"] = partes[3]
         return out + [_editar(cq, f"📝 {partes[2]}: {diario_trades.MOTIVOS[partes[3]]}. Registado no teu diário.", None)]
+    if acao == "ct":
+        u["aguarda"] = {"tipo": "ticker"}
+        return out + [_tirar_botoes(cq), _msg(chat, "🟢 Escreve o ticker da ação que compraste (ex. <code>NVDA</code>).")]
     if acao == "lst":
         return out + lista_sinais_msg(chat, u, hist, hoje)
     if acao == "car":
@@ -2348,13 +2412,19 @@ def resumo_manha(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str, abert
         linhas.append(f"\n💼 <b>{cart.fmt(total)} {moeda}</b> ({cart.sinal_fmt(ganho)} {moeda}) · "
                       f"{len(u['posicoes'])}/{r['max_posicoes']} lugares · livre {cart.fmt(u['caixa'])}")
         acabam = []
+        try:
+            troca_m = _melhor_troca(u, _avaliados(u, hist, hoje), hist, hoje) if not livres else None
+            veredictos = avaliar_posicoes(u, hist, hoje, troca=troca_m)
+        except Exception:  # noqa: BLE001  o resumo sai na mesma, sem a avaliação
+            veredictos = {}
         for t, p in sorted(u["posicoes"].items(), key=lambda x: x[1].get("data", "")):
             f, prazo = pos[t], _conf_prazo(t, p, hist)[1]
             dia = f["usados"] + 1
             ultimo = bool(p.get("data")) and dia >= prazo
             acabam += [t] if ultimo and p.get("acompanhar", True) else []
             linhas.append(f"• <b>{t}</b> {cart.sinal_fmt(f['pct'], 1)}% · "
-                          + ("⏳ último dia" if ultimo else f"dia {min(dia, prazo)} de {prazo}"))
+                          + ("⏳ último dia" if ultimo else f"dia {min(dia, prazo)} de {prazo}")
+                          + (f"\n   {veredictos[t]['texto']}" if veredictos.get(t, {}).get("texto") else ""))
         if acabam:
             linhas.append(f"⏳ Hoje acaba o prazo de <b>{', '.join(acabam)}</b>: o plano é vender até ao fecho.")
     if comprar and livres:

@@ -18,12 +18,14 @@ import yaml
 import requests
 
 from src import (acompanhamento, bot, carteira, cofre, cotacoes, leitor_print, precos, precos_agora, resultados,
-                 telegram)
+                 simuladas, telegram)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("carteira")
 RAIZ = Path(__file__).parent
 ESTADO = RAIZ / "data" / "carteira.enc"
+SIMULADAS = RAIZ / "data" / "simuladas.json"  # carteiras simuladas ao vivo (público: sem dados de ninguém)
+ESTUDO_POSICOES = RAIZ / "data" / "estudo_posicoes.json"
 HIST = RAIZ / "data" / "historico_sinais.csv"
 COTACOES = RAIZ / "data" / "cotacoes.json"
 LISTA = RAIZ / "data" / "lista_sinais.json"
@@ -137,6 +139,31 @@ def vigiar_posicoes(estado: dict, agora: pd.Timestamp) -> bool:
 AGENDA = {"dia": "", "agenda": {}, "vistos": set()}  # calendário de resultados, pedido uma vez por dia
 
 
+def simular(hist: pd.DataFrame, agora: pd.Timestamp) -> bool:
+    """De 10 em 10 min: as carteiras simuladas (3, 5, 8, 10 posições) seguem o modelo à risca."""
+    hoje = agora.strftime("%Y-%m-%d")
+    sim = simuladas.ler(SIMULADAS, hoje)
+    novo = not SIMULADAS.exists()
+    em_sim = sorted({t for u in sim["carteiras"].values() for t in u["posicoes"]} - AGENDA["vistos"])
+    if em_sim and AGENDA["dia"] == hoje:
+        try:
+            AGENDA["agenda"].update(resultados.agenda(agora, em_sim, 1))
+            AGENDA["vistos"] |= set(em_sim)
+        except Exception:  # noqa: BLE001
+            log.warning("Calendário de resultados (simuladas) falhou")
+    aberta = bolsa_eua_aberta(agora)
+    if aberta and sim["carteiras"]:  # bid/ask das posições simuladas para vender ao preço certo
+        tickers = sorted({t for u in sim["carteiras"].values() for t in u["posicoes"]})
+        for t, q in (precos_agora.agora(tickers) if tickers else {}).items():
+            _guardar_vivo(t, q)
+    mudou = simuladas.passo(sim, hist, hoje, AGENDA["agenda"], aberta)
+    if mudou or novo:
+        simuladas.guardar(SIMULADAS, sim)
+        log.info("Carteiras simuladas: %s", " · ".join(
+            f"{r['n']}: {r['pct'] * 100:+.1f}% ({r['abertas']} abertas)" for r in simuladas.resultados(sim)))
+    return mudou or novo
+
+
 def gestao_no_bot() -> bool:
     try:
         return bool((yaml.safe_load((RAIZ / "config.yaml").read_text()).get("gestao") or {}).get("no_bot"))
@@ -211,6 +238,8 @@ def guardar_e_enviar(estado: dict, k: bytes, com_git: bool) -> None:
     if not com_git:
         return
     git("add", str(ESTADO))
+    if SIMULADAS.exists():
+        git("add", str(SIMULADAS))
     if git("diff", "--cached", "--quiet"):
         return
     git("commit", "-q", "-m", "Carteira atualizada")
@@ -289,6 +318,7 @@ def main(minutos: float) -> None:
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
     bot.LER_LISTA = lambda: _json(LISTA)  # a lista de sinais que os sinais gravam a cada corrida
     bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
+    bot.SIMULADAS, bot.ESTUDO_POSICOES = SIMULADAS, ESTUDO_POSICOES
     bot.LER_AGENDA = lambda: AGENDA["agenda"]  # resultados das posições: avaliação da 💼 Carteira
     bot.SPREADS = RAIZ / "data" / "spreads.csv"  # spread normal de cada ação (src/momento.py)
     bot.TALAO_URL = cfg.get("talao_url", "")
@@ -306,7 +336,7 @@ def main(minutos: float) -> None:
         {"command": "carteira", "description": "Ver a carteira"},
         {"command": "ajuda", "description": "Como usar"}]))
     hist, ultimo_pull, ultima_vigia, ultimo_aviso_sinais = acompanhamento.carregar(HIST), 0.0, 0.0, 0.0
-    ultima_vigia_precos, ultima_gestao, ultimas_trocas = 0.0, 0.0, 0.0
+    ultima_vigia_precos, ultima_gestao, ultimas_trocas, ultima_sim = 0.0, 0.0, 0.0, 0.0
     fim = time.time() + minutos * 60
     while time.time() < fim:
         upds = telegram.api("getUpdates", espera=60, timeout=40, offset=estado["offset"],
@@ -360,6 +390,12 @@ def main(minutos: float) -> None:
                 mudou |= gerir(estado, hist, agora, os.environ.get("TELEGRAM_CHAT_ID"), trocas_agora)
             except Exception:  # noqa: BLE001  a gestão nunca pode parar o bot
                 log.exception("Gestão das posições falhou")
+        if time.time() - ultima_sim > cfg.get("simuladas_seg", 600):
+            ultima_sim = time.time()
+            try:
+                mudou |= simular(hist, agora)
+            except Exception:  # noqa: BLE001  as simuladas nunca podem parar o bot
+                log.exception("Carteiras simuladas falharam")
         if mudou:
             guardar_e_enviar(estado, k, com_git)
         if com_git and time.time() - ultima_vigia > 600:
