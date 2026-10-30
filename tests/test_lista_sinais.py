@@ -55,7 +55,7 @@ def test_lista_mostra_lugares_comprar_e_andamento(monkeypatch):
                         HIST, HOJE, CFG)
     txt = _textos(out)[0]
     # Ranking do modelo, só com os que ainda dá para comprar: preços, lucro esperado e risco de cada um.
-    assert "Ranking de agora</b> · 5 lugares livres" in txt
+    assert "Próximos sinais</b> · 5 lugares livres" in txt
     assert "🥇 <b>NOVO</b> · 🟡 risco médio\n    💵 até 21,00 · 🎯 22,00 (+9%) · 🛑 19,00 (-5%)" in txt
     assert "📊 lucro esperado <b>+2,0%</b>" in txt and "🥈 <b>CEDO</b>" in txt
     assert all(x not in txt for x in ("SUBIU", "FIM", "STOP"))
@@ -119,7 +119,7 @@ def test_resumo_da_manha_por_pessoa(monkeypatch):
     assert "Para hoje</b> (1 lugar livre)" in txt and "1. <b>NOVO</b> até 21,00" in txt
     assert "lst|" in msgs[0][1]["reply_markup"]
     out = bot.processar(e, _cb(DONO, "lst|"), HIST, HOJE, CFG)
-    assert "Ranking de agora" in _textos(out)[0]
+    assert "Próximos sinais" in _textos(out)[0]
     # Quem desliga em 🔔 Avisos deixa de receber.
     bot.processar(e, _cb(DONO, "g|manha"), HIST, HOJE, CFG)
     assert bot.resumos_manha(e, HIST, HOJE) == []
@@ -225,3 +225,32 @@ def test_nome_da_empresa_no_sinal_e_na_lista(monkeypatch):
     out = bot.processar(e, _cb(DONO, f"ls|NOVO|{HOJE}"), HIST, HOJE, CFG)
     txt = _textos(out)[0]
     assert "🏢 Novo Banco Corp." in txt and "📊 lucro esperado <b>+2,0%</b>" in txt and "🧭 Tipo de sinal" in txt
+
+
+def test_sinais_mostra_posicoes_proximos_e_troca(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    bot.definir_posicoes(u, 2)
+    cart.comprar(u, "SUBIU", 0.1, 100.0, "2026-10-27", bot._sinal(HIST, "SUBIU"))
+    out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    txt = _textos(out)[0]
+    # Primeiro as posições (como vão), depois os próximos sinais sem os que já tens.
+    assert txt.index("As tuas posições</b> (1/2)") < txt.index("Próximos sinais</b> · 1 lugar livre")
+    assert "🟢 <b>SUBIU</b> <b>+7,0%</b> · dia 3 de 5 · ainda dá +0,1%" in txt
+    assert "<b>SUBIU</b> ·" not in txt.split("Próximos sinais")[1]
+    # Carteira cheia: diz se compensa trocar.
+    bot.definir_posicoes(u, 1)
+    out = bot.processar(e, {"update_id": 2, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    assert "carteira cheia" in _textos(out)[0] and "Compensa trocar</b> a SUBIU pela NOVO" in _textos(out)[0]
+
+
+def test_restantes_sinais_numa_lista_recolhida(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    bot.definir_posicoes(u, 1)
+    out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    txt = _textos(out)[0]
+    assert "🥇 <b>NOVO</b>" in txt and "🥈" not in txt          # 1 lugar livre: 1 em destaque
+    assert "O outro sinal" in txt and "<blockquote expandable>2. <b>CEDO</b> até 52,50 · +1,0%" in txt
+    assert "mm|0|1" in out[0][1]["reply_markup"]                 # atalho para mudar o número de posições
