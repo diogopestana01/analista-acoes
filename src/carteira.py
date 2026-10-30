@@ -357,7 +357,8 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
         out.append("\n<i>~ objetivo móvel: vende se fechar acima da média dos últimos dias (muda todos os "
                    "dias; eu aviso-te).</i>")
     if blocos and cot:
-        out.append(f"\n<i>Preços{' das ' + hora if hora else ' de agora'}.</i>")
+        quando = (" " + hora if hora.startswith("deste") else " das " + hora) if hora else " de agora"
+        out.append(f"\n<i>Preços{quando}.</i>")
     return "\n".join(out)
 
 

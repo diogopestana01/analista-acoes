@@ -26,7 +26,8 @@ def _num(txt) -> float | None:
 
 
 def nasdaq(ticker: str, sessao=None) -> dict | None:
-    """{preco, hora, fonte, estado} do último negócio na Nasdaq; None se falhar ou não for dos EUA."""
+    """{preco, hora, fonte, estado[, bid, ask]} do último negócio na Nasdaq; None se falhar ou não for dos
+    EUA. bid/ask (melhor preço de venda/compra) só quando a bolsa dá os dois e fazem sentido."""
     if "." in ticker:
         return None
     try:
@@ -39,8 +40,10 @@ def nasdaq(ticker: str, sessao=None) -> dict | None:
         if preco is None or preco <= 0:
             return None
         hora = str(p.get("lastTradeTimestamp") or "").replace("DT", "").strip()
+        bid, ask = _num(p.get("bidPrice")), _num(p.get("askPrice"))
+        lados = {"bid": bid, "ask": ask} if bid and ask and 0 < bid <= ask < bid * 1.2 else {}
         return {"preco": preco, "hora": hora, "fonte": "nasdaq", "estado": d.get("marketStatus"),
-                "tempo_real": bool(p.get("isRealTime"))}
+                "tempo_real": bool(p.get("isRealTime")), **lados}
     except Exception as e:  # noqa: BLE001
         log.info("Nasdaq %s falhou: %s", ticker, e)
         return None

@@ -38,3 +38,30 @@ def test_sinais_leem_a_carteira_mais_recente(monkeypatch):
         raise subprocess.CalledProcessError(1, cmd)
     monkeypatch.setattr(diario.subprocess, "run", falha)
     assert diario.ler_carteira_recente({"velho": True}) == {"velho": True}   # sem rede: a do início
+
+
+def test_bid_ask_da_nasdaq_e_lado_certo(monkeypatch):
+    from src import bot, precos_agora
+
+    class R:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"data": {"primaryData": {"lastSalePrice": "$68.10", "bidPrice": "$68.00", "askPrice": "$68.30",
+                                             "isRealTime": True}}}
+
+    class S:
+        def get(self, *a, **k):
+            return R()
+    q = precos_agora.nasdaq("NTNX", S())
+    assert q["preco"] == 68.1 and q["bid"] == 68.0 and q["ask"] == 68.3
+    # A carteira vale ao bid (como na XTB); quem compra paga o ask; sem lado, o último negócio.
+    monkeypatch.setattr(bot, "COTAR", lambda ts: {"NTNX": 68.1})
+    monkeypatch.setattr(bot, "COTAR_LADO", lambda ts, lado: {"NTNX": 68.0 if lado == "venda" else 68.3})
+    assert bot._cotacoes(["NTNX"], "venda")["NTNX"] == 68.0 and bot._cotacoes(["NTNX"], "compra")["NTNX"] == 68.3
+    assert bot._cotacoes(["NTNX"])["NTNX"] == 68.1
+    u = cart.novo_utilizador("Ana", dict(cart.REGRAS_BASE))
+    cart.comprar(u, "NTNX", 1, 68.2, "2026-10-30")
+    txt = bot.carteira_agora(u, None, "2026-10-30")
+    assert "🔴 <b>NTNX</b>   <b>-0,3%</b>" in txt and "preço de venda (bid)" in txt
