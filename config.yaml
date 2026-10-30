@@ -41,6 +41,12 @@ sinais:
   # Probabilidade de ganhar de cada setup (backtest, período de teste) para a ordem equilibrada da lista
   # (src/lista_sinais.ordenar: ganho esperado + probabilidade de ganhar; estudo passo3j_ordem.py).
   ganha_setup: {pullback: 0.66, rompimento: 0.47, semana_forte: 0.46}
+  # Europa (estudo passo3m_europa.py, 30/10): só ações em EUR e só rompimentos (+0,47% depois do spread,
+  # positivo nas 2 metades). Pullback em EUR -0,08%; Londres/Estocolmo/Suíça negativos com o câmbio de 0,5%/lado.
+  europa: {zonas: [euro], setups: [rompimento]}
+  # Spread medido acima disto -> o sinal não aparece para comprar (estudo passo3l_spread.py: cortar >1% ganha
+  # nas duas metades da carteira de 5 lugares, +30%/+13% contra +17%/-6,5% sem corte).
+  spread_max: 0.01
   limite_compra_atr: {pullback: 0.2, rompimento: 0.5, semana_forte: 0.5}
   qualidade:                    # média do backtest por setup (bruta, %), regra de saída (src/saidas.py) e filtros [mín, máx]
     pullback: {retorno_base_pct: 0.42, saida: sma5, filtros: {}}          # backtest 22/10: sma5 +0,42% vs atual +0,37%, ganha 64%

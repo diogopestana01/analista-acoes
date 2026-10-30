@@ -24,11 +24,14 @@ def test_compra_ao_ask_e_spread_caro_tira_da_compra():
     acima = {s["ticker"]: s for s in lista_sinais.avaliar(
         HIST, PRECOS, HOJE, MODELO, CFG_S, {"CEDO": {"ask": 52.6, "spread_pct": 0.002}})}
     assert acima["CEDO"]["estado_lista"] == "andamento"
-    # Spread de 1%: o setup costuma render 0,4% -> não paga a entrada.
+    # Spread de 1,2% (acima de sinais.spread_max, 1%): já não se compra.
+    cfg = {**CFG_S, "spread_max": 0.01}
     caro = {s["ticker"]: s for s in lista_sinais.avaliar(
-        HIST, PRECOS, HOJE, MODELO, CFG_S, {"CEDO": {"ask": 50.75, "spread_pct": 0.01}})}
-    assert caro["CEDO"]["estado_lista"] == "andamento"
-    assert caro["CEDO"]["esperado_sem_spread"] == pytest.approx(0.0)
+        HIST, PRECOS, HOJE, MODELO, cfg, {"CEDO": {"ask": 50.8, "spread_pct": 0.012}})}
+    assert caro["CEDO"]["estado_lista"] == "andamento" and caro["CEDO"]["spread_alto"]
+    assert caro["CEDO"]["esperado_sem_spread"] == pytest.approx(-0.002)
+    assert {s["ticker"]: s for s in lista_sinais.avaliar(
+        HIST, PRECOS, HOJE, MODELO, cfg, {"CEDO": {"ask": 50.75, "spread_pct": 0.009}})}["CEDO"]["estado_lista"] == "comprar"
     # Spread de 0,2% (abaixo dos 0,3% fixos): continua a dar para comprar.
     barato = {s["ticker"]: s for s in lista_sinais.avaliar(
         HIST, PRECOS, HOJE, MODELO, CFG_S, {"CEDO": {"ask": 50.55, "spread_pct": 0.002}})}
@@ -53,3 +56,13 @@ def test_historico_antigo_ganha_bid_e_ask(tmp_path):
     spread.guardar_historico(f, pd.Timestamp("2026-10-30 15:10"), {"A": {"spread_pct": 0.001, "bid": 9.98, "ask": 9.99}}, ["A"])
     d = pd.read_csv(f)
     assert list(d.columns) == spread.COLUNAS and d["ask"].tolist()[1:] == [10.0, 9.99] and pd.isna(d["ask"].iat[0])
+
+
+def test_europa_so_em_euros_e_so_rompimentos():
+    from src import sinais
+    cfg = {"europa": {"zonas": ["euro"], "setups": ["rompimento"]}}
+    assert sinais.zona("DHL.DE") == "euro" and sinais.zona("DGE.L") == "gbp" and sinais.zona("AAPL") == "eua"
+    assert sinais.europa_permitida("DHL.DE", "rompimento", cfg)
+    assert not sinais.europa_permitida("DHL.DE", "pullback", cfg)
+    assert not sinais.europa_permitida("DGE.L", "rompimento", cfg)
+    assert sinais.europa_permitida("AAPL", "pullback", cfg) and sinais.europa_permitida("DGE.L", "pullback", {})

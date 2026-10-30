@@ -131,7 +131,7 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
         if pd.notna(hoje["sma50"]):
             acima[regiao(ticker)].append(hoje["close"] > hoje["sma50"])
         for nome in setups_ativos:
-            if not flags[nome].iat[-1]:
+            if not flags[nome].iat[-1] or not europa_permitida(ticker, nome, cfg):
                 continue
             st = SETUPS[nome]
             sinal = 1 if st.direcao == "compra" else -1
@@ -178,6 +178,27 @@ def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None
 
 def regiao(ticker: str) -> str:
     return "europa" if "." in ticker else "eua"
+
+
+EURO = {"DE", "PA", "AS", "MC", "MI", "LS", "BR", "HE", "VI", "IR"}
+
+
+def zona(ticker: str) -> str:
+    """Moeda da bolsa: eua (USD), euro (bolsas em EUR), gbp (Londres), sek, chf, outra."""
+    if "." not in ticker:
+        return "eua"
+    suf = ticker.rsplit(".", 1)[1].upper()
+    return "euro" if suf in EURO else {"L": "gbp", "ST": "sek", "SW": "chf"}.get(suf, "outra")
+
+
+def europa_permitida(ticker: str, setup: str, cfg: dict) -> bool:
+    """Ações europeias só nas zonas e setups de sinais.europa (estudo passo3m_europa.py, 30/10: com a
+    conversão de 0,5% por lado da XTB, Londres/Estocolmo/Suíça perdem; em EUR só o rompimento ganha
+    nas duas metades, +0,47% depois de 0,3% de spread). Sem a chave na config, tudo passa."""
+    eu = cfg.get("europa")
+    if zona(ticker) == "eua" or eu is None:
+        return True
+    return zona(ticker) in eu.get("zonas", []) and setup in eu.get("setups", [])
 
 
 def passa_filtros(s: pd.Series, filtros: dict) -> bool:
