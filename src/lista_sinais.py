@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from . import trocas
+from . import risco, trocas
 
 FUGIU = 0.5   # já percorreu mais de metade do caminho até ao objetivo -> já não se compra
 
@@ -93,7 +93,9 @@ def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | N
                 forca = trocas.valor_que_falta(setup, dias, preco / e - 1, atr, modelo)
         paga = forca is None or not modelo or forca > modelo.get("custo", 0.0)
         estado = "comprar" if (lim is None or preco <= lim) and dias < max_dias and paga else "andamento"
+        atr_sinal = trocas.atr_pct(setup, e, st, cfg) if st and setup else None
         out.append({**r, "ticker": t, "data_sinal": data, "entrada_sinal": e, "entrada": preco, "preco": preco,
+                    "risco": risco.nivel(atr_sinal), "perda_dia_mau": risco.perda_dia_mau(atr_sinal),
                     "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,
                     "limite": lim, "estado_lista": estado, "forca": forca})
     out.sort(key=lambda s: (retorno(s) is None, -(retorno(s) or 0.0), -(s["forca"] or 0.0)))
