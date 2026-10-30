@@ -8,6 +8,7 @@ regras_base:            # regras de cada carteira nova (cada pessoa muda as suas
   custo_pct: 0.0        # custo por lado (%): 0 na subconta USD; 0.5 se comprares ações em USD com conta EUR
   ordem_minima: 5       # abaixo disto não sugere compra
 lembrete_utc: "20:45"   # dias úteis: pergunta pelos sinais do dia sem resposta
+resumo_manha_ny: "09:00"    # dias úteis, hora de Nova Iorque: resumo da manhã de cada pessoa (desliga-se em Avisos)
 resumo_semanal_utc: "21:10"  # sexta, depois do fecho de Nova Iorque: a semana de cada pessoa
 vigia_precos_seg: 120   # com a bolsa dos EUA aberta, preço de agora (Nasdaq) das posições e aviso de stop/objetivo
 max_pendentes: 20       # pedidos de acesso à espera de aprovação

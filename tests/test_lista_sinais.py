@@ -101,3 +101,21 @@ def test_sinal_que_subiu_logo_deixa_de_dar_para_comprar():
     assert itens["CALMO"]["estado_lista"] == "comprar"
     sobe = lista_sinais.avaliar(h, {"SALTO": 100.2, "CALMO": 101.5}, HOJE, MODELO, cfg)
     assert {s["ticker"]: s["estado_lista"] for s in sobe}["CALMO"] == "andamento"
+
+
+def test_resumo_da_manha_por_pessoa(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    bot.definir_posicoes(u, 2)
+    cart.comprar(u, "FIM", 1, 10.0, "2026-10-22", bot._sinal(HIST, "FIM"))
+    msgs = bot.resumos_manha(e, HIST, HOJE, "14:30")
+    assert len(msgs) == 1
+    txt = msgs[0][1]["text"]
+    assert "Bom dia" in txt and "Nova Iorque abre às 14:30" in txt
+    assert "<b>FIM</b> +2,0% · ⏳ último dia" in txt and "Hoje acaba o prazo de <b>FIM</b>" in txt
+    assert "Para hoje</b> (1 lugar livre)" in txt and "🟢 <b>NOVO</b>" in txt
+    assert "lst|" in msgs[0][1]["reply_markup"]
+    out = bot.processar(e, _cb(DONO, "lst|"), HIST, HOJE, CFG)
+    assert "Sinais agora" in _textos(out)[0]
+    # Quem desliga em 🔔 Avisos deixa de receber.
+    bot.processar(e, _cb(DONO, "g|manha"), HIST, HOJE, CFG)
+    assert bot.resumos_manha(e, HIST, HOJE) == []
