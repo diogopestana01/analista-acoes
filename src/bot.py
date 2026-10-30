@@ -1798,7 +1798,6 @@ def _linha_compra(k: int, s: dict) -> str:
 
 
 MEDALHAS = {1: "🥇", 2: "🥈", 3: "🥉"}
-LISTA_MAX = 10   # quantos sinais o ranking mostra no máximo
 
 
 def _cartao_ranking(k: int, s: dict) -> str:
@@ -1855,6 +1854,23 @@ def _bloco_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[str]:
     return linhas + [""]
 
 
+RESTO_MAX = 25  # sinais na lista recolhida (o Telegram corta mensagens acima de 4096 caracteres)
+
+
+def _linha_resto(k: int, s: dict) -> str:
+    """'6. EFOR até 38,27 · +1,2% · 66% · 🔴': uma linha por sinal, na lista recolhida."""
+    partes = [f"{k}. <b>{s['ticker']}</b>"]
+    if s.get("limite"):
+        partes[0] += f" até {cart.fmt(s['limite'])}"
+    if _retorno(s) is not None:
+        partes.append(_txt_ret(s))
+    if _num(s.get("taxa")):
+        partes.append(f"{s['taxa'] * 100:.0f}%")
+    if s.get("risco") in RISCO_COR:
+        partes.append(RISCO_COR[s["risco"]])
+    return " · ".join(partes)
+
+
 def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -> list:
     """📈 Sinais, em três partes: as posições que já tens (como vão e o que ainda dão); os próximos sinais
     para os lugares livres, do melhor para o pior segundo o modelo (lista_sinais.ordenar: equilibra o lucro
@@ -1870,7 +1886,8 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         linhas.append("📈 Agora não há sinais novos para comprar. Aviso-te quando houver.")
         return [_msg(chat, "\n".join(linhas), menu=True)]
     troca = _melhor_troca(u, itens, hist, hoje) if not livres else None
-    mostrar = comprar[:LISTA_MAX]
+    mostrar = comprar[:livres or 3]          # em destaque: os que cabem nos lugares livres (3 se cheia)
+    resto = comprar[len(mostrar):len(mostrar) + RESTO_MAX]   # os outros, numa lista que abre com um toque
     if livres:
         lug = f"{livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}"
         cab = f"📈 <b>Próximos sinais</b> · {lug}"
@@ -1879,10 +1896,15 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     linhas += [cab, "<i>Do melhor para o pior, segundo o modelo.</i>", ""]
     for k, s in enumerate(mostrar, start=1):
         linhas += [_cartao_ranking(k, s), ""]
-        if livres and k == livres and len(mostrar) > k:
-            linhas += ["<i>— abaixo daqui já não cabem na tua carteira —</i>", ""]
-    if len(comprar) > len(mostrar):
-        linhas += [f"<i>e mais {len(comprar) - len(mostrar)} abaixo destes</i>", ""]
+    if resto:
+        quais = "O outro sinal" if len(resto) == 1 else f"Os outros {len(resto)} sinais"
+        linhas.append(f"➕ <b>{quais}</b> que o modelo dá agora (não cabem na tua carteira; "
+                      f"para os apanhar, aumenta as posições em ⚙️ Regras). Toca para abrir; em cada linha: preço máximo · "
+                      f"lucro esperado · confiança · risco.")
+        corpo = "\n".join(_linha_resto(k, s) for k, s in enumerate(resto, start=len(mostrar) + 1))
+        if len(comprar) > len(mostrar) + len(resto):
+            corpo += f"\n… e mais {len(comprar) - len(mostrar) - len(resto)}"
+        linhas += [f"<blockquote expandable>{corpo}</blockquote>", ""]
     if not livres:
         if troca:
             linhas += [f"🔁 <b>Compensa trocar</b> a {troca[1]} pela {troca[0]['ticker']}: proposta a seguir.", ""]
@@ -1890,14 +1912,16 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
             linhas += ["🔒 <b>Nenhuma troca compensa agora</b>: as tuas posições ainda rendem mais do que "
                        "os sinais novos, já contando o spread.", ""]
     rodape = ("Lucro esperado: média de sinais iguais no passado, já com custos e contando os que perdem. "
-              "Confiança: hipótese de acabar a ganhar. \"Ainda dá\": o que uma posição destas costuma render "
-              "daqui até à saída.")
+              "Confiança: hipótese de acabar a ganhar."
+              + (" \"Ainda dá\": o que uma posição destas costuma render daqui até à saída." if u["posicoes"] else ""))
     vivo = all(s.get("ao_vivo") for s in mostrar[:max(livres, 1)])
     linhas.append(f"<i>{rodape}" + (" Preços deste momento." if vivo else f" Preços das {hora}." if hora else "")
                   + "</i>")
     linhas.append("👇 Toca num sinal para ver quanto comprar.")
     botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}", f"ls|{s['ticker']}|{s['data_sinal']}")
                for k, s in list(enumerate(mostrar, start=1))[i:i + 3]] for i in range(0, len(mostrar), 3)]
+    if resto:
+        botoes.append([("⚙️ Mudar o número de posições", "mm|0|1")])
     out = [_msg(chat, "\n".join(linhas), botoes)]
     if troca:
         out.append(_msg(chat, *troca[2]))

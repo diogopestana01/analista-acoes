@@ -243,3 +243,14 @@ def test_sinais_mostra_posicoes_proximos_e_troca(monkeypatch):
     out = bot.processar(e, {"update_id": 2, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
                         HIST, HOJE, CFG)
     assert "carteira cheia" in _textos(out)[0] and "Compensa trocar</b> a SUBIU pela NOVO" in _textos(out)[0]
+
+
+def test_restantes_sinais_numa_lista_recolhida(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    bot.definir_posicoes(u, 1)
+    out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    txt = _textos(out)[0]
+    assert "🥇 <b>NOVO</b>" in txt and "🥈" not in txt          # 1 lugar livre: 1 em destaque
+    assert "O outro sinal" in txt and "<blockquote expandable>2. <b>CEDO</b> até 52,50 · +1,0%" in txt
+    assert "mm|0|1" in out[0][1]["reply_markup"]                 # atalho para mudar o número de posições
