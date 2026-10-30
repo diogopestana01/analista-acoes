@@ -13,6 +13,7 @@ Modelo de sinais de curto prazo (1 dia a 1 semana) com alertas no Telegram. O do
 - Ordem dos sinais: equilibrada entre o retorno esperado da ação e a probabilidade de ganhar (`lista_sinais.ordenar`, estudo `passo3j_ordem.py`); a "pontuacao" é só técnica e não serve para escolher.
 - Lista de sinais (`src/lista_sinais.py`, gravada pelos sinais em `data/lista_sinais.json`; o bot lê-a): reavaliada a cada corrida com o preço de agora; deixa de dar para comprar acima de `sinais.limite_compra_atr` ATR do preço do sinal (sinais da noite: do fecho, não da abertura; estudo `passo3h_abertura.py`).
 - Risco (`src/risco.py`, estudo `passo3i_risco.py`): perda num dia mau ≈ 2,2 x ATR; nível baixo/médio/alto. Ganho esperado, confiança e risco são três coisas diferentes.
+- Diário de trades (`src/diario_trades.py`): o bot pergunta porque vendeu (botões), regista sozinho compra acima do limite e venda antes do modelo; "tu vs modelo" no resumo de sexta e em 📊 Resultados.
 - Gestão das posições (stops, saídas, resultados, trocas): passa para a Carteira; `config.yaml` `gestao.no_bot: true` desliga-a no `diario.py`.
 - Saúde: `src/saude.py` avisa o dono (preços velhos, Claude a falhar); o Relógio avisa se os sinais pararem ou falharem 2 vezes seguidas.
 - Insiders e short interest (`src/insiders.py`, Nasdaq): compras de diretores em 90 dias e dias para cobrir, uma vez por dia por ação (`data/insiders.json`); só informação na lista e no registo, para medir.

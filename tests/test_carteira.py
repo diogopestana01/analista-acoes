@@ -277,7 +277,8 @@ def test_quem_e_aceite_configura_a_carteira_e_recebe_os_sinais_em_aberto():
     assert any("COMPRAR GMAB" in t and "2" in t for t in _textos(out))
 
 
-def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira():
+def test_cada_pessoa_so_recebe_os_melhores_sinais_que_cabem_na_carteira(monkeypatch):
+    monkeypatch.setattr(bot, "_gestao_no_bot", lambda: False)  # trocas propostas na ronda (sem a gestão no bot)
     e = _estado()
     u = e["utilizadores"][DONO]
     bot.definir_posicoes(u, 3)
@@ -372,6 +373,7 @@ def test_nome_com_simbolos_nao_parte_o_html():
 
 
 def test_carteira_cheia_propoe_trocar_a_posicao_mais_fraca(monkeypatch):
+    monkeypatch.setattr(bot, "_gestao_no_bot", lambda: False)  # trocas propostas na ronda (sem a gestão no bot)
     hist = _hist([{"data_sinal": "2026-10-22", "ticker": "VELHA", "entrada": 10.0, "objetivo": 11.0, "stop": 9.5,
                    "pontuacao": 55.0, "max_dias": 5},
                   {"data_sinal": HOJE, "ticker": "NOVA", "entrada": 20.0, "objetivo": 22.0, "stop": 19.0,

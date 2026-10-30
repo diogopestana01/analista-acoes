@@ -175,3 +175,18 @@ def test_ordem_equilibrada_entre_ganho_e_probabilidade():
     assert ordem == ["EQUIL", "MUITO", "FRACO"]   # o que dá mais mas perde muitas vezes já não vem 1.º
     assert lista_sinais.taxa_ganhar({"setup": "pullback"}, cfg) == 0.66
     assert round(lista_sinais.taxa_ganhar({"setup": "pullback", "taxa_acerto": 0.8, "n_historico": 10}, cfg), 2) == 0.73
+
+
+def test_insiders_no_cartao_do_sinal(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    agora = pd.Timestamp.now(tz="UTC")
+    item = {"ticker": "GRAV", "data_sinal": HOJE, "estado_lista": "comprar", "forca": 0.01, "limite": 11.0,
+            "preco": 10.0, "entrada": 10.0, "entrada_sinal": 10.0, "dias_usados": 0, "max_dias": 5,
+            "objetivo": 12.0, "stop": 9.0, "setup": "pullback",
+            "insiders_texto": "👔 3 insiders compraram ações nos últimos 90 dias (compra em grupo)"}
+    monkeypatch.setattr(bot, "LER_LISTA", lambda: {"gerada_em": agora.isoformat(), "itens": [item]})
+    out = bot.processar(e, _cb(DONO, f"ls|GRAV|{HOJE}"), HIST, HOJE, CFG)
+    assert "👔 3 insiders compraram" in _textos(out)[0]
+    # Sinal acabado de chegar (sem o campo): vai buscar à lista.
+    assert bot._insiders_texto({"ticker": "GRAV", "data_sinal": HOJE}).startswith("👔")
+    assert bot._insiders_texto({"ticker": "OUTRO", "data_sinal": HOJE}) == ""
