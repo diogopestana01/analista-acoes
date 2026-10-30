@@ -22,6 +22,7 @@ import requests
 from . import precos_agora
 
 log = logging.getLogger(__name__)
+COLUNAS = ["hora", "ticker", "spread_pct", "bid", "ask"]
 
 
 def pct(bid, ask) -> float | None:
@@ -66,12 +67,20 @@ def registar(hist: pd.DataFrame, medidos: dict[str, dict]) -> pd.DataFrame:
 
 
 def guardar_historico(caminho: Path, agora: pd.Timestamp, medidos: dict[str, dict], tickers) -> None:
-    """Acrescenta uma linha por ação (hora UTC, ticker, spread) a data/spreads.csv."""
-    linhas = [{"hora": f"{agora:%Y-%m-%d %H:%M}", "ticker": t, "spread_pct": medidos[t]["spread_pct"]}
+    """Acrescenta uma linha por ação (hora UTC, ticker, spread, bid, ask) a data/spreads.csv. Com o bid e
+    o ask dá para ver no fim da validação se esperar pelo spread normal compensa o que o preço mexe."""
+    linhas = [{"hora": f"{agora:%Y-%m-%d %H:%M}", "ticker": t, "spread_pct": medidos[t]["spread_pct"],
+               "bid": medidos[t].get("bid"), "ask": medidos[t].get("ask")}
               for t in sorted(set(tickers)) if t in medidos]
     if not linhas:
         return
     try:
-        pd.DataFrame(linhas).to_csv(caminho, mode="a", header=not caminho.exists(), index=False)
+        novo = pd.DataFrame(linhas, columns=COLUNAS)
+        if caminho.exists() and caminho.read_text().split("\n", 1)[0].split(",") != COLUNAS:
+            # ficheiro do formato antigo (sem bid/ask): reescreve com as colunas novas, vazias nas linhas velhas
+            novo = pd.concat([pd.read_csv(caminho).reindex(columns=COLUNAS), novo], ignore_index=True)
+            novo.to_csv(caminho, index=False)
+            return
+        novo.to_csv(caminho, mode="a", header=not caminho.exists(), index=False)
     except OSError as e:
         log.warning("Histórico de spreads não guardado: %s", e)

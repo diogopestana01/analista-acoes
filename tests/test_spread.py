@@ -44,3 +44,12 @@ def test_registo_guarda_o_primeiro_spread(tmp_path):
     spread.guardar_historico(f, pd.Timestamp("2026-10-30 14:30"), {"CEDO": {"spread_pct": 0.004}}, ["CEDO", "X"])
     spread.guardar_historico(f, pd.Timestamp("2026-10-30 14:40"), {"CEDO": {"spread_pct": 0.003}}, ["CEDO"])
     assert pd.read_csv(f)["spread_pct"].tolist() == [0.004, 0.003]
+
+
+def test_historico_antigo_ganha_bid_e_ask(tmp_path):
+    f = tmp_path / "spreads.csv"
+    f.write_text("hora,ticker,spread_pct\n2026-10-30 14:40,A,0.002\n")
+    spread.guardar_historico(f, pd.Timestamp("2026-10-30 15:00"), {"A": {"spread_pct": 0.001, "bid": 9.99, "ask": 10.0}}, ["A"])
+    spread.guardar_historico(f, pd.Timestamp("2026-10-30 15:10"), {"A": {"spread_pct": 0.001, "bid": 9.98, "ask": 9.99}}, ["A"])
+    d = pd.read_csv(f)
+    assert list(d.columns) == spread.COLUNAS and d["ask"].tolist()[1:] == [10.0, 9.99] and pd.isna(d["ask"].iat[0])
