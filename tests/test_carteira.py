@@ -887,3 +887,24 @@ def test_menu_curto_com_mais_sinais_e_desfazer_que_diz_o_que_desfaz(monkeypatch)
     assert "GMAB" not in u["posicoes"]
     # Texto solto: sem falar de comandos.
     assert "Usa os botões" in _textos(bot.processar(e, _txt(DONO, "olá"), HIST, HOJE, CFG))[0]
+
+
+def test_recomecar_como_pessoa_nova():
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    cart.comprar(u, "GMAB", 0.4, 50.0, HOJE)
+    bot.definir_posicoes(u, 2)
+    u["avisos"] = {"som": False}
+    out = bot.processar(e, _txt(DONO, "🔄 Recomeçar"), HIST, HOJE, CFG)
+    assert "z|novo" in out[0][1]["reply_markup"] and "z|sim" in out[0][1]["reply_markup"]
+    out = bot.processar(e, _cb(DONO, "z|novo"), HIST, HOJE, CFG)
+    textos = _textos(out)
+    assert any("Bem-vindo" in t for t in textos) and any("Como funciona" in t for t in textos)
+    assert u["posicoes"] == {} and u["regras"]["max_posicoes"] == 5 and "avisos" not in u
+    assert u["caixa"] == 100.0
+    # No fim da visita, configura a carteira como uma pessoa nova.
+    out = bot.processar(e, _cb(DONO, "t|fim|n"), HIST, HOJE, CFG)
+    assert "Vamos configurar a tua carteira" in _textos(out)[0]
+    # ↩️ Desfazer volta à carteira de antes.
+    bot.processar(e, _cb(DONO, "un|sim"), HIST, HOJE, CFG)
+    assert "GMAB" in u["posicoes"] and u["regras"]["max_posicoes"] == 2

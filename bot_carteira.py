@@ -217,6 +217,14 @@ def main(minutos: float) -> None:
             estado["lembrete"] = hoje
             executar(bot.lembretes(estado, hist, hoje))
             mudou = True
+        ny = agora.tz_convert("America/New_York")
+        if (ny.day_of_week < 5 and cfg.get("resumo_manha_ny", "09:00") <= ny.strftime("%H:%M") < "09:30"
+                and estado.get("resumo_manha") != hoje):
+            # Meia hora antes de Nova Iorque abrir (com e sem hora de verão): resumo de cada pessoa.
+            estado["resumo_manha"] = hoje
+            abre = ny.replace(hour=9, minute=30).tz_convert("Europe/Lisbon").strftime("%H:%M")
+            executar(bot.resumos_manha(estado, hist, hoje, abre))
+            mudou = True
         if (agora.day_of_week == 4 and agora.strftime("%H:%M") >= cfg.get("resumo_semanal_utc", "21:10")
                 and estado.get("resumo_semanal") != hoje):
             estado["resumo_semanal"] = hoje

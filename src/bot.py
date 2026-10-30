@@ -85,6 +85,7 @@ Tu decides se compras, e compras tu na tua corretora (ex. XTB). O bot não mexe 
 Chega assim:
 
 🟢 <b>COMPRAR AAPL</b> a ~230,00
+🔒 Compra só até 231,50: acima disso já não compensa
 💵 Quanto: 0,0869 ações (~20,00 USD)
 🎯 Vender com lucro a 236,00 (+2,6%)
 🛑 Vender para travar a perda a 226,00 (−1,7%)
@@ -94,7 +95,7 @@ Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde escreves o preço 
     """💼 <b>Depois de comprar</b> (3 de 3)
 Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
 
-Em 💼 <b>Carteira</b> vês as tuas posições, o dinheiro livre e o resultado. O menu em baixo tem tudo; ❓ <b>Ajuda</b> explica cada tema.
+Em 💼 <b>Carteira</b> vês as tuas posições, o dinheiro livre e o resultado. Em 📈 <b>Sinais</b> vês a lista dos sinais de agora: os que ainda dá para comprar e os que estão em andamento. O resto (resultados, regras, ajuda) está em ⚙️ <b>Mais</b>.
 
 ⚠️ Nenhum sinal é garantia. Investe só dinheiro que podes perder.""",
 ]
@@ -474,9 +475,14 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
     if botao in ("📊 Resultados", "📜 Histórico"):
         return _msg(chat, resultados(u, hist), menu=True)
     if botao == "🔄 Recomeçar":
-        return _msg(chat, f"🔄 Recomeçar a carteira do zero? Apaga posições e operações e volta a "
-                          f"{cart.fmt(u['regras']['capital_inicial'])} {moeda}. As regras ficam iguais.",
-                    [[("✅ Sim, recomeçar", "z|sim"), ("❌ Cancelar", "z|nao")]])
+        return _msg(chat, "🔄 <b>Recomeçar do zero?</b> Apaga as posições e as operações. Escolhe:\n"
+                          f"🧹 <b>Só a carteira</b>: volta a {cart.fmt(u['regras']['capital_inicial'])} {moeda} "
+                          "e escolhes o capital e as posições.\n"
+                          "👤 <b>Como pessoa nova</b>: tudo como no primeiro dia (boas-vindas, visita guiada, "
+                          "configuração e avisos de origem).\n"
+                          "Se te enganares, ↩️ Desfazer volta atrás.",
+                    [[("🧹 Só a carteira", "z|sim")], [("👤 Como pessoa nova", "z|novo")],
+                     [("❌ Cancelar", "z|nao")]])
     if botao == "↩️ Desfazer":
         o = cart.ultima_operacao(u)
         if not o:
@@ -707,6 +713,10 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, "👍 Qualquer dúvida, carrega em ❓ Ajuda.", menu=True)]
     if acao == "q":
         return out + [_msg(chat, porque(hist, ticker, partes[2]))]
+    if acao == "lst":
+        return out + lista_sinais_msg(chat, u, hist, hoje)
+    if acao == "car":
+        return out + [_msg(chat, carteira_agora(u, hist, hoje), menu=True)]
     if acao == "ls":
         return out + [ver_sinal(chat, u, ticker, partes[2], hist, hoje)]
     if acao == "g":
@@ -717,6 +727,8 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
             a["ret_min"] = _seguinte_ret(a["ret_min"])
         elif ticker == "fora":
             a["fora"] = not a["fora"]
+        elif ticker == "manha":
+            a["manha"] = not a["manha"]
         u["avisos"] = a
         txt, botoes = texto_avisos(u)
         return out + [_msg(chat, txt, botoes) if ticker == "ver" else _editar(cq, txt, botoes)]
@@ -747,9 +759,15 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, f"⚙️ Feito: {cart.fmt(r['pct'], 0)}% por sinal, máximo {r['max_posicoes']} posições.",
                                                menu=True)]
     if acao == "z":
-        if ticker != "sim":
+        if ticker not in ("sim", "novo"):
             return out + [_tirar_botoes(cq), _msg(chat, "Ficou tudo como estava.", menu=True)]
         cart.recomecar(u, hoje)
+        if ticker == "novo":  # como no primeiro dia: regras e avisos de origem, boas-vindas e visita guiada
+            u["regras"] = {**cart.REGRAS_BASE, **(cfg.get("regras_base") or {})}
+            u["caixa"] = float(u["regras"]["capital_inicial"])
+            for k in ("avisos", "precos_mostrados", "talao", "print"):
+                u.pop(k, None)
+            return out + [_tirar_botoes(cq)] + _boas_vindas(chat, u["nome"], cfg.get("aviso", ""))
         return out + [_tirar_botoes(cq), pergunta_capital(chat, u, "🔄 Carteira a zero (se foi engano, carrega em "
                                                                      "↩️ Desfazer).\n\n")]
     if acao == "cap":
@@ -864,7 +882,7 @@ def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
     return elegiveis[:livres], elegiveis[livres:], livres
 
 
-AVISOS_BASE = {"som": True, "ret_min": 0.0, "fora": True}
+AVISOS_BASE = {"som": True, "ret_min": 0.0, "fora": True, "manha": True}
 RET_OPCOES = [0.0, 0.005, 0.01, 0.015]  # retorno esperado mínimo: qualquer, +0,5%, +1%, +1,5%
 
 
@@ -890,11 +908,13 @@ def texto_avisos(u: dict) -> tuple[str, list]:
            f"• Retorno esperado mínimo: <b>{_pct(a['ret_min']) if a['ret_min'] else 'qualquer'}</b> "
            "(sinais abaixo disto não te chegam)\n"
            f"• Sinais que não cabem na carteira: <b>{'mostrar numa linha' if a['fora'] else 'não mostrar'}</b>\n"
+           f"• Resumo da manhã (antes de Nova Iorque abrir): <b>{'ligado' if a['manha'] else 'desligado'}</b>\n"
            "Carrega para mudar:")
     seguinte = _seguinte_ret(a["ret_min"])
     return txt, [[("🔕 Desligar som" if a["som"] else "🔔 Ligar som", "g|som")],
                  [(f"📊 Retorno mínimo → {_pct(seguinte) if seguinte else 'qualquer'}", "g|ret")],
-                 [("🙈 Esconder os que não cabem" if a["fora"] else "👀 Mostrar os que não cabem", "g|fora")]]
+                 [("🙈 Esconder os que não cabem" if a["fora"] else "👀 Mostrar os que não cabem", "g|fora")],
+                 [("🌅 Desligar resumo da manhã" if a["manha"] else "🌅 Ligar resumo da manhã", "g|manha")]]
 
 
 def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | None = None, hoje: str = "",
@@ -1812,6 +1832,60 @@ def resumos_semanais(estado: dict, hoje: str) -> list:
         texto = cart.formatar_semana(u, segunda, cot)
         if texto:
             out.append(("sendMessage", _msg(chat, texto, menu=True)[1]))
+    return out
+
+
+# ---------- resumo da manhã, por pessoa ----------
+
+def resumo_manha(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str, abertura: str = "") -> tuple | None:
+    """☀️ Antes de Nova Iorque abrir: a carteira, o que acaba hoje e os melhores da lista para hoje.
+    None se a pessoa não tem posições nem nada para comprar (não vale a pena acordá-la)."""
+    r, moeda = u["regras"], u["regras"]["moeda"]
+    pos = {f["ticker"]: f for f in forcas(u, hist, hoje)}
+    comprar = _compraveis(u, _avaliados(u, hist, hoje))
+    livres = max(r["max_posicoes"] - len(u["posicoes"]), 0)
+    if not pos and not comprar:
+        return None
+    linhas = [f"☀️ <b>Bom dia, {html.escape(u.get('nome') or '')}!</b>"
+              + (f" Nova Iorque abre às {abertura}." if abertura else "")]
+    if pos:
+        em_acoes = sum(p["qtd"] * pos[t]["preco"] for t, p in u["posicoes"].items())
+        total = u["caixa"] + em_acoes
+        ganho = total - r["capital_inicial"]
+        linhas.append(f"\n💼 <b>{cart.fmt(total)} {moeda}</b> ({cart.sinal_fmt(ganho)} {moeda}) · "
+                      f"{len(u['posicoes'])}/{r['max_posicoes']} lugares · livre {cart.fmt(u['caixa'])}")
+        acabam = []
+        for t, p in sorted(u["posicoes"].items(), key=lambda x: x[1].get("data", "")):
+            f, prazo = pos[t], _conf_prazo(t, p, hist)[1]
+            dia = f["usados"] + 1
+            ultimo = bool(p.get("data")) and dia >= prazo
+            acabam += [t] if ultimo and p.get("acompanhar", True) else []
+            linhas.append(f"• <b>{t}</b> {cart.sinal_fmt(f['pct'], 1)}% · "
+                          + ("⏳ último dia" if ultimo else f"dia {min(dia, prazo)} de {prazo}"))
+        if acabam:
+            linhas.append(f"⏳ Hoje acaba o prazo de <b>{', '.join(acabam)}</b>: o plano é vender até ao fecho.")
+    if comprar and livres:
+        linhas.append(f"\n📈 <b>Para hoje</b> ({livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''})")
+        for s in comprar[:min(livres, 3)]:
+            lim = f" · compra até {cart.fmt(s['limite'])}" if s["limite"] else ""
+            quando = " · entra à abertura" if _a_espera_da_abertura(s) else ""
+            linhas.append(f"🟢 <b>{s['ticker']}</b> {_esperado(s)}{lim}{quando}")
+    elif comprar:
+        troca = _melhor_troca(u, _avaliados(u, hist, hoje), hist, hoje)
+        linhas.append(f"\n🔁 A {troca[0]['ticker']} compensa mais do que a {troca[1]}: vê a proposta em 📈 Sinais."
+                      if troca else "\n🔒 Carteira cheia e nenhuma troca compensa agora.")
+    linhas.append("\n<i>Preços do último fecho; confirma na XTB.</i>")
+    return _msg(chat, "\n".join(linhas), [[("📈 Ver a lista", "lst|"), ("💼 Carteira", "car|")]])
+
+
+def resumos_manha(estado: dict, hist: pd.DataFrame | None, hoje: str, abertura: str = "") -> list:
+    out = []
+    for chat, u in cart.ativos(estado).items():
+        if not avisos(u)["manha"]:
+            continue
+        m = resumo_manha(chat, u, hist, hoje, abertura)
+        if m:
+            out.append(m)
     return out
 
 
