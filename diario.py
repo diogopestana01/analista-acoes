@@ -179,6 +179,7 @@ def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Times
     e o bot, os alertas e os resumos leem-na (data/lista_sinais.json)."""
     try:
         abertos = hist.loc[hist["estado"] == "aberto", "ticker"].tolist()
+        hist = acompanhamento.completar_taxas(hist, DADOS)
         itens = lista_sinais.avaliar(hist, cotacoes.precos_agora(dados, abertos), f"{agora:%Y-%m-%d}",
                                      trocas.carregar(), config["sinais"])
         LISTA.write_text(json.dumps({"gerada_em": agora.isoformat(), "itens": itens}, ensure_ascii=False,

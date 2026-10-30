@@ -233,3 +233,30 @@ def em_pausa(hist: pd.DataFrame, hoje: str, dias_uteis: int) -> set[str]:
     limite = (pd.Timestamp(hoje) - pd.offsets.BDay(dias_uteis)).strftime("%Y-%m-%d")
     f = hist[(hist["estado"] != "aberto") & (hist["data_fecho"].astype(str) > limite)]
     return set(f["ticker"])
+
+
+def completar_taxas(hist: pd.DataFrame, pasta: Path) -> pd.DataFrame:
+    """Sinais registados antes de o registo guardar a taxa de acerto: vai buscá-la ao ficheiro de
+    sinais do dia (sinais_AAAA-MM-DD.csv, o mais recente até à data do sinal), para a ordem da lista."""
+    falta = hist["estado"].eq("aberto") & hist["taxa_acerto"].isna()
+    if not falta.any():
+        return hist
+    fontes = []
+    for f in sorted(Path(pasta).glob("sinais_20*.csv")):
+        try:
+            s = pd.read_csv(f, usecols=lambda c: c in ("ticker", "setup", "taxa_acerto", "n_historico"))
+        except (ValueError, pd.errors.EmptyDataError):
+            continue
+        if {"ticker", "setup", "taxa_acerto"} <= set(s.columns):
+            fontes.append(s.assign(_dia=f.stem.removeprefix("sinais_")))
+    if not fontes:
+        return hist
+    todas = pd.concat(fontes, ignore_index=True).sort_values("_dia")
+    hist = hist.copy()
+    for i in hist.index[falta]:
+        r = hist.loc[i]
+        c = todas[(todas["ticker"] == r["ticker"]) & (todas["setup"] == r["setup"])
+                  & (todas["_dia"] <= str(r["data_sinal"])[:10])]
+        if not c.empty:
+            hist.loc[i, ["taxa_acerto", "n_historico"]] = [c["taxa_acerto"].iat[-1], c.get("n_historico", pd.Series([0])).iat[-1]]
+    return hist
