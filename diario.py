@@ -15,7 +15,7 @@ import yaml
 import passo1_universo
 import passo2_sinais
 from src import (acompanhamento, bot, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
-                 telegram, trocas, vigia)
+                 insiders, telegram, trocas, vigia)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -172,9 +172,42 @@ def enviar_sinais(msgs: list, registos: list[dict], precos: pd.DataFrame, estado
 
 PENDENTES = DADOS / "sinais_pendentes.json"
 LISTA = DADOS / "lista_sinais.json"
+INSIDERS = DADOS / "insiders.json"
 
 
-def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Timestamp) -> None:
+def enriquecer_insiders(hist: pd.DataFrame, agora: pd.Timestamp) -> tuple[pd.DataFrame, dict]:
+    """Compras de insiders e short interest dos sinais em aberto (src/insiders.py), uma vez por dia e
+    ação. Só informação: vai para a lista e para o registo (modo sombra, para medir mais tarde)."""
+    hoje = f"{agora:%Y-%m-%d}"
+    try:
+        cache = json.loads(INSIDERS.read_text()) if INSIDERS.exists() else {}
+    except (ValueError, OSError):
+        cache = {}
+    do_dia = cache.get(hoje, {})
+    abertos = hist.index[hist["estado"] == "aberto"]
+    try:
+        import requests
+        sessao = requests.Session()
+        for t in sorted(set(hist.loc[abertos, "ticker"]) - set(do_dia)):
+            ins, sh = insiders.insiders(t, agora, sessao), insiders.short(t, sessao)
+            do_dia[t] = {"insiders": ins, "short": sh, "texto": insiders.texto(ins, sh)}
+        INSIDERS.write_text(json.dumps({hoje: do_dia}, ensure_ascii=False))
+    except Exception as e:  # noqa: BLE001 — nunca pode parar os sinais
+        logging.warning("Insiders não atualizados: %s", e)
+    hist = hist.copy()
+    for i in abertos:
+        d = do_dia.get(hist.at[i, "ticker"]) or {}
+        if pd.isna(hist.at[i, "insiders_compradores"]) and d.get("insiders"):
+            hist.at[i, "insiders_compradores"] = d["insiders"]["compradores"]
+        if pd.isna(hist.at[i, "short_dias"]) and d.get("short") and d["short"].get("dias") is not None:
+            hist.at[i, "short_dias"] = d["short"]["dias"]
+    logging.info("Insiders: %d ações com compras de insiders em 90 dias",
+                 sum(1 for d in do_dia.values() if (d.get("insiders") or {}).get("compradores")))
+    return hist, do_dia
+
+
+def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Timestamp,
+                  extra: dict | None = None) -> None:
     """A lista de sinais, reavaliada nesta corrida com o preço de agora: um só sítio que a calcula,
     e o bot, os alertas e os resumos leem-na (data/lista_sinais.json)."""
     try:
@@ -182,6 +215,9 @@ def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Times
         hist = acompanhamento.completar_taxas(hist, DADOS)
         itens = lista_sinais.avaliar(hist, cotacoes.precos_agora(dados, abertos), f"{agora:%Y-%m-%d}",
                                      trocas.carregar(), config["sinais"])
+        for s in itens:   # insiders e short interest (só informação)
+            info = (extra or {}).get(s["ticker"]) or {}
+            s["insiders"], s["short"], s["insiders_texto"] = info.get("insiders"), info.get("short"), info.get("texto", "")
         LISTA.write_text(json.dumps({"gerada_em": agora.isoformat(), "itens": itens}, ensure_ascii=False,
                                     default=str))
         logging.info("Lista de sinais: %d (%d para comprar)", len(itens),
@@ -305,8 +341,9 @@ def main() -> None:
     # tomados por fechados e apagados da lista de espera sem nunca serem enviados).
     enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
     _guardar_trocas(trocas_avisadas)
+    hist, info_insiders = enriquecer_insiders(hist, agora)
     hist.to_csv(HIST, index=False)
-    guardar_lista(hist, dados, config, agora)
+    guardar_lista(hist, dados, config, agora, info_insiders)
 
 
 if __name__ == "__main__":
