@@ -34,6 +34,11 @@ sinais:
   peso_base_casos: 10           # quantos casos "vale" a média do setup face ao histórico da própria ação
   peso_backtest_casos: 150      # quantos sinais reais em papel "vale" o backtest na média de cada setup (ajuste automático).
                                 # Era 30: uma semana boa de pullbacks punha a base em +1,22% (backtest +0,42%). Revisão 29/10.
+  # Lista de sinais: deixa de dar para comprar quando o preço já está mais de k ATR acima do preço do sinal
+  # (sinais da noite: acima do fecho em que se formou). Estudo 30/10 passo3h_abertura.py, nas duas metades:
+  # pullback a 0,2-0,5 ATR acima rende +0,18% (não paga o spread); rompimento/semana forte ainda +0,4%;
+  # acima de 0,5 ATR ~0% em todos.
+  limite_compra_atr: {pullback: 0.2, rompimento: 0.5, semana_forte: 0.5}
   qualidade:                    # média do backtest por setup (bruta, %), regra de saída (src/saidas.py) e filtros [mín, máx]
     pullback: {retorno_base_pct: 0.42, saida: sma5, filtros: {}}          # backtest 22/10: sma5 +0,42% vs atual +0,37%, ganha 64%
     # Rompimento e semana forte: só se o gráfico SEMANAL não estiver esticado (RSI semanal < 70).

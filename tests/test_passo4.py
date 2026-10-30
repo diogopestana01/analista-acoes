@@ -129,6 +129,7 @@ def test_sinal_com_bolsa_fechada_entra_na_abertura_seguinte():
     h, f = acompanhamento.atualizar(noite, precos, pd.Timestamp("2026-10-29 15:00", tz="UTC"))
     linha = h.iloc[-1]
     assert linha["entrada"] == 102.0 and linha["stop"] == 98.0 and not bool(linha["entrada_na_abertura"])
+    assert linha["preco_sinal"] == 100.0   # preço a que o sinal se formou, para medir o salto
     assert linha["estado"] == "aberto" and not f
     # Antes da sessão seguinte não há abertura: fica à espera, sem fechar.
     h2, _ = acompanhamento.atualizar(noite, precos[precos["data"] == "2026-10-28"],

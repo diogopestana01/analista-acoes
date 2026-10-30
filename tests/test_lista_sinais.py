@@ -78,3 +78,26 @@ def test_reage_quando_a_posicao_ja_deu_o_que_tinha_a_dar(monkeypatch):
     msgs = bot.mensagens_trocas(e, HIST, HOJE, set())
     assert all("COMPRAR NOVO" not in m[1] for m in msgs)
     assert bot.mensagens_trocas(None, HIST, HOJE, set()) == []
+
+
+def test_limite_em_atr_desde_o_preco_do_sinal():
+    # Rompimento (atr_3_15): entrada 100, stop 97 = 1,5 ATR -> ATR 2. Teto 0,5 ATR = 101.
+    cfg = {**CFG_S, "limite_compra_atr": {"rompimento": 0.5}}
+    assert lista_sinais.limite(100.0, 106.0, 97.0) == 103.0                          # sem teto: meio caminho
+    assert lista_sinais.limite(100.0, 106.0, 97.0, "rompimento", cfg) == 101.0
+    # Sinal da noite: formou-se a 99 e abriu a 100 (stop e objetivo deslocados): teto 99 + 1 = 100.
+    assert lista_sinais.limite(100.0, 106.0, 97.0, "rompimento", cfg, 99.0) == 100.0
+    assert lista_sinais.limite(100.0, 106.0, 97.0, "pullback", cfg) == 103.0          # setup sem teto
+
+
+def test_sinal_que_subiu_logo_deixa_de_dar_para_comprar():
+    cfg = {**CFG_S, "limite_compra_atr": {"rompimento": 0.5, "semana_forte": 0.5}}
+    h = _hist([{"data_sinal": HOJE, "ticker": "SALTO", "entrada": 100.0, "objetivo": 106.0, "stop": 97.0,
+                "preco_sinal": 98.0, "retorno_esperado": 0.02},
+               {"data_sinal": HOJE, "ticker": "CALMO", "entrada": 100.0, "objetivo": 106.0, "stop": 97.0,
+                "retorno_esperado": 0.01}])
+    itens = {s["ticker"]: s for s in lista_sinais.avaliar(h, {"SALTO": 100.2, "CALMO": 100.5}, HOJE, MODELO, cfg)}
+    assert itens["SALTO"]["estado_lista"] == "andamento"   # abriu 1 ATR acima do fecho do sinal
+    assert itens["CALMO"]["estado_lista"] == "comprar"
+    sobe = lista_sinais.avaliar(h, {"SALTO": 100.2, "CALMO": 101.5}, HOJE, MODELO, cfg)
+    assert {s["ticker"]: s["estado_lista"] for s in sobe}["CALMO"] == "andamento"

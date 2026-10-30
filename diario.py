@@ -14,7 +14,7 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import acompanhamento, bot, cofre, cotacoes, grafico, precos as precos_mod, resultados, telegram, vigia
+from src import acompanhamento, bot, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados, telegram, vigia
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -187,9 +187,10 @@ def guardar_pendentes(sinais: pd.DataFrame) -> None:
 
 
 def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | None, dono: str | None,
-                     precos: pd.DataFrame, trocas_avisadas: set | None = None) -> None:
+                     precos: pd.DataFrame, trocas_avisadas: set | None = None, cfg: dict | None = None) -> None:
     """Na primeira corrida com a bolsa aberta e a entrada já à abertura no registo, envia os sinais da
-    noite numa ronda só, com o preço de abertura, stop e objetivo atualizados."""
+    noite numa ronda só, com o preço de abertura, stop e objetivo atualizados. Os que abriram já acima
+    do limite de compra (src/lista_sinais.limite) não são enviados: ficam só na lista, em andamento."""
     try:
         pend = json.loads(PENDENTES.read_text()) if PENDENTES.exists() else {}
     except (ValueError, OSError):
@@ -205,6 +206,10 @@ def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | Non
         resolvido = str(h.get("entrada_na_abertura")).strip().lower() in ("false", "0", "0.0")
         if not acompanhamento.bolsa_aberta(t, agora) or not resolvido:
             restam[t] = r
+            continue
+        lim = lista_sinais.limite(h["entrada"], h["objetivo"], h["stop"], h.get("setup"), cfg, h.get("preco_sinal"))
+        if lim is not None and h["entrada"] > lim:
+            logging.info("%s abriu a %.2f, acima do limite de compra %.2f: não enviado", t, h["entrada"], lim)
             continue
         prontos.append({**r, "entrada": h["entrada"], "stop": h["stop"], "objetivo": h["objetivo"],
                         "data_sinal": h["data_sinal"]})
@@ -264,7 +269,7 @@ def main() -> None:
         registos = [{**s, "data_sinal": data} for s in agora_ja.to_dict("records")]
         enviar_sinais(bot.mensagens_sinais(estado, registos, cabecalho, dono, hist, data, trocas_avisadas),
                       registos, precos, estado)
-    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas)
+    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
     # Os sinais de dias anteriores são reavaliados a cada corrida: se uma posição já deu o que tinha a dar
     # e um sinal que ainda dá para comprar rende mais, propõe a troca (uma vez, só com a bolsa de NY aberta).
     if acompanhamento.bolsa_aberta("SPY", agora):

@@ -33,12 +33,25 @@ def _num(x) -> float | None:
     return None if pd.isna(v) else v
 
 
-def limite(entrada, objetivo, stop) -> float | None:
+def limite(entrada, objetivo, stop, setup: str | None = None, cfg: dict | None = None,
+           preco_sinal=None) -> float | None:
     """Preço máximo de compra: entrada + metade do caminho até ao objetivo. Sem objetivo (saída pela
-    regra), conta como objetivo a mesma distância do stop para cima."""
+    regra), conta como objetivo a mesma distância do stop para cima.
+    Com o setup e a config (sinais.limite_compra_atr), também nunca mais de k ATR acima do preço a que
+    o sinal se formou (`preco_sinal`; nos sinais da noite é o fecho anterior, não a abertura).
+    Estudo passo3h_abertura.py (47 836 sinais, comprar à abertura seguinte): a abrir até 0,2 ATR acima
+    rende como o sinal (+0,38%); 0,2-0,5 ATR +0,23% (pullback +0,18%, não paga o spread); acima de
+    0,5 ATR ~0%. A abrir abaixo continua a compensar (+0,36% a +0,48%)."""
     e, o, st = _num(entrada), _num(objetivo), _num(stop)
     alvo = o or (e + (e - st) if e and st else None)
-    return round(e + FUGIU * (alvo - e), 2) if e and alvo and alvo > e else None
+    lim = round(e + FUGIU * (alvo - e), 2) if e and alvo and alvo > e else None
+    k = _num(((cfg or {}).get("limite_compra_atr") or {}).get(setup))
+    if k is not None and e and st:
+        atr = trocas.atr_pct(setup, e, st, cfg)
+        if atr:
+            teto = round((_num(preco_sinal) or e) + k * atr * e, 2)
+            lim = teto if lim is None else min(lim, teto)
+    return lim
 
 
 def retorno(s: dict) -> float | None:
@@ -67,8 +80,8 @@ def avaliar(hist: pd.DataFrame | None, precos: dict, hoje: str, modelo: dict | N
         preco = p or e
         dias = int(np.busday_count(data, hoje)) if hoje >= data else 0
         max_dias = int(_num(r.get("max_dias")) or 5)
-        lim = limite(e, o, st)
         setup = r.get("setup") if isinstance(r.get("setup"), str) else ""
+        lim = limite(e, o, st, setup, cfg, r.get("preco_sinal"))
         forca = None
         if modelo:
             if dias >= max_dias:

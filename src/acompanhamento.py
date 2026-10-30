@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 COLUNAS = ["data_sinal", "ticker", "setup", "direcao", "entrada", "objetivo", "stop",
            "dias_estimados", "max_dias", "pontuacao", "estado", "data_fecho", "preco_fecho", "dias", "saida",
            "veredicto_inv", "risco_inv", "impacto_noticias", "sentimento", "reddit_mencoes", "reddit_variacao",
-           "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv", "entrada_na_abertura"]
+           "st_otimismo", "retorno_esperado", "verif_noticias", "verif_inv", "entrada_na_abertura", "preco_sinal"]
 
 
 def carregar(caminho: Path) -> pd.DataFrame:
@@ -147,7 +147,9 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame,
                 continue
             delta = abertura - s["entrada"]
             cols = [c for c in ("stop", "objetivo") if pd.notna(s[c])]
-            hist.loc[i, ["entrada", "entrada_na_abertura"] + cols] = [abertura, False] + [s[c] + delta for c in cols]
+            # preco_sinal: o preço quando o sinal se formou, para medir o salto na abertura (lista de sinais)
+            hist.loc[i, ["entrada", "entrada_na_abertura", "preco_sinal"] + cols] = \
+                [abertura, False, s["entrada"]] + [s[c] + delta for c in cols]
             s = hist.loc[i]
         compra = s["direcao"] == "compra"
         regra = saidas.REGRAS.get(s["saida"]) if isinstance(s["saida"], str) else None
