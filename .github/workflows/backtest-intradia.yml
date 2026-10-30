@@ -12,13 +12,14 @@ name: Backtest intradiário
 #   ordem        ordem dos sinais: ganho esperado ou ajustado ao risco? (passo3j_ordem.py)
 #   saidas_risco prazo mais curto e stop que sobe para a entrada (passo3k_saidas_risco.py)
 #   spread       spread estimado: cortar ou reordenar sinais caros de entrar? (passo3l_spread.py)
+#   europa       os setups rendem na Europa depois dos custos da XTB? (passo3m_europa.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa]
         default: rompimentos
 
 permissions:
@@ -68,6 +69,8 @@ jobs:
         if: inputs.estudo == 'saidas_risco'
       - run: python passo3l_spread.py
         if: inputs.estudo == 'spread'
+      - run: python passo3m_europa.py
+        if: inputs.estudo == 'europa'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia

@@ -27,7 +27,7 @@ import passo3j_ordem as p3j
 from src import indicadores, saidas, sinais
 
 RAIZ, DADOS = t3.RAIZ, t3.DADOS
-JANELA = 21
+JANELA = 63   # 3 meses: com 21 dias a estimativa dava 0 em mais de 40% dos casos
 CORTES = (0.005, 0.0075, 0.01, 0.015)
 
 
@@ -123,7 +123,7 @@ def main() -> None:
           f"com o ATR {todos['spread'].rank().corr(todos['atr_pct'].rank()):+.2f}")
 
     print("\n### 1. Retorno por quinto do spread estimado (todos os trades; antes | depois do spread)")
-    todos["q"] = pd.qcut(todos["spread"], 5, labels=False)
+    todos["q"] = pd.qcut(todos["spread"].rank(method="first"), 5, labels=False)
     meio_t = todos["entrada_data"].median()
     for s, g in [("todos", todos)] + list(todos.groupby("setup")):
         print(f"  {s}:")
@@ -134,6 +134,14 @@ def main() -> None:
                   f"bruto {x['ret'].mean()*100:+.2f}% ({a['ret'].mean()*100:+.2f}|{b['ret'].mean()*100:+.2f}) "
                   f"líquido {liq.mean()*100:+.2f}% ({(a['ret']-a['spread']).mean()*100:+.2f}|"
                   f"{(b['ret']-b['spread']).mean()*100:+.2f}) ganha {(liq > 0).mean()*100:.0f}%")
+
+    print("\n### 1b. Retorno por quinto do valor negociado por dia (ações menos líquidas têm spread maior)")
+    todos["qd"] = pd.qcut(todos["dolares"].rank(method="first"), 5, labels=False)
+    for q, x in todos.groupby("qd"):
+        a, b = x[x["entrada_data"] < meio_t], x[x["entrada_data"] >= meio_t]
+        print(f"    Q{q+1} {x['dolares'].min()/1e6:.1f}-{x['dolares'].max()/1e6:.0f} M/dia n={len(x):6d} "
+              f"bruto {x['ret'].mean()*100:+.2f}% ({a['ret'].mean()*100:+.2f}|{b['ret'].mean()*100:+.2f}) "
+              f"spread estimado médio {x['spread'].mean()*100:.2f}%")
 
     print("\n### 2. Carteira de 5 lugares, ordem equilibrada, cada trade paga o seu spread estimado")
     rng = np.random.default_rng(1)
