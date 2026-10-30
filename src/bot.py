@@ -19,7 +19,7 @@ import pandas as pd
 
 from . import carteira as cart
 from . import acompanhamento, cotacoes, diario_trades, lista_sinais, risco, saidas, telegram, tendencias, trocas
-from . import spread as spread_mod
+from . import momento, spread as spread_mod
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -35,6 +35,7 @@ DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
 MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 LER_LISTA = None  # () -> dict: data/lista_sinais.json, gravada pelos sinais a cada corrida
+SPREADS = None  # Path de data/spreads.csv (spread de cada corrida), para o spread normal de cada ação
 COTAR_LADO = None  # (tickers, "compra"|"venda") -> {ticker: ask|bid} em tempo real; o bot_carteira preenche
 COTAR_VIVO = None  # (tickers) -> {ticker: preço} em tempo real (Nasdaq), só com a bolsa aberta; o bot_carteira preenche
 VIVO_MAX = 12      # quantos sinais da lista vão buscar o preço do momento quando alguém a abre
@@ -1558,6 +1559,26 @@ def _insiders_texto(s: dict) -> str:
     return txt.strip() if isinstance(txt, str) else ""
 
 
+def _espera(ticker: str, spread: float | None) -> dict | None:
+    """Conselho de esperar (src/momento.py): spread de agora contra o normal desta ação."""
+    try:
+        return momento.conselho(spread, momento.normais(SPREADS).get(ticker))
+    except Exception:  # noqa: BLE001  é só um conselho
+        return None
+
+
+def _espera_venda(ticker: str) -> str:
+    """Linha "espera para vender" com o bid/ask deste momento (vazia se não compensa ou sem bid/ask)."""
+    if COTAR_LADO is None:
+        return ""
+    try:
+        sp = spread_mod.pct((COTAR_LADO([ticker], "venda") or {}).get(ticker),
+                            (COTAR_LADO([ticker], "compra") or {}).get(ticker))
+    except Exception:  # noqa: BLE001
+        return ""
+    return momento.texto(_espera(ticker, sp), sp, "venda") if sp is not None else ""
+
+
 def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
     moeda, e = u["regras"]["moeda"], s["entrada"]
@@ -1600,6 +1621,9 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         linhas.append(f"↔️ Spread agora {cart.fmt(sp * 100, 2)}%: começas a perder isto ao comprar"
                       + (f"; sem ele, o esperado é <b>{_pct(s['esperado_sem_spread'])}</b>"
                          if _num(s.get("esperado_sem_spread")) is not None else ""))
+        espera = momento.texto(_espera(s["ticker"], sp), sp, "compra")
+        if espera:
+            linhas.append(espera)
     if isinstance(s.get("setup"), str):
         linhas.append(f"🧭 Tipo de sinal: {acompanhamento.SETUPS_PT.get(s['setup'], s['setup'])}")
     if isinstance(s.get("resumo_noticias"), str) and s["resumo_noticias"].strip():
@@ -1877,6 +1901,9 @@ def _cartao_ranking(k: int, s: dict) -> str:
         modelo.append(f"confiança <b>{s['taxa'] * 100:.0f}%</b>")
     if _num(s.get("spread_pct")) is not None:
         modelo.append(f"spread {cart.fmt(s['spread_pct'] * 100, 1)}%")
+        espera = momento.curto(_espera(s["ticker"], s["spread_pct"]))
+        if espera:
+            modelo.append(espera)
     linhas = [cab, "    " + " · ".join(p for p in precos if p)]
     if modelo:
         linhas.append("    📊 " + " · ".join(modelo))
@@ -2069,6 +2096,9 @@ def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None, 
             pct = (f["preco_saida"] / p["preco"] - 1) * 100
             texto = (f"{base}\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])} "
                      f"({cart.sinal_fmt(pct, 1)}% a {cart.fmt(f['preco_saida'])}).")
+            if f["resultado"] not in ("stop", "objetivo") and momento.minutos_desde_abertura() is None:
+                texto += (f"\n⏳ Na primeira meia hora de NY o spread costuma ser maior: se puderes, "
+                          f"vende depois das {momento.hora_calma_lisboa()} (hora de Lisboa).")
             out.append((chat, texto, botoes_venda(f["ticker"], f["preco_saida"])))
             donos_avisados |= chat == dono
         if dono and not donos_avisados:
@@ -2125,6 +2155,9 @@ def mensagens_saidas(estado: dict | None, dados: dict, avisados: set) -> list:
             texto = (f"{cab}: vende.\n💼 Tens {cart.fmt_qtd(p['qtd'])} compradas a {cart.fmt(p['preco'])}; "
                      f"agora {cart.fmt(agora)} ({cart.sinal_fmt(pct, 1)}%).\n"
                      "Se a ordem já executou na XTB, carrega em ✅ Vendi e acerta o preço no talão.")
+            espera = _espera_venda(t) if s["tipo"] == "objetivo" else ""  # um stop nunca espera
+            if espera:
+                texto += "\n" + espera
             out.append((chat, texto, botoes_venda(t, s["nivel"])))
     return out
 
