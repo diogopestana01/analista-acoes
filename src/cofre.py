@@ -25,6 +25,11 @@ def chave() -> bytes | None:
     return base64.urlsafe_b64encode(hashlib.sha256(segredo.encode()).digest())
 
 
+def abrir(dados: bytes, k: bytes) -> dict:
+    """Estado a partir dos bytes cifrados (ex. a versão mais recente do ficheiro no GitHub)."""
+    return json.loads(Fernet(k).decrypt(dados))
+
+
 def carregar(caminho: Path, k: bytes | None, dono: str | None = None) -> dict:
     """Estado guardado, ou um estado novo se o ficheiro não existir. Erro se a chave estiver errada."""
     if not caminho.exists():

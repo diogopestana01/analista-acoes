@@ -7,6 +7,7 @@ de cada dia reconstrói o universo; as restantes só atualizam os últimos preç
 import json
 import logging
 import os
+import subprocess
 from pathlib import Path
 
 import pandas as pd
@@ -32,6 +33,23 @@ def ler_carteira() -> dict | None:
     except Exception as e:  # noqa: BLE001
         logging.warning("Carteira indisponível: %s", e)
         return None
+
+
+def ler_carteira_recente(atual: dict | None) -> dict | None:
+    """A carteira como está AGORA no GitHub. Uma corrida dos sinais demora alguns minutos e o bot pode ter
+    registado compras entretanto: sem isto, os sinais diziam "tens 2 lugares livres" a quem acabou de os
+    ocupar. Se falhar, fica a lida no início da corrida."""
+    k = cofre.chave()
+    if not k:
+        return atual
+    try:
+        subprocess.run(["git", "fetch", "-q", "origin", "main"], cwd=RAIZ, timeout=60, check=True)
+        r = subprocess.run(["git", "show", f"origin/main:{CARTEIRA.relative_to(RAIZ).as_posix()}"], cwd=RAIZ,
+                           capture_output=True, timeout=30, check=True)
+        return cofre.abrir(r.stdout, k)
+    except Exception as e:  # noqa: BLE001
+        logging.warning("Carteira recente indisponível: %s", type(e).__name__)
+        return atual
 
 
 def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dict) -> None:
@@ -346,6 +364,8 @@ def main() -> None:
     guardar_pendentes(para_depois)
 
     trocas_avisadas = set(_ler_cache().get("trocas_avisadas", []))
+    if not agora_ja.empty or os.path.exists(DADOS / "sinais_pendentes.json"):
+        estado = ler_carteira_recente(estado)   # lugares livres de cada pessoa neste momento
     if not agora_ja.empty:
         cabecalho = (f"📊 <b>Novos sinais ({agora:%d/%m %H:%M} UTC)</b> ({len(agora_ja)})\n"
                      f"Preços da última cotação; confirma na XTB antes de entrar.\n{acompanhamento.resumo(hist)}")
