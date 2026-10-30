@@ -1083,8 +1083,19 @@ def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str) -> str:
     velas = dados.get("acoes", {})
     saidas = {t: s for t, p in u["posicoes"].items()
               if (s := cotacoes.saida_atingida(p, velas.get(t, {}).get("velas", [])))}
+    alvos = {t: a for t, p in u["posicoes"].items()
+             if (a := _alvo_movel(t, (_linha_sinal(t, p, hist) or {}).get("saida"), hoje, velas))}
     return cart.formatar_carteira(u, _cotacoes(list(u["posicoes"])), hoje, prazos, saidas,
-                                  _hora_lisboa(dados.get("hora", "")))
+                                  _hora_lisboa(dados.get("hora", "")), alvos)
+
+
+def _alvo_movel(t: str, saida, hoje: str, velas: dict | None = None) -> float | None:
+    """Objetivo dos sinais que saem "quando o preço recuperar" (média de 5 dias), em preço de hoje."""
+    regra = saidas.REGRAS.get(saida or "") if isinstance(saida, str) else None
+    if not regra or regra.sair_se != "acima_sma5" or not hoje:
+        return None
+    velas = velas if velas is not None else _ler_cotacoes().get("acoes", {})
+    return cotacoes.alvo_media5((velas.get(t) or {}).get("velas") or [], hoje)
 
 
 def posicao_mais_fraca(u: dict, hist: pd.DataFrame | None, hoje: str) -> dict | None:
@@ -1549,7 +1560,12 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     if obj:
         linhas.append(f"🎯 Vender com lucro a <b>{cart.fmt(obj)}</b> ({cart.sinal_fmt((obj / e - 1) * 100, 1)}%)")
     elif regra and regra.sair_se:
-        linhas.append(f"🎯 Vender: {regra.texto_alerta()} (eu aviso-te)")
+        alvo = _alvo_movel(s["ticker"], s.get("saida"), str(pd.Timestamp.now(tz="UTC").date()))
+        if alvo and alvo > e:
+            linhas.append(f"🎯 Vender com lucro a ~<b>{cart.fmt(alvo)}</b> ({cart.sinal_fmt((alvo / e - 1) * 100, 1)}%): "
+                          f"objetivo móvel, vende quando fechar acima da média dos últimos dias (eu aviso-te)")
+        else:
+            linhas.append(f"🎯 Vender: {regra.texto_alerta()} (eu aviso-te)")
     if stop:
         linhas.append(f"🛑 Vender para travar a perda a <b>{cart.fmt(stop)}</b> ({cart.sinal_fmt((stop / e - 1) * 100, 1)}%)")
     r_txt = risco.texto(_atr_sinal(s))
@@ -1819,6 +1835,8 @@ def _cartao_ranking(k: int, s: dict) -> str:
     precos = [f"💵 até {cart.fmt(s['limite'])}" if s.get("limite") else ""]
     if o:
         precos.append(f"🎯 {cart.fmt(o)}" + (f" ({cart.sinal_fmt((o / base - 1) * 100, 0)}%)" if base else ""))
+    elif (alvo := _alvo_movel(s["ticker"], s.get("saida"), str(pd.Timestamp.now(tz="UTC").date()))):
+        precos.append(f"🎯 ~{cart.fmt(alvo)}" + (f" ({cart.sinal_fmt((alvo / base - 1) * 100, 0)}%)" if base else ""))
     elif regra and regra.sair_se:
         precos.append("🎯 aviso quando vender")
     if st:
@@ -1854,6 +1872,7 @@ def _bloco_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[str]:
     return linhas + [""]
 
 
+RESERVA_BOTOES = 5  # sinais da lista recolhida que também têm botão
 RESTO_MAX = 25  # sinais na lista recolhida (o Telegram corta mensagens acima de 4096 caracteres)
 
 
@@ -1900,7 +1919,9 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         quais = "O outro sinal" if len(resto) == 1 else f"Os outros {len(resto)} sinais"
         linhas.append(f"➕ <b>{quais}</b> que o modelo dá agora (não cabem na tua carteira; "
                       f"para os apanhar, aumenta as posições em ⚙️ Regras). Toca para abrir; em cada linha: preço máximo · "
-                      f"lucro esperado · confiança · risco.")
+                      f"lucro esperado · confiança · risco. Os primeiros {min(len(resto), RESERVA_BOTOES)} também "
+                      f"têm botão: servem de reserva se não encontrares um na XTB ou não o quiseres "
+                      f"(❌ Ignorar tira-o da lista).")
         corpo = "\n".join(_linha_resto(k, s) for k, s in enumerate(resto, start=len(mostrar) + 1))
         if len(comprar) > len(mostrar) + len(resto):
             corpo += f"\n… e mais {len(comprar) - len(mostrar) - len(resto)}"
@@ -1918,8 +1939,10 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     linhas.append(f"<i>{rodape}" + (" Preços deste momento." if vivo else f" Preços das {hora}." if hora else "")
                   + "</i>")
     linhas.append("👇 Toca num sinal para ver quanto comprar.")
+    # Botões para os em destaque e para os 5 seguintes (se um não se encontra na XTB ou não se quer, há outros).
+    com_botao = list(enumerate(mostrar + resto[:RESERVA_BOTOES], start=1))
     botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}", f"ls|{s['ticker']}|{s['data_sinal']}")
-               for k, s in list(enumerate(mostrar, start=1))[i:i + 3]] for i in range(0, len(mostrar), 3)]
+               for k, s in com_botao[i:i + 3]] for i in range(0, len(com_botao), 3)]
     if resto:
         botoes.append([("⚙️ Mudar o número de posições", "mm|0|1")])
     out = [_msg(chat, "\n".join(linhas), botoes)]

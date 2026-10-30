@@ -290,20 +290,20 @@ def simular(hist: pd.DataFrame, regras: dict, desde: str = "") -> dict:
             "abertas": len(abertas), "fechadas": fechadas, "ganhas": ganhas}
 
 
-def _barra(px: float, stop: float, obj: float, n: int = 9) -> str:
-    """🛑 47,00 ━━━━●━━━━ 55,00 🎯: onde está o preço entre o stop e o objetivo."""
+def _barra(px: float, stop: float, obj: float, n: int = 9, movel: bool = False) -> str:
+    """🛑 47,00 ━━━━●━━━━ 55,00 🎯: onde está o preço entre o stop e o objetivo (~ = objetivo móvel)."""
     pos = min(max((px - stop) / (obj - stop), 0.0), 1.0) if obj > stop else 0.5
     k = round(pos * (n - 1))
-    return f"🛑 {fmt(stop)} {'━' * k}●{'━' * (n - 1 - k)} {fmt(obj)} 🎯"
+    return f"🛑 {fmt(stop)} {'━' * k}●{'━' * (n - 1 - k)} {'~' if movel else ''}{fmt(obj)} 🎯"
 
 
 def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: dict | None = None,
-                      saidas: dict | None = None, hora: str = "") -> str:
+                      saidas: dict | None = None, hora: str = "", alvos: dict | None = None) -> str:
     """Carteira ao preço de agora (`cot`): valor total e, por posição, ganho, prazo e onde está o preço
     entre o stop e o objetivo. `saidas[t]` = stop/objetivo já atingido (cotacoes.saida_atingida)."""
     r, moeda = u["regras"], u["regras"]["moeda"]
-    cot, prazos, saidas = cot or {}, prazos or {}, saidas or {}
-    blocos, em_acoes = [], 0.0
+    cot, prazos, saidas, alvos = cot or {}, prazos or {}, saidas or {}, alvos or {}
+    blocos, em_acoes, moveis = [], 0.0, False
     for t, p in sorted(u["posicoes"].items(), key=lambda x: x[1].get("data", "")):
         agora = cot.get(t)
         px = agora or p["preco"]
@@ -330,6 +330,9 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
                           + f" ({fmt(s['nivel'])}) a {dia_s}: vende e regista em 🔴 Vendi")
         elif stop and obj:
             linhas.append(_barra(px, stop, obj))
+        elif stop and alvos.get(t):
+            linhas.append(_barra(px, stop, alvos[t], movel=True))
+            moveis = True
         elif stop:
             linhas.append(f"🛑 {fmt(stop)} (a {sinal_fmt((stop / px - 1) * 100, 1)}%) · sai quando o bot avisar")
         elif not obj:
@@ -350,6 +353,9 @@ def formatar_carteira(u: dict, cot: dict | None = None, hoje: str = "", prazos: 
     lucro, n, g = realizado(u)
     if n:
         out.append(f"\n✔️ Já fechadas: {sinal_fmt(lucro)} {moeda} em {n} vendas ({g} a ganhar)")
+    if moveis:
+        out.append("\n<i>~ objetivo móvel: vende se fechar acima da média dos últimos dias (muda todos os "
+                   "dias; eu aviso-te).</i>")
     if blocos and cot:
         out.append(f"\n<i>Preços{' das ' + hora if hora else ' de agora'}.</i>")
     return "\n".join(out)

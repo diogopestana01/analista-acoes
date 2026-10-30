@@ -45,6 +45,14 @@ def precos_agora(dados: dict, tickers) -> dict[str, float]:
     return {t: a[t]["preco"] for t in tickers if t in a}
 
 
+def alvo_media5(velas: list, hoje: str) -> float | None:
+    """Saída "fecha acima da média de 5 dias" (src/saidas.py, sma5) dita como preço: a média dos 5 dias
+    inclui o fecho de hoje, por isso fechar acima dela é o mesmo que fechar acima da média dos 4 fechos
+    anteriores. É um objetivo móvel: muda a cada dia."""
+    fechos = [v[3] for v in velas if v[0] < hoje and v[3]]
+    return round(sum(fechos[-4:]) / 4, 2) if len(fechos) >= 4 else None
+
+
 def saida_atingida(p: dict, velas: list) -> dict | None:
     """Primeiro dia, desde a compra, em que o preço tocou no stop ou no objetivo da posição.
     No dia da compra só conta o fecho (o mínimo/máximo desse dia pode ter sido antes de comprar).
