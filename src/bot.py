@@ -1835,26 +1835,48 @@ def _cartao_ranking(k: int, s: dict) -> str:
     return "\n".join(linhas)
 
 
+def _bloco_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[str]:
+    """💼 As posições que já tens, da que está melhor para a pior: como vão e o que ainda costumam dar."""
+    if not u["posicoes"]:
+        return []
+    r = u["regras"]
+    linhas = [f"💼 <b>As tuas posições</b> ({len(u['posicoes'])}/{r['max_posicoes']})"]
+    for f in sorted(forcas(u, hist, hoje), key=lambda x: -x["pct"]):
+        t, p = f["ticker"], u["posicoes"][f["ticker"]]
+        nome = nome_empresa(t)
+        prazo = _conf_prazo(t, p, hist)[1]
+        partes = [f"{'🟢' if f['pct'] >= 0 else '🔴'} <b>{t}</b>" + (f" <i>{html.escape(nome)}</i>" if nome else "")
+                  + f" <b>{cart.sinal_fmt(f['pct'], 1)}%</b>"]
+        if p.get("sinal"):
+            partes.append("último dia" if f["usados"] + 1 >= prazo else f"dia {f['usados'] + 1} de {prazo}")
+        if f["falta"] is not None:
+            partes.append(f"ainda dá {_pct(f['falta'])}")
+        linhas.append(" · ".join(partes))
+    return linhas + [""]
+
+
 def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -> list:
-    """📈 Sinais: o ranking de agora dos sinais que ainda dá para comprar, do melhor para o pior segundo o
-    modelo (lista_sinais.ordenar: equilibra o lucro esperado e a probabilidade de ganhar). Cada sinal com o
-    preço máximo de compra, objetivo, stop, lucro esperado, confiança e risco; o detalhe (quanto comprar)
-    está no botão de cada um."""
+    """📈 Sinais, em três partes: as posições que já tens (como vão e o que ainda dão); os próximos sinais
+    para os lugares livres, do melhor para o pior segundo o modelo (lista_sinais.ordenar: equilibra o lucro
+    esperado e a probabilidade de ganhar), sem os que já tens; e, com a carteira cheia, se compensa trocar.
+    O detalhe de cada sinal (quanto comprar) está no botão dele."""
     itens = _avaliados(u, hist, hoje)
     comprar = _compraveis(u, itens)
     r = u["regras"]
     livres = max(r["max_posicoes"] - len(u["posicoes"]), 0)
     hora = _hora_lisboa(_ler_cotacoes().get("hora", ""))
+    linhas = _bloco_posicoes(u, hist, hoje)
     if not comprar:
-        return [_msg(chat, "📈 Agora não há sinais para comprar. Aviso-te quando houver.", menu=True)]
+        linhas.append("📈 Agora não há sinais novos para comprar. Aviso-te quando houver.")
+        return [_msg(chat, "\n".join(linhas), menu=True)]
     troca = _melhor_troca(u, itens, hist, hoje) if not livres else None
     mostrar = comprar[:LISTA_MAX]
     if livres:
         lug = f"{livres} lugar{'es' if livres != 1 else ''} livre{'s' if livres != 1 else ''}"
-        cab = f"📈 <b>Ranking de agora</b> · {lug}"
+        cab = f"📈 <b>Próximos sinais</b> · {lug}"
     else:
-        cab = f"📈 <b>Ranking de agora</b> · carteira cheia ({len(u['posicoes'])}/{r['max_posicoes']})"
-    linhas = [cab, "<i>Do melhor para o pior, segundo o modelo.</i>", ""]
+        cab = "📈 <b>Próximos sinais</b> · carteira cheia"
+    linhas += [cab, "<i>Do melhor para o pior, segundo o modelo.</i>", ""]
     for k, s in enumerate(mostrar, start=1):
         linhas += [_cartao_ranking(k, s), ""]
         if livres and k == livres and len(mostrar) > k:
@@ -1862,10 +1884,14 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     if len(comprar) > len(mostrar):
         linhas += [f"<i>e mais {len(comprar) - len(mostrar)} abaixo destes</i>", ""]
     if not livres:
-        linhas += [f"🔁 Compensa trocar a {troca[1]} pela {troca[0]['ticker']}: proposta a seguir." if troca
-                   else "🔒 Nenhuma troca compensa agora.", ""]
+        if troca:
+            linhas += [f"🔁 <b>Compensa trocar</b> a {troca[1]} pela {troca[0]['ticker']}: proposta a seguir.", ""]
+        else:
+            linhas += ["🔒 <b>Nenhuma troca compensa agora</b>: as tuas posições ainda rendem mais do que "
+                       "os sinais novos, já contando o spread.", ""]
     rodape = ("Lucro esperado: média de sinais iguais no passado, já com custos e contando os que perdem. "
-              "Confiança: hipótese de acabar a ganhar.")
+              "Confiança: hipótese de acabar a ganhar. \"Ainda dá\": o que uma posição destas costuma render "
+              "daqui até à saída.")
     vivo = all(s.get("ao_vivo") for s in mostrar[:max(livres, 1)])
     linhas.append(f"<i>{rodape}" + (" Preços deste momento." if vivo else f" Preços das {hora}." if hora else "")
                   + "</i>")
