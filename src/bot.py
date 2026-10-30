@@ -875,11 +875,12 @@ def linha_numeros(s: dict, taxas: dict, extra: str = "") -> str:
 
 
 def escolher(u: dict, sinais: list[dict]) -> tuple[list, list, int]:
-    """Sinais que servem a esta carteira, do melhor para o pior (retorno esperado), partidos em
-    (os que cabem nos lugares livres, os que ficam de fora, lugares livres)."""
+    """Sinais que servem a esta carteira, do melhor para o pior, partidos em (os que cabem nos lugares
+    livres, os que ficam de fora, lugares livres). A ordem é a da lista: equilíbrio entre ganho esperado e
+    probabilidade de ganhar (lista_sinais.ordenar, estudo passo3j_ordem.py)."""
     elegiveis = [s for s in sinais if cart.mercado(s["ticker"]) in u["regras"]["mercados"]
                  and s["ticker"] not in u["posicoes"]]
-    elegiveis.sort(key=lambda s: (_retorno(s) if _retorno(s) is not None else -1.0, _confianca(s)), reverse=True)
+    elegiveis = lista_sinais.ordenar(elegiveis, _cfg_sinais())
     livres = max(u["regras"]["max_posicoes"] - len(u["posicoes"]), 0)
     return elegiveis[:livres], elegiveis[livres:], livres
 
@@ -1622,8 +1623,10 @@ RISCO_COR = {"baixo": "🟢", "médio": "🟡", "alto": "🔴"}
 def _esperado(s: dict) -> str:
     """Retorno esperado do sinal (nos antigos sem ele, o que ainda costuma render) e o risco."""
     txt = f"esperado <b>{_txt_ret(s)}</b>" if _retorno(s) is not None else _ainda(s["forca"])
+    if _num(s.get("taxa")):
+        txt += f" · ganha {s['taxa'] * 100:.0f}%"
     if s.get("risco") and s.get("perda_dia_mau"):
-        txt += f" · {RISCO_COR[s['risco']]} risco {s['risco']} (dia mau −{s['perda_dia_mau'] * 100:.0f}%)"
+        txt += f" · {RISCO_COR[s['risco']]} dia mau −{s['perda_dia_mau'] * 100:.0f}%"
     return txt
 
 
@@ -1642,7 +1645,8 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     livres = max(n - len(u["posicoes"]), 0)
     hora = _hora_lisboa(_ler_cotacoes().get("hora", ""))
     linhas = [f"📈 <b>Sinais agora</b>{f' (preços das {hora})' if hora else ''}",
-              "Reavalio cada sinal a cada 10 min. Ficam por ordem do retorno esperado. Um sinal deixa de estar "
+              "Reavalio cada sinal a cada 10 min. A ordem equilibra o ganho esperado e quantas vezes ganha. "
+              "🟢🟡🔴 é o risco: quanto perde num dia mau (1 em 10). Um sinal deixa de estar "
               "para comprar quando passa o limite de preço ou quando o que ainda costuma render (contando com o "
               "que já subiu e os dias que passaram) já não paga o spread."]
     linhas.append(f"\n🏆 <b>Os teus {n} lugares</b>")
