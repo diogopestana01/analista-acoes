@@ -254,3 +254,4 @@ def test_restantes_sinais_numa_lista_recolhida(monkeypatch):
     assert "🥇 <b>NOVO</b>" in txt and "🥈" not in txt          # 1 lugar livre: 1 em destaque
     assert "O outro sinal" in txt and "<blockquote expandable>2. <b>CEDO</b> até 52,50 · +1,0%" in txt
     assert "mm|0|1" in out[0][1]["reply_markup"]                 # atalho para mudar o número de posições
+    assert f"ls|CEDO|2026-10-27" in out[0][1]["reply_markup"]    # reserva: também tem botão

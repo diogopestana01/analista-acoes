@@ -1854,6 +1854,7 @@ def _bloco_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[str]:
     return linhas + [""]
 
 
+RESERVA_BOTOES = 5  # sinais da lista recolhida que também têm botão
 RESTO_MAX = 25  # sinais na lista recolhida (o Telegram corta mensagens acima de 4096 caracteres)
 
 
@@ -1900,7 +1901,9 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         quais = "O outro sinal" if len(resto) == 1 else f"Os outros {len(resto)} sinais"
         linhas.append(f"➕ <b>{quais}</b> que o modelo dá agora (não cabem na tua carteira; "
                       f"para os apanhar, aumenta as posições em ⚙️ Regras). Toca para abrir; em cada linha: preço máximo · "
-                      f"lucro esperado · confiança · risco.")
+                      f"lucro esperado · confiança · risco. Os primeiros {min(len(resto), RESERVA_BOTOES)} também "
+                      f"têm botão: servem de reserva se não encontrares um na XTB ou não o quiseres "
+                      f"(❌ Ignorar tira-o da lista).")
         corpo = "\n".join(_linha_resto(k, s) for k, s in enumerate(resto, start=len(mostrar) + 1))
         if len(comprar) > len(mostrar) + len(resto):
             corpo += f"\n… e mais {len(comprar) - len(mostrar) - len(resto)}"
@@ -1918,8 +1921,10 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     linhas.append(f"<i>{rodape}" + (" Preços deste momento." if vivo else f" Preços das {hora}." if hora else "")
                   + "</i>")
     linhas.append("👇 Toca num sinal para ver quanto comprar.")
+    # Botões para os em destaque e para os 5 seguintes (se um não se encontra na XTB ou não se quer, há outros).
+    com_botao = list(enumerate(mostrar + resto[:RESERVA_BOTOES], start=1))
     botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}", f"ls|{s['ticker']}|{s['data_sinal']}")
-               for k, s in list(enumerate(mostrar, start=1))[i:i + 3]] for i in range(0, len(mostrar), 3)]
+               for k, s in com_botao[i:i + 3]] for i in range(0, len(com_botao), 3)]
     if resto:
         botoes.append([("⚙️ Mudar o número de posições", "mm|0|1")])
     out = [_msg(chat, "\n".join(linhas), botoes)]
