@@ -1621,7 +1621,10 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         linhas.append(f"↔️ Spread agora {cart.fmt(sp * 100, 2)}%: começas a perder isto ao comprar"
                       + (f"; sem ele, o esperado é <b>{_pct(s['esperado_sem_spread'])}</b>"
                          if _num(s.get("esperado_sem_spread")) is not None else ""))
-        espera = momento.texto(_espera(s["ticker"], sp), sp, "compra")
+        if s.get("spread_alto"):
+            linhas.append(f"⚠️ Spread de {cart.fmt(sp * 100, 1)}%: entrar sai caro e o modelo tirou este sinal "
+                          f"da compra até o spread baixar.")
+        espera = "" if s.get("spread_alto") else momento.texto(_espera(s["ticker"], sp), sp, "compra")
         if espera:
             linhas.append(espera)
     if isinstance(s.get("setup"), str):
@@ -1948,6 +1951,21 @@ def _linha_resto(k: int, s: dict) -> str:
     return " · ".join(partes)
 
 
+def _spread_max_txt() -> str:
+    return f"{cart.fmt((_num(_cfg_sinais().get('spread_max')) or 0.01) * 100, 0)}%"
+
+
+def _linha_spread_alto(u: dict, itens: list[dict]) -> str:
+    """Sinais que saíram da compra só por o spread estar acima de sinais.spread_max (passo3l_spread.py)."""
+    caros = [s for s in itens if s.get("spread_alto") and s["ticker"] not in u["posicoes"]
+             and u["decisoes"].get(cart.chave_sinal(s["ticker"], s["data_sinal"])) != "ignorei"]
+    if not caros:
+        return ""
+    lista = " · ".join(f"{s['ticker']} {cart.fmt(s['spread_pct'] * 100, 1)}%" for s in caros[:8])
+    return (f"↔️ <b>Fora da compra por spread alto</b> (acima de {_spread_max_txt()}, entrar sai caro): {lista}. "
+            f"Voltam à lista se o spread baixar.")
+
+
 def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -> list:
     """📈 Sinais, em três partes: as posições que já tens (como vão e o que ainda dão); os próximos sinais
     para os lugares livres, do melhor para o pior segundo o modelo (lista_sinais.ordenar: equilibra o lucro
@@ -1959,8 +1977,11 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
     livres = max(r["max_posicoes"] - len(u["posicoes"]), 0)
     hora = _hora_lisboa(_ler_cotacoes().get("hora", ""))
     linhas = _bloco_posicoes(u, hist, hoje)
+    caros = _linha_spread_alto(u, itens)
     if not comprar:
         linhas.append("📈 Agora não há sinais novos para comprar. Aviso-te quando houver.")
+        if caros:
+            linhas += ["", caros]
         return [_msg(chat, "\n".join(linhas), menu=True)]
     troca = _melhor_troca(u, itens, hist, hoje) if not livres else None
     mostrar = comprar[:livres or 3]          # em destaque: os que cabem nos lugares livres (3 se cheia)
@@ -1984,6 +2005,8 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         if len(comprar) > len(mostrar) + len(resto):
             corpo += f"\n… e mais {len(comprar) - len(mostrar) - len(resto)}"
         linhas += [f"<blockquote expandable>{corpo}</blockquote>", ""]
+    if caros:
+        linhas += [caros, ""]
     if not livres:
         if troca:
             linhas += [f"🔁 <b>Compensa trocar</b> a {troca[1]} pela {troca[0]['ticker']}: proposta a seguir.", ""]
@@ -2012,6 +2035,9 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
 def ver_sinal(chat: str, u: dict, ticker: str, data: str, hist, hoje: str) -> tuple[str, dict]:
     """Botão 🟢 Ver da lista: o sinal ao preço de agora, com quanto comprar e os botões."""
     s = next((x for x in _avaliados(u, hist, hoje) if x["ticker"] == ticker and x["data_sinal"] == data), None)
+    if s and s.get("spread_alto") and ticker not in u["posicoes"]:
+        return _msg(chat, f"{ticker} saiu da compra: o spread agora é {cart.fmt(s['spread_pct'] * 100, 1)}% "
+                          f"e entrar sai caro (acima de {_spread_max_txt()}, o modelo perde). Volta à lista se o spread baixar.")
     if not s or s["estado_lista"] != "comprar" or ticker in u["posicoes"]:
         return _msg(chat, f"{ticker} já não está para comprar: passou o limite de compra, acabou ou já o tens. "
                           f"Carrega outra vez em 📈 Sinais para ver a lista de agora.")

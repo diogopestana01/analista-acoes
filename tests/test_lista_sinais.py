@@ -271,3 +271,21 @@ def test_lista_compra_ao_ask_e_paga_o_spread(monkeypatch):
     assert av["CEDO"]["spread_pct"] == pytest.approx(0.2 / 50.2, rel=1e-3)
     out = bot.processar(e, _cb(DONO, f"ls|CEDO|2026-10-27"), HIST, HOJE, CFG)
     assert "↔️ Spread agora 0,40%" in _textos(out)[0]
+
+
+def test_spread_alto_tira_da_compra_e_diz_porque(monkeypatch):
+    e, u = _preparar(monkeypatch)
+    monkeypatch.setattr(bot, "_cfg_sinais", lambda: {**CFG_S, "spread_max": 0.01})
+    agora = pd.Timestamp.now(tz="UTC")
+    itens = lista_sinais.avaliar(HIST, PRECOS, HOJE, MODELO, CFG_S)
+    monkeypatch.setattr(bot, "LER_LISTA", lambda: {"gerada_em": agora.isoformat(), "itens": itens})
+    monkeypatch.setattr(bot, "COTAR_VIVO", lambda ts: {"NOVO": 20.1, "CEDO": 50.2})
+    lados = {"venda": {"NOVO": 20.0, "CEDO": 49.5}, "compra": {"NOVO": 20.15, "CEDO": 50.3}}  # CEDO: 1,6%
+    monkeypatch.setattr(bot, "COTAR_LADO", lambda ts, lado: {t: lados[lado][t] for t in ts if t in lados[lado]})
+    av = {s["ticker"]: s for s in bot._avaliados(u, HIST, HOJE)}
+    assert av["CEDO"]["spread_alto"] and av["CEDO"]["estado_lista"] == "andamento"
+    out = bot.processar(e, {"update_id": 1, "message": {"chat": {"id": int(DONO)}, "text": "📈 Sinais"}},
+                        HIST, HOJE, CFG)
+    assert "Fora da compra por spread alto</b> (acima de 1%, entrar sai caro): CEDO 1,6%" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, "ls|CEDO|2026-10-27"), HIST, HOJE, CFG)
+    assert "CEDO saiu da compra: o spread agora é 1,6%" in _textos(out)[0]
