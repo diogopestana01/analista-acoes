@@ -25,7 +25,7 @@ import passo3e_trocas as t3
 from src import indicadores, risco, saidas, sinais
 
 RAIZ, DADOS = t3.RAIZ, t3.DADOS
-ORDENS = ["esperado", "taxa", "por_risco", "sem_alto", "esperado_taxa"]
+ORDENS = ["esperado", "taxa", "por_risco", "sem_alto", "esperado_taxa", "equilibrado"]
 
 
 def recolher(precos: pd.DataFrame, cfg: dict) -> list[dict]:
@@ -64,7 +64,11 @@ def medidas(trades: list[dict], media: dict, ganha: dict, k: int = 10) -> pd.Dat
                        "sem_alto": esp - (1.0 if dia_mau >= 0.09 else 0.0), "esperado_taxa": esp * taxa,
                        "dia_mau": dia_mau})
         passado[(t["ticker"], t["setup"])].append((t["saida_data"], t["ret"]))
-    return pd.DataFrame(linhas)
+    df = pd.DataFrame(linhas)
+    # equilibrado: média das posições no dia por ganho esperado e por probabilidade de ganhar
+    g = df.groupby("entrada_data")
+    df["equilibrado"] = g["esperado"].rank(pct=True) + g["taxa"].rank(pct=True)
+    return df
 
 
 def pior10(r: pd.Series | np.ndarray) -> float:
@@ -72,7 +76,8 @@ def pior10(r: pd.Series | np.ndarray) -> float:
     return r[: max(len(r) // 10, 1)].mean()
 
 
-def carteira(c: pd.DataFrame, chave: str, lugares: int, rng=None) -> dict:
+def carteira(c: pd.DataFrame, chave: str, lugares: int, rng=None, por_risco: bool = False) -> dict:
+    """por_risco: cada posição com o mesmo risco (dinheiro = 6% / perda num dia mau, no máximo 1 lugar)."""
     c = c.assign(_o=rng.random(len(c)) if chave == "aleatorio" else c[chave])
     abertas, trades = {}, []
     for d, g in c.sort_values(["entrada_data", "_o"], ascending=[True, False]).groupby("entrada_data", sort=True):
@@ -83,9 +88,10 @@ def carteira(c: pd.DataFrame, chave: str, lugares: int, rng=None) -> dict:
                 break
             if r.ticker not in abertas:
                 abertas[r.ticker] = r.saida_data
-                trades.append((r.saida_data, r.ret - t3.CUSTO))
-    t = pd.DataFrame(trades, columns=["saida", "ret"]).sort_values("saida")
-    curva = 1 + (t["ret"] / lugares).cumsum()   # cada posição = 1/lugares do capital
+                peso = min(1.0, 0.06 / r.dia_mau) if por_risco else 1.0
+                trades.append((r.saida_data, r.ret - t3.CUSTO, peso))
+    t = pd.DataFrame(trades, columns=["saida", "ret", "peso"]).sort_values("saida")
+    curva = 1 + (t["ret"] * t["peso"] / lugares).cumsum()   # cada posição = peso/lugares do capital
     descida = (curva / curva.cummax() - 1).min()
     return {"total": curva.iat[-1] - 1, "n": len(t), "media": t["ret"].mean(), "perde": (t["ret"] < 0).mean(),
             "pior10": pior10(t["ret"]), "descida": descida}
@@ -126,6 +132,10 @@ def main() -> None:
             r = carteira(parte, chave, 5, rng)
             print(f"    {chave:13s} total {r['total']*100:+6.1f}% | pior descida {r['descida']*100:+5.1f}% | "
                   f"{r['n']} trades {r['media']*100:+.2f}% | perde {r['perde']*100:.0f}% | pior10 {r['pior10']*100:+.1f}%")
+        for chave in ("esperado", "equilibrado"):
+            r = carteira(parte, chave, 5, rng, por_risco=True)
+            print(f"    {chave + '+tamanho':13s} total {r['total']*100:+6.1f}% | pior descida {r['descida']*100:+5.1f}% | "
+                  f"tamanho pelo risco (mesmo risco por posição)")
         sorte = sorted(carteira(parte, "aleatorio", 5, rng)["total"] * 100 for _ in range(30))
         desc = sorted(carteira(parte, "aleatorio", 5, rng)["descida"] * 100 for _ in range(30))
         print(f"    30 ordens ao acaso: total {sorte[0]:+.1f}% a {sorte[-1]:+.1f}% (metade {sorte[7]:+.1f} a {sorte[22]:+.1f}); "
