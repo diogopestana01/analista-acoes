@@ -34,6 +34,7 @@ DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
 MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
 LER_LISTA = None  # () -> dict: data/lista_sinais.json, gravada pelos sinais a cada corrida
+COTAR_LADO = None  # (tickers, "compra"|"venda") -> {ticker: ask|bid} em tempo real; o bot_carteira preenche
 COTAR_VIVO = None  # (tickers) -> {ticker: preço} em tempo real (Nasdaq), só com a bolsa aberta; o bot_carteira preenche
 VIVO_MAX = 12      # quantos sinais da lista vão buscar o preço do momento quando alguém a abre
 LISTA_MAX_MIN = 20  # mais velha do que isto (ex. os sinais pararam), o bot calcula a lista ele próprio
@@ -454,7 +455,7 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
             t = partes[0].upper()
             sinal = _sinal(hist, t)
             data = sinal["data"] if sinal and sinal["estado"] == "aberto" else None
-            preco = _cotacoes([t]).get(t) or (sinal["entrada"] if data else None)
+            preco = _cotacoes([t], "compra").get(t) or (sinal["entrada"] if data else None)
             if preco:
                 u["aguarda"] = None
                 return [_abrir_compra(chat, u, t, preco, data)]
@@ -764,7 +765,7 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         if compra in u["posicoes"]:
             return out + [_msg(chat, f"Já tens {compra} na carteira.")]
         p = u["posicoes"][vende]
-        abrir_talao(u, "venda", vende, _cotacoes([vende]).get(vende) or p["preco"], p["qtd"],
+        abrir_talao(u, "venda", vende, _cotacoes([vende], "venda").get(vende) or p["preco"], p["qtd"],
                     troca={"compra": compra, "data": data})
         return out + [_tirar_botoes(cq), msg_talao(chat, u)]
     if acao == "n":
@@ -822,7 +823,7 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, f"Já não tens {ticker} na carteira.")]
     if acao in ("v", "w"):
         p = u["posicoes"][ticker]
-        preco = cart.numero(partes[2]) if acao == "v" else (_cotacoes([ticker]).get(ticker) or p["preco"])
+        preco = cart.numero(partes[2]) if acao == "v" else (_cotacoes([ticker], "venda").get(ticker) or p["preco"])
         abrir_talao(u, "venda", ticker, preco, p["qtd"])
         return out + [msg_talao(chat, u)]
     if acao == "m":
@@ -984,13 +985,21 @@ def _ronda(u: dict, sinais: list[dict], cabecalho: str, hist: pd.DataFrame | Non
 
 # ---------- troca pela posição mais fraca ----------
 
-def _cotacoes(tickers: list[str]) -> dict:
+def _cotacoes(tickers: list[str], lado: str | None = None) -> dict:
+    """Preço de agora. Com `lado`, o preço a que se faz mesmo o negócio, quando há bid/ask em tempo real:
+    "venda" = bid (o que a posição vale se vendida já, como a XTB mostra), "compra" = ask (o que se paga)."""
     if COTAR is None or not tickers:
         return {}
     try:
-        return COTAR(sorted(set(tickers))) or {}
+        px = COTAR(sorted(set(tickers))) or {}
     except Exception:  # noqa: BLE001  sem cotação, usa-se o preço de compra
         return {}
+    if lado and COTAR_LADO is not None:
+        try:
+            px.update(COTAR_LADO(sorted(set(tickers)), lado) or {})
+        except Exception:  # noqa: BLE001  sem bid/ask, fica o último negócio
+            pass
+    return px
 
 
 def _conf_prazo(t: str, p: dict, hist: pd.DataFrame | None) -> tuple[float, int]:
@@ -1047,7 +1056,7 @@ def forcas(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
     """O que cada posição aberta ainda costuma render até à saída ("falta", src/trocas.py): posições
     iguais (mesmo setup, dias já passados e ganho em ATR) no backtest. Da mais fraca para a mais forte;
     sem dados (compra à mão, ou comprada hoje) fica no fim e não se troca."""
-    px, modelo = _cotacoes(list(u["posicoes"])), _modelo_trocas()
+    px, modelo = _cotacoes(list(u["posicoes"]), "venda"), _modelo_trocas()
     out = []
     for t, p in u["posicoes"].items():
         usados = int(np.busday_count(p.get("data") or hoje, hoje)) if hoje and p.get("data") else 0
@@ -1085,8 +1094,14 @@ def carteira_agora(u: dict, hist: pd.DataFrame, hoje: str) -> str:
               if (s := cotacoes.saida_atingida(p, velas.get(t, {}).get("velas", [])))}
     alvos = {t: a for t, p in u["posicoes"].items()
              if (a := _alvo_movel(t, (_linha_sinal(t, p, hist) or {}).get("saida"), hoje, velas))}
-    return cart.formatar_carteira(u, _cotacoes(list(u["posicoes"])), hoje, prazos, saidas,
-                                  _hora_lisboa(dados.get("hora", "")), alvos)
+    hora = _hora_lisboa(dados.get("hora", ""))
+    try:
+        ao_bid = bool(COTAR_LADO and COTAR_LADO(list(u["posicoes"]), "venda"))
+    except Exception:  # noqa: BLE001
+        ao_bid = False
+    if ao_bid:  # tempo real, ao preço a que se vende (bid), como a XTB mostra as posições
+        hora = "deste momento, ao preço de venda (bid) como na XTB"
+    return cart.formatar_carteira(u, _cotacoes(list(u["posicoes"]), "venda"), hoje, prazos, saidas, hora, alvos)
 
 
 def _alvo_movel(t: str, saida, hoje: str, velas: dict | None = None) -> float | None:
@@ -1429,7 +1444,7 @@ def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str)
         # troca: a seguir, o talão da compra (o ↩️ Desfazer anula as duas)
         compra, data = b["troca"]["compra"], b["troca"]["data"]
         sinal = _sinal(hist, compra, data)
-        px = _cotacoes([compra]).get(compra) or (sinal or {}).get("entrada")
+        px = _cotacoes([compra], "compra").get(compra) or (sinal or {}).get("entrada")
         if not px:
             return [mostrar(txt + f"\nNão tenho o preço de {compra}; regista a compra com 🟢 Comprei.")]
         return [mostrar(txt),
@@ -2135,7 +2150,7 @@ def sinais_no_periodo(hist: pd.DataFrame | None, desde: str) -> dict:
 
 
 def resultados(u: dict, hist: pd.DataFrame | None) -> str:
-    txt = cart.formatar_resultados(u, _cotacoes(list(u["posicoes"])), sinais_no_periodo(hist, u.get("desde", "")))
+    txt = cart.formatar_resultados(u, _cotacoes(list(u["posicoes"]), "venda"), sinais_no_periodo(hist, u.get("desde", "")))
     d = diario(u, hist, u.get("desde", ""))
     return txt + ("\n\n" + d if d else "")
 
@@ -2144,7 +2159,7 @@ def resumos_semanais(estado: dict, hoje: str, hist: pd.DataFrame | None = None) 
     """Sexta ao fecho: a semana de cada pessoa (só a quem teve movimento ou tem posições)."""
     segunda = (pd.Timestamp(hoje) - pd.Timedelta(days=pd.Timestamp(hoje).dayofweek)).strftime("%Y-%m-%d")
     ativos = cart.ativos(estado)
-    cot = _cotacoes(sorted({t for u in ativos.values() for t in u["posicoes"]}))
+    cot = _cotacoes(sorted({t for u in ativos.values() for t in u["posicoes"]}), "venda")
     out = []
     for chat, u in ativos.items():
         texto = cart.formatar_semana(u, segunda, cot)

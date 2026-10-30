@@ -31,6 +31,20 @@ CACHE_SINAIS = RAIZ / "data" / "avaliacoes_cache.json"  # avisos já dados pelos
 
 
 VIVOS: dict[str, tuple[float, float]] = {}  # ticker -> (preço de agora, quando foi lido)
+LADOS: dict[str, tuple[float, float, float]] = {}  # ticker -> (bid, ask, quando foi lido), da Nasdaq
+
+
+def _guardar_vivo(t: str, q: dict) -> None:
+    VIVOS[t] = (q["preco"], time.time())
+    if q.get("bid") and q.get("ask"):
+        LADOS[t] = (q["bid"], q["ask"], time.time())
+
+
+def cotar_lado(tickers: list[str], lado: str) -> dict:
+    """Bid (lado "venda") ou ask ("compra") lidos há menos de 5 min: o que a XTB mostra numa posição
+    é o bid, e o que se paga a comprar é o ask. Sem bid/ask fresco, fica o último negócio."""
+    i = 0 if lado == "venda" else 1
+    return {t: LADOS[t][i] for t in tickers if t in LADOS and time.time() - LADOS[t][2] < 300}
 
 
 def cotar(tickers: list[str]) -> dict:
@@ -58,8 +72,10 @@ def cotar_vivo(tickers: list[str]) -> dict:
         with ThreadPoolExecutor(max_workers=8) as ex:
             for q in ex.map(lambda t: precos_agora.agora([t]), falta):
                 for t, v in (q or {}).items():
-                    VIVOS[t] = (v["preco"], time.time())
+                    _guardar_vivo(t, v)
                     out[t] = v["preco"]
+    # quem compra paga o ask: é com ele que se vê se ainda dá para comprar
+    out.update(cotar_lado(list(out), "compra"))
     return out
 
 
@@ -104,7 +120,7 @@ def vigiar_posicoes(estado: dict, agora: pd.Timestamp) -> bool:
         return False
     vivos = precos_agora.agora(tickers)
     for t, q in vivos.items():
-        VIVOS[t] = (q["preco"], time.time())
+        _guardar_vivo(t, q)
     hora = agora.strftime("%Y-%m-%dT%H:%MZ")
     dados = cotacoes.juntar_agora(cotacoes.ler(COTACOES), {t: q["preco"] for t, q in vivos.items()},
                                   agora.strftime("%Y-%m-%d"), hora)
@@ -270,7 +286,8 @@ def main(minutos: float) -> None:
     cfg = yaml.safe_load((RAIZ / "config_carteira.yaml").read_text())
     k = cofre.chave()
     bot.COTAR = cotar  # carteira e sinais em aberto ao preço de agora
-    bot.COTAR_VIVO = cotar_vivo  # 📈 Sinais e cartão do sinal ao preço deste momento
+    bot.COTAR_VIVO = cotar_vivo
+    bot.COTAR_LADO = cotar_lado  # carteira ao bid (como na XTB), compras ao ask  # 📈 Sinais e cartão do sinal ao preço deste momento
     bot.LER_COTACOES = lambda: cotacoes.ler(COTACOES)
     bot.LER_LISTA = lambda: _json(LISTA)  # a lista de sinais que os sinais gravam a cada corrida
     bot.LER_PRINT, bot.NOMES = ler_print, nomes_universo()
