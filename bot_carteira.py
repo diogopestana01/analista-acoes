@@ -233,19 +233,38 @@ def git(*args: str) -> bool:
     return r.returncode == 0
 
 
+NOSSOS = (ESTADO, SIMULADAS)  # só o bot escreve estes ficheiros: a cópia local é sempre a certa
+
+
+def alinhar_com_main() -> bool:
+    """Põe a pasta igual ao main do GitHub, sem perder os ficheiros que só o bot escreve.
+    Antes era "git pull --rebase": quando o bot anterior e este gravavam a carteira ao mesmo tempo
+    (ao reiniciar), o carteira.enc entrava em conflito, o rebase ficava a meio e o bot deixava de
+    conseguir guardar (30/10). Assim nunca há conflito: o main traz o resto, a carteira é a nossa."""
+    guardados = {c: c.read_bytes() for c in NOSSOS if c.exists()}
+    if (RAIZ / ".git" / "rebase-merge").exists() or (RAIZ / ".git" / "rebase-apply").exists():
+        git("rebase", "--abort")
+    if not git("fetch", "-q", "origin", "main"):
+        return False
+    git("reset", "-q", "--hard", "origin/main")
+    for c, dados in guardados.items():
+        c.write_bytes(dados)
+    return True
+
+
 def guardar_e_enviar(estado: dict, k: bytes, com_git: bool) -> None:
     cofre.guardar(ESTADO, estado, k)
     if not com_git:
         return
-    git("add", str(ESTADO))
-    if SIMULADAS.exists():
-        git("add", str(SIMULADAS))
-    if git("diff", "--cached", "--quiet"):
-        return
-    git("commit", "-q", "-m", "Carteira atualizada")
     for espera in (0, 2, 4, 8):
         time.sleep(espera)
-        git("pull", "--rebase", "-q", "origin", "main")
+        alinhar_com_main()
+        for c in NOSSOS:
+            if c.exists():
+                git("add", str(c))
+        if git("diff", "--cached", "--quiet"):
+            return
+        git("commit", "-q", "-m", "Carteira atualizada")
         if git("push", "-q", "origin", "HEAD:main"):
             return
     log.error("Não consegui guardar a carteira no GitHub")
@@ -327,6 +346,8 @@ def main(minutos: float) -> None:
     if k is None:
         raise SystemExit("Falta TELEGRAM_TOKEN.")
     com_git = os.environ.get("CARTEIRA_GIT") == "1"
+    if com_git:  # o checkout é do commit em que fui lançado: o bot anterior pode ter gravado depois
+        git("fetch", "-q", "origin", "main") and git("reset", "-q", "--hard", "origin/main")
     estado = cofre.carregar(ESTADO, k, os.environ.get("TELEGRAM_CHAT_ID"))
     hoje = pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%d")
     bot.garantir_dono(estado, cfg["regras_base"], hoje)
@@ -344,7 +365,7 @@ def main(minutos: float) -> None:
         agora = pd.Timestamp.now(tz="UTC")
         hoje = agora.strftime("%Y-%m-%d")
         if com_git and (upds or time.time() - ultimo_pull > 60):
-            git("pull", "--rebase", "-q", "origin", "main")
+            alinhar_com_main()
             hist, ultimo_pull = acompanhamento.carregar(HIST), time.time()
         mudou = False
         for u in upds or []:
