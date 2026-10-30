@@ -299,7 +299,7 @@ def main(minutos: float) -> None:
         if (agora.day_of_week == 4 and agora.strftime("%H:%M") >= cfg.get("resumo_semanal_utc", "21:10")
                 and estado.get("resumo_semanal") != hoje):
             estado["resumo_semanal"] = hoje
-            executar(bot.resumos_semanais(estado, hoje))
+            executar(bot.resumos_semanais(estado, hoje, hist))
             mudou = True
         if bolsa_eua_aberta(agora) and time.time() - ultima_vigia_precos > cfg.get("vigia_precos_seg", 120):
             ultima_vigia_precos = time.time()

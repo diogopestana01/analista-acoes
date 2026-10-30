@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import acompanhamento, cotacoes, lista_sinais, risco, saidas, telegram, trocas
+from . import acompanhamento, cotacoes, diario_trades, lista_sinais, risco, saidas, telegram, trocas
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -413,6 +413,13 @@ def processar(estado: dict, upd: dict, hist: pd.DataFrame, hoje: str, cfg: dict)
             if dono and dono != chat:
                 out.append(_msg(dono, f"💬 <b>Sugestão de {html.escape(u['nome'])}</b>:\n{html.escape(texto)}"))
             return out
+        if a.get("tipo") == "motivo" and not cmd.startswith("/"):
+            u["aguarda"] = None
+            op = _venda_do_diario(u, str(a.get("idx")), a.get("t", ""))
+            if op:
+                op["motivo"], op["motivo_txt"] = "outro", html.escape(texto[:200])
+            return [_msg(chat, f"📝 {a.get('t', '')}: registado no teu diário." if op
+                         else "Essa venda já não existe (foi desfeita?).", menu=True)]
         if a.get("tipo") == "print" and not cmd.startswith("/"):
             return _do_print(chat, u, partes[0].upper(), a["lido"], hist)
         if a.get("tipo") == "talao" and not cmd.startswith("/") and u.get("talao"):
@@ -715,6 +722,15 @@ def _callback(estado, cq: dict, hist, hoje: str, cfg: dict) -> list:
         return out + [_tirar_botoes(cq), _msg(chat, "👍 Qualquer dúvida, carrega em ❓ Ajuda.", menu=True)]
     if acao == "q":
         return out + [_msg(chat, porque(hist, ticker, partes[2]))]
+    if acao == "mv":
+        op = _venda_do_diario(u, partes[1], partes[2]) if len(partes) > 3 else None
+        if not op or partes[3] not in diario_trades.MOTIVOS:
+            return out + [_tirar_botoes(cq)]
+        if partes[3] == "outro":
+            u["aguarda"] = {"tipo": "motivo", "idx": int(partes[1]), "t": partes[2]}
+            return out + [_editar(cq, f"✍️ Escreve numa mensagem porque vendeste {partes[2]}.", None)]
+        op["motivo"] = partes[3]
+        return out + [_editar(cq, f"📝 {partes[2]}: {diario_trades.MOTIVOS[partes[3]]}. Registado no teu diário.", None)]
     if acao == "lst":
         return out + lista_sinais_msg(chat, u, hist, hoje)
     if acao == "car":
@@ -1390,10 +1406,12 @@ def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str)
         if t not in u["posicoes"]:
             u["talao"] = None
             return [mostrar(f"Já não tens {t} na carteira.")]
+        antes = dict(u["posicoes"][t])
         txt = cart.vender(u, t, qtd, preco, hoje)
         u["talao"] = None
+        idx = _anotar_venda(u, t, antes, hist, "troca" if b["troca"] else None)
         if not b["troca"]:
-            return [mostrar(txt)]
+            return [mostrar(txt)] + ([pergunta_motivo(chat, t, idx)] if idx is not None else [])
         # troca: a seguir, o talão da compra (o ↩️ Desfazer anula as duas)
         compra, data = b["troca"]["compra"], b["troca"]["data"]
         sinal = _sinal(hist, compra, data)
@@ -1407,10 +1425,57 @@ def _callback_talao(chat: str, u: dict, cq: dict, partes: list, hist, hoje: str)
     if t not in u["posicoes"]:  # não registou (ex. sem dinheiro livre): o talão fica aberto
         return [_msg(chat, txt + "\nAcerta o valor no talão e confirma outra vez.")]
     u["talao"] = None
+    _anotar_compra(u, t, preco, b["data"], sinal, hist, hoje)
     if b["troca"]:
         u["anterior"] = b["troca"]["anterior"]
         txt = f"🔁 Troca registada.\n{b['troca']['venda']}\n{txt}"
     return [mostrar(txt)]
+
+
+# ---------- diário de trades (src/diario_trades.py) ----------
+
+def _anotar_compra(u: dict, t: str, preco: float, data: str | None, sinal: dict | None, hist, hoje: str) -> None:
+    """Regista, sem perguntar, se a compra foi acima do preço máximo de compra da lista."""
+    if not data or not sinal:
+        return
+    s = next((x for x in _avaliados(u, hist, hoje) if x["ticker"] == t and x["data_sinal"] == data), None)
+    lim = _num((s or {}).get("limite")) if s else limite_compra(sinal)
+    op = u["operacoes"][-1] if u["operacoes"] else {}
+    if lim and preco > lim + 0.005 and op.get("tipo") == "compra" and op.get("ticker") == t:
+        op["acima_limite"] = u["posicoes"][t]["acima_limite"] = True
+
+
+def _anotar_venda(u: dict, t: str, p: dict, hist, motivo: str | None) -> int | None:
+    """Junta à venda o sinal da compra, se a compra foi acima do limite e se a venda foi antes da saída do
+    modelo (o sinal ainda aberto no registo em papel). Devolve a posição da venda nas operações."""
+    if not u["operacoes"] or u["operacoes"][-1].get("tipo") != "venda" or u["operacoes"][-1].get("ticker") != t:
+        return None
+    op = u["operacoes"][-1]
+    op.update(sinal=p.get("sinal"), acima_limite=bool(p.get("acima_limite")),
+              antes_modelo=diario_trades.ainda_aberto(hist, p.get("sinal")))
+    if motivo:
+        op["motivo"] = motivo
+    return len(u["operacoes"]) - 1
+
+
+def pergunta_motivo(chat: str, t: str, idx: int) -> tuple[str, dict]:
+    m = diario_trades.MOTIVOS
+    k = diario_trades.PERGUNTA
+    botoes = [[(m[a], f"mv|{idx}|{t}|{a}") for a in k[i:i + 2]] for i in range(0, len(k), 2)]
+    return _msg(chat, f"📝 Porque vendeste <b>{t}</b>? Fica no teu diário de trades e conta no resumo de sexta "
+                      f"(tu vs modelo).", botoes)
+
+
+def _venda_do_diario(u: dict, idx: str, t: str) -> dict | None:
+    try:
+        op = u["operacoes"][int(idx)]
+    except (ValueError, IndexError):
+        return None
+    return op if op.get("tipo") == "venda" and op.get("ticker") == t else None
+
+
+def diario(u: dict, hist, desde: str = "") -> str | None:
+    return diario_trades.texto(u, hist, desde)
 
 
 def _num(x) -> float | None:
@@ -1923,10 +1988,12 @@ def sinais_no_periodo(hist: pd.DataFrame | None, desde: str) -> dict:
 
 
 def resultados(u: dict, hist: pd.DataFrame | None) -> str:
-    return cart.formatar_resultados(u, _cotacoes(list(u["posicoes"])), sinais_no_periodo(hist, u.get("desde", "")))
+    txt = cart.formatar_resultados(u, _cotacoes(list(u["posicoes"])), sinais_no_periodo(hist, u.get("desde", "")))
+    d = diario(u, hist, u.get("desde", ""))
+    return txt + ("\n\n" + d if d else "")
 
 
-def resumos_semanais(estado: dict, hoje: str) -> list:
+def resumos_semanais(estado: dict, hoje: str, hist: pd.DataFrame | None = None) -> list:
     """Sexta ao fecho: a semana de cada pessoa (só a quem teve movimento ou tem posições)."""
     segunda = (pd.Timestamp(hoje) - pd.Timedelta(days=pd.Timestamp(hoje).dayofweek)).strftime("%Y-%m-%d")
     ativos = cart.ativos(estado)
@@ -1934,6 +2001,9 @@ def resumos_semanais(estado: dict, hoje: str) -> list:
     out = []
     for chat, u in ativos.items():
         texto = cart.formatar_semana(u, segunda, cot)
+        d = diario(u, hist, segunda) if texto else None
+        if d:
+            texto += "\n\n" + d
         if texto:
             out.append(("sendMessage", _msg(chat, texto, menu=True)[1]))
     return out
