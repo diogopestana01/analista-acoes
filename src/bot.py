@@ -1387,7 +1387,10 @@ def _num(x) -> float | None:
 def limite_compra(s: dict) -> float | None:
     """Preço máximo a que ainda vale a pena entrar: o mesmo corte que tira dos sinais em aberto os que
     já fizeram mais de metade do caminho até ao objetivo (FUGIU)."""
-    return lista_sinais.limite(_num(s.get("entrada_sinal")) or _num(s.get("entrada")), s.get("objetivo"), s.get("stop"))
+    if "limite" in s:  # já calculado pela lista (src/lista_sinais.avaliar)
+        return _num(s["limite"])
+    return lista_sinais.limite(_num(s.get("entrada_sinal")) or _num(s.get("entrada")), s.get("objetivo"),
+                               s.get("stop"), s.get("setup"), _cfg_sinais(), s.get("preco_sinal"))
 
 
 def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
