@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from . import carteira as cart
-from . import acompanhamento, cotacoes, lista_sinais, saidas, telegram, trocas
+from . import acompanhamento, cotacoes, lista_sinais, risco, saidas, telegram, trocas
 
 # Função que dá o preço atual de uma lista de tickers ({ticker: preço}). O bot_carteira.py liga-a a
 # precos.atuais; nos testes fica None (usa o preço do sinal).
@@ -32,6 +32,8 @@ DONO = ""         # chat do dono, para lhe mostrar o botão 🎟️ Convidar no 
 DIAS_CONVITE = 7  # um convite serve uma vez e caduca ao fim destes dias
 CFG_SINAIS = None  # config.yaml -> sinais (regra de saída de cada setup, para o ATR)
 MODELO_TROCAS = None  # data/valor_restante.json (src/trocas.py)
+LER_LISTA = None  # () -> dict: data/lista_sinais.json, gravada pelos sinais a cada corrida
+LISTA_MAX_MIN = 20  # mais velha do que isto (ex. os sinais pararam), o bot calcula a lista ele próprio
 CONF_SEM_SINAL = 50  # confiança assumida para uma compra registada à mão (sem sinal)
 
 AJUDA = """<b>Como usar</b>
@@ -1413,6 +1415,17 @@ def limite_compra(s: dict) -> float | None:
                                s.get("stop"), s.get("setup"), _cfg_sinais(), s.get("preco_sinal"))
 
 
+def _atr_sinal(s: dict) -> float | None:
+    """ATR em % do preço no dia do sinal: o do sinal (atr_pct) ou, nos do registo, a partir do stop."""
+    a = _num(s.get("atr_pct"))
+    if a:
+        return a / 100 if a > 1 else a
+    e = _num(s.get("entrada_sinal")) or _num(s.get("entrada"))
+    if not e or not isinstance(s.get("setup"), str) or _num(s.get("stop")) is None:
+        return None
+    return trocas.atr_pct(s["setup"], e, s["stop"], _cfg_sinais())
+
+
 def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
     """O sinal em linguagem simples: o que comprar, quanto, quando vender e em quanto tempo."""
     moeda, e = u["regras"]["moeda"], s["entrada"]
@@ -1433,6 +1446,9 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         linhas.append(f"🎯 Vender: {regra.texto_alerta()} (eu aviso-te)")
     if stop:
         linhas.append(f"🛑 Vender para travar a perda a <b>{cart.fmt(stop)}</b> ({cart.sinal_fmt((stop / e - 1) * 100, 1)}%)")
+    r_txt = risco.texto(_atr_sinal(s))
+    if r_txt:
+        linhas.append(r_txt)
     dias = int(round(_num(s.get("max_dias")) or _num(s.get("dias_estimados")) or 5))
     linhas.append(f"⏳ Prazo: até {dias} dia{'s' if dias != 1 else ''} út{'eis' if dias != 1 else 'il'}")
     if isinstance(s.get("resultados_em"), str):
@@ -1545,12 +1561,29 @@ def sinais_abertos(chat: str, u: dict, hist: pd.DataFrame) -> list:
 
 # ---------- 📈 Sinais: a lista reavaliada a cada corrida ----------
 
+def lista_guardada(agora: pd.Timestamp | None = None) -> list[dict] | None:
+    """Os itens da lista que os sinais gravaram (data/lista_sinais.json), se tiver menos de LISTA_MAX_MIN."""
+    if LER_LISTA is None:
+        return None
+    try:
+        d = LER_LISTA() or {}
+        idade = (agora or pd.Timestamp.now(tz="UTC")) - pd.Timestamp(d["gerada_em"])
+    except Exception:  # noqa: BLE001  sem ficheiro ou estragado: calcula-se
+        return None
+    if idade > pd.Timedelta(minutes=LISTA_MAX_MIN) or not isinstance(d.get("itens"), list):
+        return None
+    return [{k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in s.items()} for s in d["itens"]]
+
+
 def _avaliados(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
-    """Sinais em aberto do mercado desta pessoa, com estado e força ao preço de agora (src/lista_sinais.py)."""
-    if hist is None or hist.empty:
-        return []
-    abertos = sorted(set(hist.loc[hist["estado"] == "aberto", "ticker"]))
-    itens = lista_sinais.avaliar(hist, _cotacoes(abertos), hoje, _modelo_trocas(), _cfg_sinais())
+    """Sinais em aberto do mercado desta pessoa, com estado e força ao preço de agora: a lista que os
+    sinais gravam a cada corrida; se estiver velha, calcula-se aqui (src/lista_sinais.py)."""
+    itens = lista_guardada()
+    if itens is None:
+        if hist is None or hist.empty:
+            return []
+        abertos = sorted(set(hist.loc[hist["estado"] == "aberto", "ticker"]))
+        itens = lista_sinais.avaliar(hist, _cotacoes(abertos), hoje, _modelo_trocas(), _cfg_sinais())
     return [s for s in itens if cart.mercado(s["ticker"]) in u["regras"]["mercados"]]
 
 
@@ -1583,9 +1616,15 @@ def _dia(s: dict) -> str:
     return f"dia {s['dias_usados'] + 1} de {s['max_dias']}"
 
 
+RISCO_COR = {"baixo": "🟢", "médio": "🟡", "alto": "🔴"}
+
+
 def _esperado(s: dict) -> str:
-    """Retorno esperado do sinal; nos antigos sem ele, o que ainda costuma render."""
-    return f"esperado <b>{_txt_ret(s)}</b>" if _retorno(s) is not None else _ainda(s["forca"])
+    """Retorno esperado do sinal (nos antigos sem ele, o que ainda costuma render) e o risco."""
+    txt = f"esperado <b>{_txt_ret(s)}</b>" if _retorno(s) is not None else _ainda(s["forca"])
+    if s.get("risco") and s.get("perda_dia_mau"):
+        txt += f" · {RISCO_COR[s['risco']]} risco {s['risco']} (dia mau −{s['perda_dia_mau'] * 100:.0f}%)"
+    return txt
 
 
 def _ainda(x: float | None) -> str:
@@ -1699,6 +1738,30 @@ def mensagens_trocas(estado: dict | None, hist: pd.DataFrame | None, hoje: str, 
 
 def _chave_saida(chat, t: str, p: dict, tipo: str) -> str:
     return f"saida|{chat}|{t}|{p.get('data', '')}|{tipo}"
+
+
+FECHADOS = ("stop", "objetivo", "expirou", "regra")
+
+
+def fechos_do_registo(hist: pd.DataFrame | None, vistos: set, desde: str) -> tuple[list[dict], set]:
+    """Sinais que o registo fechou (stop, objetivo, prazo, regra) desde `desde` e ainda não vistos pelo bot,
+    no formato de acompanhamento.atualizar. Devolve (fechos novos, chaves de todos os fechos recentes)."""
+    if hist is None or hist.empty:
+        return [], set()
+    h = hist[hist["estado"].isin(FECHADOS) & (hist["data_fecho"].astype(str) >= desde)]
+    novos, chaves = [], set()
+    for r in h.to_dict("records"):
+        chave = f"{r['ticker']}|{r['data_sinal']}|{r['estado']}"
+        chaves.add(chave)
+        if chave in vistos:
+            continue
+        preco, e = _num(r.get("preco_fecho")), _num(r.get("entrada"))
+        if not preco or not e:
+            continue
+        compra = r.get("direcao") != "venda"
+        novos.append({**r, "data_sinal": str(r["data_sinal"]), "resultado": r["estado"], "preco_saida": preco,
+                      "preco_atual": preco, "variacao_pct": (preco / e - 1) * (100 if compra else -100)})
+    return novos, chaves
 
 
 def mensagens_fechos(estado: dict | None, fechos: list[dict], dono: str | None, avisados: set | None = None) -> list:
