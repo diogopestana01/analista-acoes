@@ -154,3 +154,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-02,GFR,pullback,compra,6.380000114440918,,5.820425212536777,2.0,5,66.5,aberto,,,,sma5,duvidoso,5.0,apoia,0.2,,,1.0,0.02467779735038722,ok,ok,False,,1.0,10.0,0.0,,0.01555
 2026-11-02,MASS,pullback,compra,10.899999618530273,,9.52702664611038,3.0,5,38.6,aberto,,,,sma5,manter,3.0,neutro,-0.2,,,1.0,0.013974692025344421,ok,ok,False,,0.6875,16.0,0.0,7.121878,0.03077
 2026-11-02,HPK,pullback,compra,9.479999542236328,,8.240245499305027,1.5,5,60.2,aberto,,,,sma5,duvidoso,6.0,neutro,-0.2,,,1.0,0.01354456968748785,ok,ok,False,,1.0,2.0,0.0,11.860977,0.01259
+2026-11-02,S,pullback,compra,24.239999771118164,,21.74979611157023,2.0,5,35.3,aberto,,,,sma5,manter,2.0,neutro,0.1,,,1.0,0.014212315872622049,ok,ok,False,,0.5,6.0,0.0,,0.00373
