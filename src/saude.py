@@ -19,7 +19,9 @@ def problemas(ultimo_dia_precos, verificacoes: list[str], agora: pd.Timestamp) -
     agora = pd.Timestamp(agora).tz_convert("UTC")
     hora = agora.hour + agora.minute / 60
     # Bolsa dos EUA aberta há mais de 30 min num dia útil e os preços ainda não são de hoje.
-    if agora.weekday() < 5 and 14.0 <= hora <= 20.0 and pd.Timestamp(ultimo_dia_precos).date() < agora.date():
+    from .precos import _horario
+    ini, fim = _horario("SPY", agora)
+    if agora.weekday() < 5 and ini + 0.5 <= hora <= fim and pd.Timestamp(ultimo_dia_precos).date() < agora.date():
         out.append(("precos_velhos", f"Os preços guardados são de {pd.Timestamp(ultimo_dia_precos):%d/%m}: "
                                      "o Yahoo pode ter deixado de responder. Os sinais de hoje podem estar errados."))
     falhas = sum(v == "falhou" for v in verificacoes)

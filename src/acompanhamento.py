@@ -33,10 +33,10 @@ def carregar(caminho: Path) -> pd.DataFrame:
 
 
 def bolsa_aberta(ticker: str, agora: pd.Timestamp) -> bool:
-    """Horário normal da bolsa da ação (UTC aproximado, dias úteis). Fora dele não se compra nem vende."""
+    """Horário normal da bolsa da ação (dias úteis, com a mudança de hora). Fora dele não se compra nem vende."""
     from .precos import _horario
     agora = pd.Timestamp(agora).tz_convert("UTC") if pd.Timestamp(agora).tzinfo else pd.Timestamp(agora)
-    ini, fim = _horario(ticker)
+    ini, fim = _horario(ticker, agora)
     h = agora.hour + agora.minute / 60
     return agora.weekday() < 5 and ini <= h < fim
 
@@ -46,7 +46,7 @@ def proxima_sessao(ticker: str, agora: pd.Timestamp) -> str:
     from .precos import _horario
     agora = pd.Timestamp(agora).tz_convert("UTC")
     dia = agora.normalize().tz_localize(None)
-    if agora.weekday() >= 5 or agora.hour + agora.minute / 60 >= _horario(ticker)[1]:
+    if agora.weekday() >= 5 or agora.hour + agora.minute / 60 >= _horario(ticker, agora)[1]:
         dia = dia + pd.offsets.BDay(1)
     return f"{dia:%Y-%m-%d}"
 
@@ -106,7 +106,7 @@ def sessao_fechada(ticker: str, dia: str, agora: pd.Timestamp) -> bool:
         return True
     if dia > hoje:
         return False
-    return agora.hour + agora.minute / 60 >= _horario(ticker)[1] + 10 / 60
+    return agora.hour + agora.minute / 60 >= _horario(ticker, agora)[1] + 10 / 60
 
 
 def atualizar(hist: pd.DataFrame, precos: pd.DataFrame,

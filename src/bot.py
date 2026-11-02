@@ -2021,7 +2021,7 @@ MEDALHAS = {1: "🥇", 2: "🥈", 3: "🥉"}
 def _cartao_ranking(k: int, s: dict) -> str:
     """Um sinal no ranking, em três linhas: posição e risco; preços para a ordem; o que o modelo espera.
     1. <b>KPLT</b> · 🟢 risco baixo
-       💵 até 13,01 · 🎯 15,47 (+19%) · 🛑 11,05 (−15%)
+       💵 agora 12,80 · compra até 13,01 · 🎯 15,47 (+21%) · 🛑 11,05 (−14%)
        📊 lucro esperado +1,4% · confiança 68%"""
     cab = f"{MEDALHAS.get(k, f'{k}.')} <b>{s['ticker']}</b>"
     nome = nome_empresa(s["ticker"], s)
@@ -2034,7 +2034,9 @@ def _cartao_ranking(k: int, s: dict) -> str:
     base = _num(s.get("preco")) or _num(s.get("entrada"))
     o, st = _num(s.get("objetivo")), _num(s.get("stop"))
     regra = saidas.REGRAS.get(s.get("saida") or "")
-    precos = [f"💵 até {cart.fmt(s['limite'])}" if s.get("limite") else ""]
+    # O preço de agora muda a cada corrida; o limite, o objetivo e o stop são do sinal e não mudam.
+    agora = (f"💵 fecho {cart.fmt(base)}" if _a_espera_da_abertura(s) else f"💵 agora {cart.fmt(base)}") if base else ""
+    precos = [agora, f"compra até {cart.fmt(s['limite'])}" if s.get("limite") else ""]
     if o:
         precos.append(f"🎯 {cart.fmt(o)}" + (f" ({cart.sinal_fmt((o / base - 1) * 100, 0)}%)" if base else ""))
     elif (alvo := _alvo_movel(s["ticker"], s.get("saida"), str(pd.Timestamp.now(tz="UTC").date()))):
