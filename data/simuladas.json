@@ -217,7 +217,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 4.076798461425753,
+   "caixa": 0.9625307299606476,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -280,16 +280,6 @@
      "entrada_sinal": 38.38999938964844,
      "acompanhar": true
     },
-    "NTNX": {
-     "qtd": 1.8876,
-     "preco": 66.22,
-     "data": "2026-10-30",
-     "sinal": "NTNX|2026-10-30",
-     "stop": 64.68790647835075,
-     "objetivo": null,
-     "entrada_sinal": 69.06999969482422,
-     "acompanhar": true
-    },
     "FET": {
      "qtd": 1.5454,
      "preco": 81.26,
@@ -298,6 +288,16 @@
      "stop": 74.70832751994439,
      "objetivo": null,
      "entrada_sinal": 83.31500244140625,
+     "acompanhar": true
+    },
+    "GFR": {
+     "qtd": 20.394,
+     "preco": 6.14,
+     "data": "2026-11-02",
+     "sinal": "GFR|2026-11-02",
+     "stop": 5.820425212536777,
+     "objetivo": null,
+     "entrada_sinal": 6.380000114440918,
      "acompanhar": true
     }
    },
@@ -383,6 +383,24 @@
      "preco": 81.26,
      "data": "2026-11-02",
      "sinal": "FET|2026-10-30"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "NTNX",
+     "qtd": 1.8876,
+     "preco": 64.68790647835075,
+     "data": "2026-11-02",
+     "preco_compra": 66.22,
+     "lucro": -2.8919797314651134,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "GFR",
+     "qtd": 20.394,
+     "preco": 6.14,
+     "data": "2026-11-02",
+     "sinal": "GFR|2026-11-02"
     }
    ],
    "decisoes": {
@@ -394,7 +412,8 @@
     "NTCT|2026-10-30": "comprei",
     "SPSC|2026-10-30": "comprei",
     "NTNX|2026-10-30": "comprei",
-    "FET|2026-10-30": "comprei"
+    "FET|2026-10-30": "comprei",
+    "GFR|2026-11-02": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -413,7 +432,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.3688653691406785,
+   "caixa": 0.9143569420981663,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -476,16 +495,6 @@
      "entrada_sinal": 38.38999938964844,
      "acompanhar": true
     },
-    "NTNX": {
-     "qtd": 1.5101,
-     "preco": 66.22,
-     "data": "2026-10-30",
-     "sinal": "NTNX|2026-10-30",
-     "stop": 64.68790647835075,
-     "objetivo": null,
-     "entrada_sinal": 69.06999969482422,
-     "acompanhar": true
-    },
     "AGIO": {
      "qtd": 3.2331,
      "preco": 30.93,
@@ -514,6 +523,16 @@
      "stop": 74.70832751994439,
      "objetivo": null,
      "entrada_sinal": 83.31500244140625,
+     "acompanhar": true
+    },
+    "GFR": {
+     "qtd": 16.3094,
+     "preco": 6.14,
+     "data": "2026-11-02",
+     "sinal": "GFR|2026-11-02",
+     "stop": 5.820425212536777,
+     "objetivo": null,
+     "entrada_sinal": 6.380000114440918,
      "acompanhar": true
     }
    },
@@ -615,6 +634,24 @@
      "preco": 81.26,
      "data": "2026-11-02",
      "sinal": "FET|2026-10-30"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "NTNX",
+     "qtd": 1.5101,
+     "preco": 64.68790647835075,
+     "data": "2026-11-02",
+     "preco_compra": 66.22,
+     "lucro": -2.3136144270425234,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "GFR",
+     "qtd": 16.3094,
+     "preco": 6.14,
+     "data": "2026-11-02",
+     "sinal": "GFR|2026-11-02"
     }
    ],
    "decisoes": {
@@ -628,7 +665,8 @@
     "NTNX|2026-10-30": "comprei",
     "AGIO|2026-10-30": "comprei",
     "PBYI|2026-10-30": "comprei",
-    "FET|2026-10-30": "comprei"
+    "FET|2026-10-30": "comprei",
+    "GFR|2026-11-02": "comprei"
    },
    "aguarda": null,
    "anterior": null
