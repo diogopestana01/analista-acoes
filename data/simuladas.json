@@ -217,7 +217,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.013341999999994414,
+   "caixa": 4.076798461425753,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -280,16 +280,6 @@
      "entrada_sinal": 38.38999938964844,
      "acompanhar": true
     },
-    "SPSC": {
-     "qtd": 1.512,
-     "preco": 82.67,
-     "data": "2026-10-30",
-     "sinal": "SPSC|2026-10-30",
-     "stop": 76.20027549405198,
-     "objetivo": null,
-     "entrada_sinal": 82.31500244140625,
-     "acompanhar": true
-    },
     "NTNX": {
      "qtd": 1.8876,
      "preco": 66.22,
@@ -298,6 +288,16 @@
      "stop": 64.68790647835075,
      "objetivo": null,
      "entrada_sinal": 69.06999969482422,
+     "acompanhar": true
+    },
+    "FET": {
+     "qtd": 1.5454,
+     "preco": 81.26,
+     "data": "2026-11-02",
+     "sinal": "FET|2026-10-30",
+     "stop": 74.70832751994439,
+     "objetivo": null,
+     "entrada_sinal": 83.31500244140625,
      "acompanhar": true
     }
    },
@@ -365,6 +365,24 @@
      "preco": 66.22,
      "data": "2026-10-30",
      "sinal": "NTNX|2026-10-30"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SPSC",
+     "qtd": 1.512,
+     "preco": 85.74250030517578,
+     "data": "2026-11-02",
+     "preco_compra": 82.67,
+     "lucro": 4.645620461425779,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "FET",
+     "qtd": 1.5454,
+     "preco": 81.26,
+     "data": "2026-11-02",
+     "sinal": "FET|2026-10-30"
     }
    ],
    "decisoes": {
@@ -375,7 +393,8 @@
     "SMWB|2026-10-30": "comprei",
     "NTCT|2026-10-30": "comprei",
     "SPSC|2026-10-30": "comprei",
-    "NTNX|2026-10-30": "comprei"
+    "NTNX|2026-10-30": "comprei",
+    "FET|2026-10-30": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -394,7 +413,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.01896300000007045,
+   "caixa": 3.3688653691406785,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -457,16 +476,6 @@
      "entrada_sinal": 38.38999938964844,
      "acompanhar": true
     },
-    "SPSC": {
-     "qtd": 1.2096,
-     "preco": 82.67,
-     "data": "2026-10-30",
-     "sinal": "SPSC|2026-10-30",
-     "stop": 76.20027549405198,
-     "objetivo": null,
-     "entrada_sinal": 82.31500244140625,
-     "acompanhar": true
-    },
     "NTNX": {
      "qtd": 1.5101,
      "preco": 66.22,
@@ -495,6 +504,16 @@
      "stop": 9.617513720946079,
      "objetivo": null,
      "entrada_sinal": 10.470000267028809,
+     "acompanhar": true
+    },
+    "FET": {
+     "qtd": 1.2351,
+     "preco": 81.26,
+     "data": "2026-11-02",
+     "sinal": "FET|2026-10-30",
+     "stop": 74.70832751994439,
+     "objetivo": null,
+     "entrada_sinal": 83.31500244140625,
      "acompanhar": true
     }
    },
@@ -578,6 +597,24 @@
      "preco": 10.52,
      "data": "2026-10-30",
      "sinal": "PBYI|2026-10-30"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SPSC",
+     "qtd": 1.2096,
+     "preco": 85.74250030517578,
+     "data": "2026-11-02",
+     "preco_compra": 82.67,
+     "lucro": 3.7164963691406285,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "FET",
+     "qtd": 1.2351,
+     "preco": 81.26,
+     "data": "2026-11-02",
+     "sinal": "FET|2026-10-30"
     }
    ],
    "decisoes": {
@@ -590,7 +627,8 @@
     "SPSC|2026-10-30": "comprei",
     "NTNX|2026-10-30": "comprei",
     "AGIO|2026-10-30": "comprei",
-    "PBYI|2026-10-30": "comprei"
+    "PBYI|2026-10-30": "comprei",
+    "FET|2026-10-30": "comprei"
    },
    "aguarda": null,
    "anterior": null
