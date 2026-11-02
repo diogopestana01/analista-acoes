@@ -134,13 +134,21 @@ def juntar(antigos: pd.DataFrame, novos: pd.DataFrame) -> pd.DataFrame:
         .reset_index(drop=True)
 
 
-# Horário de negociação (UTC) para estimar o volume do dia ainda em curso.
-_HORARIO_EUA = (13.5, 20.0)
-_HORARIO_EUROPA = (7.0, 15.5)
+# Horário de negociação na hora local da bolsa (abre, fecha). Passa-se para UTC com a mudança de hora
+# de cada bolsa: NY 9:30-16:00 é 13:30-20:00 UTC no verão e 14:30-21:00 UTC no inverno (desde 1/11);
+# a Europa (Xetra) 9:00-17:30 é 7:00-15:30 UTC no verão e 8:00-16:30 UTC no inverno (desde 25/10).
+_SESSAO_EUA = ("America/New_York", 9.5, 16.0)
+_SESSAO_EUROPA = ("Europe/Berlin", 9.0, 17.5)
 
 
-def _horario(ticker: str) -> tuple[float, float]:
-    return _HORARIO_EUROPA if "." in ticker else _HORARIO_EUA
+def _horario(ticker: str, agora=None) -> tuple[float, float]:
+    """(abre, fecha) em horas UTC no dia de `agora` (por omissão, hoje). Sem fuso, `agora` é UTC."""
+    tz, ini, fim = _SESSAO_EUROPA if "." in ticker else _SESSAO_EUA
+    dia = pd.Timestamp.now(tz="UTC") if agora is None else pd.Timestamp(agora)
+    if dia.tzinfo is None:
+        dia = dia.tz_localize("UTC")
+    desvio = dia.tz_convert(tz).utcoffset().total_seconds() / 3600
+    return ini - desvio, fim - desvio
 
 
 def projetar_volume_hoje(precos: pd.DataFrame, agora: pd.Timestamp) -> pd.DataFrame:
@@ -152,7 +160,7 @@ def projetar_volume_hoje(precos: pd.DataFrame, agora: pd.Timestamp) -> pd.DataFr
     p = precos.copy()
     mask = pd.to_datetime(p["data"]).dt.normalize() == hoje
     for ticker in p.loc[mask, "ticker"].unique():
-        ini, fim = _horario(ticker)
+        ini, fim = _horario(ticker, agora)
         if hora >= fim:
             continue
         frac = max((hora - ini) / (fim - ini), 0.1)

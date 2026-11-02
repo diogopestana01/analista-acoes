@@ -56,7 +56,7 @@ def test_lista_mostra_lugares_comprar_e_andamento(monkeypatch):
     txt = _textos(out)[0]
     # Ranking do modelo, só com os que ainda dá para comprar: preços, lucro esperado e risco de cada um.
     assert "Próximos sinais</b> · 5 lugares livres" in txt
-    assert "🥇 <b>NOVO</b> · 🟡 risco médio\n    💵 até 21,00 · 🎯 22,00 (+9%) · 🛑 19,00 (-5%)" in txt
+    assert "🥇 <b>NOVO</b> · 🟡 risco médio\n    💵 agora 20,10 · compra até 21,00 · 🎯 22,00 (+9%) · 🛑 19,00 (-5%)" in txt
     assert "📊 lucro esperado <b>+2,0%</b>" in txt and "🥈 <b>CEDO</b>" in txt
     assert all(x not in txt for x in ("SUBIU", "FIM", "STOP"))
     out = bot.processar(e, _cb(DONO, f"ls|SUBIU|2026-10-27"), HIST, HOJE, CFG)

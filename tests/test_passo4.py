@@ -135,3 +135,19 @@ def test_sinal_com_bolsa_fechada_entra_na_abertura_seguinte():
     h2, _ = acompanhamento.atualizar(noite, precos[precos["data"] == "2026-10-28"],
                                      pd.Timestamp("2026-10-28 23:00", tz="UTC"))
     assert bool(h2["entrada_na_abertura"].iat[-1]) and h2["entrada"].iat[-1] == 100.0
+
+
+def test_horario_da_bolsa_segue_a_mudanca_de_hora():
+    """NY abre às 9:30 locais: 13:30 UTC no verão e 14:30 UTC depois de 1/11 (fim da hora de verão nos EUA)."""
+    from src import acompanhamento, precos
+    assert precos._horario("SPY", pd.Timestamp("2026-10-30 15:00", tz="UTC")) == (13.5, 20.0)
+    assert precos._horario("SPY", pd.Timestamp("2026-11-02 15:00", tz="UTC")) == (14.5, 21.0)
+    assert precos._horario("SAP.DE", pd.Timestamp("2026-10-23 10:00", tz="UTC")) == (7.0, 15.5)
+    assert precos._horario("SAP.DE", pd.Timestamp("2026-10-27 10:00", tz="UTC")) == (8.0, 16.5)
+    inverno = pd.Timestamp("2026-11-02 14:00", tz="UTC")   # 9:00 em NY: ainda fechada
+    assert not acompanhamento.bolsa_aberta("SPY", inverno)
+    assert acompanhamento.bolsa_aberta("SPY", pd.Timestamp("2026-11-02 20:30", tz="UTC"))   # 15:30 em NY
+    # A vela de hoje só é final depois das 21:10 UTC: às 20:12 a saída ao fecho ainda não se decide.
+    assert not acompanhamento.sessao_fechada("SPY", "2026-11-02", pd.Timestamp("2026-11-02 20:12", tz="UTC"))
+    assert acompanhamento.sessao_fechada("SPY", "2026-11-02", pd.Timestamp("2026-11-02 21:15", tz="UTC"))
+    assert acompanhamento.proxima_sessao("SPY", pd.Timestamp("2026-11-02 20:50", tz="UTC")) == "2026-11-02"
