@@ -945,6 +945,26 @@ def _txt_ret(s: dict) -> str:
     return _pct(r) if r is not None else "?"
 
 
+def _ret_agora(s: dict) -> float | None:
+    """Lucro esperado de agora: o do dia do sinal, encolhido pelo que um sinal destes ainda costuma render
+    (força da lista: dias que já passaram e quanto já subiu ou caiu, src/trocas.valor_que_falta) face ao
+    que rendia no dia em que apareceu (média do setup). No dia do sinal é igual ao original.
+    Só para mostrar: a ordem e as regras da lista não mudam."""
+    r, f = _retorno(s), _num(s.get("forca"))
+    media = ((_modelo_trocas() or {}).get("media") or {}).get(s.get("setup"))
+    if r is None or r <= 0 or f is None or not media or not s.get("dias_usados"):
+        return r
+    return r * f / media
+
+
+def _txt_ret_agora(s: dict) -> str:
+    """'+2,1%' ou, depois do dia do sinal, '+1,1% (no sinal +2,1%)'."""
+    r, a = _retorno(s), _ret_agora(s)
+    if a is None:
+        return "?"
+    return f"{_pct(a)} (no sinal {_pct(r)})" if r is not None and round(a, 3) != round(r, 3) else _pct(a)
+
+
 def taxas_setup(hist: pd.DataFrame | None) -> dict:
     """{setup: (n fechados, % que ganharam)} do registo real (sinais em papel), só compras."""
     if hist is None or hist.empty:
@@ -1770,7 +1790,11 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
         linhas.append(r_txt)
     modelo = []
     if _retorno(s) is not None:
-        modelo.append(f"lucro esperado <b>{_txt_ret(s)}</b>")
+        a, r = _ret_agora(s), _retorno(s)
+        if round(a, 3) != round(r, 3):
+            modelo.append(f"lucro esperado agora <b>{_pct(a)}</b> (no sinal {_pct(r)})")
+        else:
+            modelo.append(f"lucro esperado <b>{_pct(a)}</b>")
     taxa = _num(s.get("taxa")) or lista_sinais.taxa_ganhar(s, _cfg_sinais())
     if taxa:
         modelo.append(f"confiança <b>{taxa * 100:.0f}%</b>")
@@ -2105,7 +2129,7 @@ def _linha_resto(k: int, s: dict) -> str:
     if s.get("limite"):
         partes[0] += f" até {cart.fmt(s['limite'])}"
     if _retorno(s) is not None:
-        partes.append(_txt_ret(s))
+        partes.append(_txt_ret_agora(s))
     if _num(s.get("taxa")):
         partes.append(f"{s['taxa'] * 100:.0f}%")
     if s.get("risco") in RISCO_COR:
@@ -2175,7 +2199,8 @@ def lista_sinais_msg(chat: str, u: dict, hist: pd.DataFrame | None, hoje: str) -
         else:
             linhas += ["🔒 <b>Nenhuma troca compensa agora</b>: as tuas posições ainda rendem mais do que "
                        "os sinais novos, já contando o spread.", ""]
-    rodape = ("Lucro esperado: média de sinais iguais no passado, já com custos e contando os que perdem. "
+    rodape = ("Lucro esperado: média de sinais iguais no passado, já com custos e contando os que perdem; "
+              "recalculado a cada 10 min com o preço e os dias que já passaram. "
               "Confiança: hipótese de acabar a ganhar."
               + (" \"Ainda dá\": o que uma posição destas costuma render daqui até à saída." if u["posicoes"] else ""))
     vivo = all(s.get("ao_vivo") for s in mostrar[:max(livres, 1)])
