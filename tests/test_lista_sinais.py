@@ -311,3 +311,12 @@ def test_carteira_avalia_cada_posicao(monkeypatch):
     monkeypatch.setattr(bot, "LER_AGENDA", lambda: {"SUBIU": {"data": "2026-11-02", "quando": "antes da abertura"}})
     txt = _textos(bot.processar(e, menu, HIST, HOJE, CFG))[0]
     assert "1 vender" in txt and "📅 <b>Vender antes dos resultados</b> (a 02/11)" in txt
+
+
+def test_lucro_esperado_recalculado(monkeypatch):
+    """Depois do dia do sinal, o lucro esperado encolhe com o que o sinal ainda costuma render."""
+    monkeypatch.setattr(bot, "MODELO_TROCAS", MODELO)
+    s = {"setup": "pullback", "retorno_esperado": 0.02, "forca": 0.002, "dias_usados": 2}
+    assert abs(bot._ret_agora(s) - 0.01) < 1e-9          # 2% x 0,2% / 0,4% (média do setup)
+    assert bot._txt_ret_agora(s) == "+1,0% (no sinal +2,0%)"
+    assert bot._ret_agora({**s, "dias_usados": 0}) == 0.02  # no dia do sinal fica igual
