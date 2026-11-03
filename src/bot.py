@@ -1191,8 +1191,8 @@ def avaliar_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str, saidas_: dic
             v = ("trocar", f"🔁 <b>Trocar pela {troca[0]['ticker']}</b>: o sinal novo rende mais do que esta "
                            f"ainda dá ({_pct(f['falta'])}), já contando o spread. Proposta a seguir")
         elif f["falta"] is not None and f["falta"] <= 0.003:
-            v = ("pouco", f"⏳ <b>Manter, mas já deu quase tudo</b>: daqui à saída costuma dar {_pct(f['falta'])}; "
-                          f"se aparecer um sinal melhor, troca")
+            v = ("pouco", f"⏳ <b>Manter, mas já deu quase tudo</b>: daqui à saída costuma dar {_pct(f['falta'])}"
+                          + _fasquia_troca(f["falta"]))
         elif f["falta"] is not None:
             v = ("manter", f"🔒 <b>Manter</b>: ainda costuma dar {_pct(f['falta'])} até à saída")
         elif p.get("sinal"):
@@ -1201,6 +1201,20 @@ def avaliar_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str, saidas_: dic
             continue  # comprada fora de um sinal: o modelo não tem opinião
         out[t] = {"tipo": v[0], "texto": v[1]}
     return out
+
+
+def _fasquia_troca(falta: float) -> str:
+    """Quanto um sinal novo teria de render para compensar trocar (src/trocas.vale_trocar: o que a posição
+    ainda dá + spread + margem), ao lado do que um sinal novo costuma dar no máximo (média do melhor setup).
+    Quase sempre fica acima: a troca só aparece quando a posição já não dá nada."""
+    modelo = _modelo_trocas()
+    if not modelo or not modelo.get("media"):
+        return ""
+    fasquia = falta + modelo["custo"] + modelo["margem"]
+    melhor = max(modelo["media"].values())
+    return (f". Para compensar trocar, um sinal novo teria de dar mais de {_pct(fasquia)} (o que paga o spread "
+            f"e uma margem); um sinal novo costuma dar até {_pct(melhor)}"
+            + (", por isso ainda não compensa" if fasquia >= melhor else ""))
 
 
 def _resumo_veredictos(v: dict) -> str:

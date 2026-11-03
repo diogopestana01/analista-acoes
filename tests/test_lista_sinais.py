@@ -299,6 +299,8 @@ def test_carteira_avalia_cada_posicao(monkeypatch):
     txt = _textos(bot.processar(e, menu, HIST, HOJE, CFG))[0]
     assert "🧭 <b>Avaliação do modelo</b>: 1 manter" in txt
     assert "⏳ <b>Manter, mas já deu quase tudo</b>: daqui à saída costuma dar +0,1%" in txt
+    # Diz quanto um sinal novo teria de dar para compensar a troca (+0,05% + 0,3% spread + 0,2% margem).
+    assert "um sinal novo teria de dar mais de +0,5%" in txt and "costuma dar até +1,2%" in txt
     # Carteira cheia: a posição fraca passa a "trocar" e a proposta vem a seguir.
     bot.definir_posicoes(u, 1)
     out = bot.processar(e, menu, HIST, HOJE, CFG)
