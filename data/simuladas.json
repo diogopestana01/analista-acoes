@@ -464,19 +464,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0019883423908595432,
+   "caixa": 1.361114342390863,
    "desde": "2026-10-30",
    "posicoes": {
-    "RBRK": {
-     "qtd": 1.0376,
-     "preco": 120.47,
-     "data": "2026-10-30",
-     "sinal": "RBRK|2026-10-30",
-     "stop": 111.91902474602718,
-     "objetivo": null,
-     "entrada_sinal": 126.18499755859375,
-     "acompanhar": true
-    },
     "CLF": {
      "qtd": 9.1142,
      "preco": 13.64,
@@ -545,6 +535,16 @@
      "stop": 34.29833877052914,
      "objetivo": 37.75332474776007,
      "entrada_sinal": 35.45000076293945,
+     "acompanhar": true
+    },
+    "PAYS": {
+     "qtd": 7.9694,
+     "preco": 15.31,
+     "data": "2026-11-04",
+     "sinal": "PAYS|2026-11-04",
+     "stop": 14.511761690512541,
+     "objetivo": 18.301475474565738,
+     "entrada_sinal": 15.774999618530273,
      "acompanhar": true
     }
    },
@@ -828,6 +828,24 @@
      "preco": 35.18,
      "data": "2026-11-04",
      "sinal": "AVBH|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RBRK",
+     "qtd": 1.0376,
+     "preco": 118.9,
+     "data": "2026-11-04",
+     "preco_compra": 120.47,
+     "lucro": -1.6290319999999952,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PAYS",
+     "qtd": 7.9694,
+     "preco": 15.31,
+     "data": "2026-11-04",
+     "sinal": "PAYS|2026-11-04"
     }
    ],
    "decisoes": {
@@ -850,7 +868,8 @@
     "DLTR|2026-11-04": "comprei",
     "EQNR|2026-11-04": "comprei",
     "FRSH|2026-11-04": "comprei",
-    "AVBH|2026-11-04": "comprei"
+    "AVBH|2026-11-04": "comprei",
+    "PAYS|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
