@@ -173,19 +173,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 4.66623791820183,
+   "caixa": 10.073386918201834,
    "desde": "2026-10-30",
    "posicoes": {
-    "BNC": {
-     "qtd": 40.8997,
-     "preco": 4.89,
-     "data": "2026-10-30",
-     "sinal": "BNC|2026-10-30",
-     "stop": 4.059590720881118,
-     "objetivo": null,
-     "entrada_sinal": 4.889999866485596,
-     "acompanhar": true
-    },
     "RBRK": {
      "qtd": 1.6601,
      "preco": 120.47,
@@ -224,6 +214,16 @@
      "stop": 13.664339018493829,
      "objetivo": null,
      "entrada_sinal": 14.729999542236328,
+     "acompanhar": true
+    },
+    "VNCE": {
+     "qtd": 15.0553,
+     "preco": 13.55,
+     "data": "2026-11-04",
+     "sinal": "VNCE|2026-11-04",
+     "stop": 11.928560901228268,
+     "objetivo": 16.942879341952644,
+     "entrada_sinal": 13.600000381469727,
      "acompanhar": true
     }
    },
@@ -339,6 +339,24 @@
      "preco": 14.0,
      "data": "2026-11-04",
      "sinal": "TK|2026-11-03"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "BNC",
+     "qtd": 40.8997,
+     "preco": 5.12,
+     "data": "2026-11-04",
+     "preco_compra": 4.89,
+     "lucro": 9.406931000000014,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "VNCE",
+     "qtd": 15.0553,
+     "preco": 13.55,
+     "data": "2026-11-04",
+     "sinal": "VNCE|2026-11-04"
     }
    ],
    "decisoes": {
@@ -350,7 +368,8 @@
     "BP|2026-11-03": "comprei",
     "AEYE|2026-10-30": "comprei",
     "CLF|2026-11-04": "comprei",
-    "TK|2026-11-03": "comprei"
+    "TK|2026-11-03": "comprei",
+    "VNCE|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -369,19 +388,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.3701364901482833,
+   "caixa": 7.954972490148251,
    "desde": "2026-10-30",
    "posicoes": {
-    "BNC": {
-     "qtd": 25.5623,
-     "preco": 4.89,
-     "data": "2026-10-30",
-     "sinal": "BNC|2026-10-30",
-     "stop": 4.059590720881118,
-     "objetivo": null,
-     "entrada_sinal": 4.889999866485596,
-     "acompanhar": true
-    },
     "RBRK": {
      "qtd": 1.0376,
      "preco": 120.47,
@@ -450,6 +459,16 @@
      "stop": 13.664339018493829,
      "objetivo": null,
      "entrada_sinal": 14.729999542236328,
+     "acompanhar": true
+    },
+    "VNCE": {
+     "qtd": 9.2468,
+     "preco": 13.55,
+     "data": "2026-11-04",
+     "sinal": "VNCE|2026-11-04",
+     "stop": 11.928560901228268,
+     "objetivo": 16.942879341952644,
+     "entrada_sinal": 13.600000381469727,
      "acompanhar": true
     }
    },
@@ -643,6 +662,24 @@
      "preco": 14.0,
      "data": "2026-11-04",
      "sinal": "TK|2026-11-03"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "BNC",
+     "qtd": 25.5623,
+     "preco": 5.12,
+     "data": "2026-11-04",
+     "preco_compra": 4.89,
+     "lucro": 5.8793289999999985,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "VNCE",
+     "qtd": 9.2468,
+     "preco": 13.55,
+     "data": "2026-11-04",
+     "sinal": "VNCE|2026-11-04"
     }
    ],
    "decisoes": {
@@ -660,7 +697,8 @@
     "AEYE|2026-10-30": "comprei",
     "CLF|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
-    "TK|2026-11-03": "comprei"
+    "TK|2026-11-03": "comprei",
+    "VNCE|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -679,19 +717,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0012945359144538315,
+   "caixa": 2.817282535914444,
    "desde": "2026-10-30",
    "posicoes": {
-    "MSBI": {
-     "qtd": 3.0303,
-     "preco": 33.0,
-     "data": "2026-10-30",
-     "sinal": "MSBI|2026-10-30",
-     "stop": 31.370102163425894,
-     "objetivo": null,
-     "entrada_sinal": 33.060001373291016,
-     "acompanhar": true
-    },
     "BNC": {
      "qtd": 20.4498,
      "preco": 4.89,
@@ -780,6 +808,16 @@
      "stop": 13.664339018493829,
      "objetivo": null,
      "entrada_sinal": 14.729999542236328,
+     "acompanhar": true
+    },
+    "VNCE": {
+     "qtd": 7.2863,
+     "preco": 13.55,
+     "data": "2026-11-04",
+     "sinal": "VNCE|2026-11-04",
+     "stop": 11.928560901228268,
+     "objetivo": 16.942879341952644,
+     "entrada_sinal": 13.600000381469727,
      "acompanhar": true
     }
    },
@@ -989,6 +1027,24 @@
      "preco": 14.0,
      "data": "2026-11-04",
      "sinal": "TK|2026-11-03"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MSBI",
+     "qtd": 3.0303,
+     "preco": 33.51,
+     "data": "2026-11-04",
+     "preco_compra": 33.0,
+     "lucro": 1.5454529999999949,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "VNCE",
+     "qtd": 7.2863,
+     "preco": 13.55,
+     "data": "2026-11-04",
+     "sinal": "VNCE|2026-11-04"
     }
    ],
    "decisoes": {
@@ -1008,7 +1064,8 @@
     "AEYE|2026-10-30": "comprei",
     "CLF|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
-    "TK|2026-11-03": "comprei"
+    "TK|2026-11-03": "comprei",
+    "VNCE|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
