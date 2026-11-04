@@ -388,7 +388,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.954972490148251,
+   "caixa": 11.449347490148284,
    "desde": "2026-10-30",
    "posicoes": {
     "RBRK": {
@@ -399,16 +399,6 @@
      "stop": 111.91902474602718,
      "objetivo": null,
      "entrada_sinal": 126.18499755859375,
-     "acompanhar": true
-    },
-    "SMWB": {
-     "qtd": 14.4175,
-     "preco": 8.67,
-     "data": "2026-10-30",
-     "sinal": "SMWB|2026-10-30",
-     "stop": 7.820927628792613,
-     "objetivo": null,
-     "entrada_sinal": 8.654999732971191,
      "acompanhar": true
     },
     "FET": {
@@ -469,6 +459,16 @@
      "stop": 11.928560901228268,
      "objetivo": 16.942879341952644,
      "entrada_sinal": 13.600000381469727,
+     "acompanhar": true
+    },
+    "DLTR": {
+     "qtd": 0.8708,
+     "preco": 144.5,
+     "data": "2026-11-04",
+     "sinal": "DLTR|2026-11-04",
+     "stop": 136.08651878474694,
+     "objetivo": 157.69694228890455,
+     "entrada_sinal": 143.2899932861328,
      "acompanhar": true
     }
    },
@@ -680,6 +680,24 @@
      "preco": 13.55,
      "data": "2026-11-04",
      "sinal": "VNCE|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SMWB",
+     "qtd": 14.4175,
+     "preco": 8.97,
+     "data": "2026-11-04",
+     "preco_compra": 8.67,
+     "lucro": 4.325250000000025,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DLTR",
+     "qtd": 0.8708,
+     "preco": 144.5,
+     "data": "2026-11-04",
+     "sinal": "DLTR|2026-11-04"
     }
    ],
    "decisoes": {
@@ -698,7 +716,8 @@
     "CLF|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
     "TK|2026-11-03": "comprei",
-    "VNCE|2026-11-04": "comprei"
+    "VNCE|2026-11-04": "comprei",
+    "DLTR|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -717,19 +736,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.817282535914444,
+   "caixa": 7.589716535914448,
    "desde": "2026-10-30",
    "posicoes": {
-    "BNC": {
-     "qtd": 20.4498,
-     "preco": 4.89,
-     "data": "2026-10-30",
-     "sinal": "BNC|2026-10-30",
-     "stop": 4.059590720881118,
-     "objetivo": null,
-     "entrada_sinal": 4.889999866485596,
-     "acompanhar": true
-    },
     "FISI": {
      "qtd": 2.5713,
      "preco": 38.89,
@@ -818,6 +827,16 @@
      "stop": 11.928560901228268,
      "objetivo": 16.942879341952644,
      "entrada_sinal": 13.600000381469727,
+     "acompanhar": true
+    },
+    "DLTR": {
+     "qtd": 0.6859,
+     "preco": 144.5,
+     "data": "2026-11-04",
+     "sinal": "DLTR|2026-11-04",
+     "stop": 136.08651878474694,
+     "objetivo": 157.69694228890455,
+     "entrada_sinal": 143.2899932861328,
      "acompanhar": true
     }
    },
@@ -1045,6 +1064,24 @@
      "preco": 13.55,
      "data": "2026-11-04",
      "sinal": "VNCE|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "BNC",
+     "qtd": 20.4498,
+     "preco": 5.08,
+     "data": "2026-11-04",
+     "preco_compra": 4.89,
+     "lucro": 3.885462000000004,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DLTR",
+     "qtd": 0.6859,
+     "preco": 144.5,
+     "data": "2026-11-04",
+     "sinal": "DLTR|2026-11-04"
     }
    ],
    "decisoes": {
@@ -1065,7 +1102,8 @@
     "CLF|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
     "TK|2026-11-03": "comprei",
-    "VNCE|2026-11-04": "comprei"
+    "VNCE|2026-11-04": "comprei",
+    "DLTR|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
