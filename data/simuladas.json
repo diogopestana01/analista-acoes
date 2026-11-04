@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 330.4244813226339,
+   "caixa": 0.0009373226338880158,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -36,6 +36,16 @@
      "stop": 12.633171942492144,
      "objetivo": 16.628656572779384,
      "entrada_sinal": 13.96500015258789,
+     "acompanhar": true
+    },
+    "CLF": {
+     "qtd": 24.2246,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04",
+     "stop": 12.06770410484644,
+     "objetivo": null,
+     "entrada_sinal": 13.664999961853027,
      "acompanhar": true
     }
    },
@@ -109,6 +119,14 @@
      "preco_compra": 47.78,
      "lucro": -6.750253677366118,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CLF",
+     "qtd": 24.2246,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04"
     }
    ],
    "decisoes": {
@@ -116,7 +134,8 @@
     "BNC|2026-10-30": "comprei",
     "FISI|2026-10-30": "comprei",
     "BP|2026-11-03": "comprei",
-    "AEYE|2026-10-30": "comprei"
+    "AEYE|2026-10-30": "comprei",
+    "CLF|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -135,7 +154,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 205.19315991820184,
+   "caixa": 3.693531918201842,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -176,6 +195,16 @@
      "stop": 12.633171942492144,
      "objetivo": 16.628656572779384,
      "entrada_sinal": 13.96500015258789,
+     "acompanhar": true
+    },
+    "CLF": {
+     "qtd": 14.7727,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04",
+     "stop": 12.06770410484644,
+     "objetivo": null,
+     "entrada_sinal": 13.664999961853027,
      "acompanhar": true
     }
    },
@@ -265,6 +294,14 @@
      "preco_compra": 47.78,
      "lucro": -4.089218081798123,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CLF",
+     "qtd": 14.7727,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04"
     }
    ],
    "decisoes": {
@@ -274,7 +311,8 @@
     "RBRK|2026-10-30": "comprei",
     "SMWB|2026-10-30": "comprei",
     "BP|2026-11-03": "comprei",
-    "AEYE|2026-10-30": "comprei"
+    "AEYE|2026-10-30": "comprei",
+    "CLF|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -293,7 +331,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 124.82248470567328,
+   "caixa": 0.00035849014828670533,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -346,16 +384,6 @@
      "entrada_sinal": 83.31500244140625,
      "acompanhar": true
     },
-    "GFR": {
-     "qtd": 20.394,
-     "preco": 6.14,
-     "data": "2026-11-02",
-     "sinal": "GFR|2026-11-02",
-     "stop": 5.820425212536777,
-     "objetivo": null,
-     "entrada_sinal": 6.380000114440918,
-     "acompanhar": true
-    },
     "AEYE": {
      "qtd": 8.6757,
      "preco": 14.46,
@@ -364,6 +392,26 @@
      "stop": 12.633171942492144,
      "objetivo": 16.628656572779384,
      "entrada_sinal": 13.96500015258789,
+     "acompanhar": true
+    },
+    "CLF": {
+     "qtd": 9.1142,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04",
+     "stop": 12.06770410484644,
+     "objetivo": null,
+     "entrada_sinal": 13.664999961853027,
+     "acompanhar": true
+    },
+    "CNC": {
+     "qtd": 1.6397,
+     "preco": 72.7,
+     "data": "2026-11-04",
+     "sinal": "CNC|2026-11-04",
+     "stop": 68.37013229913742,
+     "objetivo": 81.23974638805326,
+     "entrada_sinal": 72.66000366210938,
      "acompanhar": true
     }
    },
@@ -513,6 +561,32 @@
      "preco_compra": 47.78,
      "lucro": -2.5390880242873664,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "GFR",
+     "qtd": 20.394,
+     "preco": 5.820425212536777,
+     "data": "2026-11-04",
+     "preco_compra": 6.14,
+     "lucro": -6.517408215524966,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CLF",
+     "qtd": 9.1142,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CNC",
+     "qtd": 1.6397,
+     "preco": 72.7,
+     "data": "2026-11-04",
+     "sinal": "CNC|2026-11-04"
     }
    ],
    "decisoes": {
@@ -527,7 +601,9 @@
     "FET|2026-10-30": "comprei",
     "GFR|2026-11-02": "comprei",
     "BP|2026-11-03": "comprei",
-    "AEYE|2026-10-30": "comprei"
+    "AEYE|2026-10-30": "comprei",
+    "CLF|2026-11-04": "comprei",
+    "CNC|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -546,7 +622,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 191.18269757456716,
+   "caixa": 88.96149453591445,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -609,16 +685,6 @@
      "entrada_sinal": 83.31500244140625,
      "acompanhar": true
     },
-    "GFR": {
-     "qtd": 16.3094,
-     "preco": 6.14,
-     "data": "2026-11-02",
-     "sinal": "GFR|2026-11-02",
-     "stop": 5.820425212536777,
-     "objetivo": null,
-     "entrada_sinal": 6.380000114440918,
-     "acompanhar": true
-    },
     "AEYE": {
      "qtd": 6.8671,
      "preco": 14.46,
@@ -627,6 +693,26 @@
      "stop": 12.633171942492144,
      "objetivo": 16.628656572779384,
      "entrada_sinal": 13.96500015258789,
+     "acompanhar": true
+    },
+    "CLF": {
+     "qtd": 7.2269,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04",
+     "stop": 12.06770410484644,
+     "objetivo": null,
+     "entrada_sinal": 13.664999961853027,
+     "acompanhar": true
+    },
+    "CNC": {
+     "qtd": 1.3559,
+     "preco": 72.7,
+     "data": "2026-11-04",
+     "sinal": "CNC|2026-11-04",
+     "stop": 68.37013229913742,
+     "objetivo": 81.23974638805326,
+     "entrada_sinal": 72.66000366210938,
      "acompanhar": true
     }
    },
@@ -802,6 +888,32 @@
      "preco_compra": 47.78,
      "lucro": -2.0145583675310093,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "GFR",
+     "qtd": 16.3094,
+     "preco": 5.820425212536777,
+     "data": "2026-11-04",
+     "preco_compra": 6.14,
+     "lucro": -5.21207303865269,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CLF",
+     "qtd": 7.2269,
+     "preco": 13.64,
+     "data": "2026-11-04",
+     "sinal": "CLF|2026-11-04"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CNC",
+     "qtd": 1.3559,
+     "preco": 72.7,
+     "data": "2026-11-04",
+     "sinal": "CNC|2026-11-04"
     }
    ],
    "decisoes": {
@@ -818,7 +930,9 @@
     "FET|2026-10-30": "comprei",
     "GFR|2026-11-02": "comprei",
     "BP|2026-11-03": "comprei",
-    "AEYE|2026-10-30": "comprei"
+    "AEYE|2026-10-30": "comprei",
+    "CLF|2026-11-04": "comprei",
+    "CNC|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
