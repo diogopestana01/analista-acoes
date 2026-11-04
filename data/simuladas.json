@@ -888,19 +888,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.00022732730090524456,
+   "caixa": 103.98359579615772,
    "desde": "2026-10-30",
    "posicoes": {
-    "FISI": {
-     "qtd": 2.5713,
-     "preco": 38.89,
-     "data": "2026-10-30",
-     "sinal": "FISI|2026-10-30",
-     "stop": 37.59457648244359,
-     "objetivo": null,
-     "entrada_sinal": 39.369998931884766,
-     "acompanhar": true
-    },
     "RBRK": {
      "qtd": 0.83,
      "preco": 120.47,
@@ -1306,6 +1296,16 @@
      "preco": 35.18,
      "data": "2026-11-04",
      "sinal": "AVBH|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "FISI",
+     "qtd": 2.5713,
+     "preco": 40.439998626708984,
+     "data": "2026-11-04",
+     "preco_compra": 38.89,
+     "lucro": 3.9855114688568136,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
