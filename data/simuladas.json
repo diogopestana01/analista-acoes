@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0009373226338880158,
+   "caixa": 3.7987373226338264,
    "desde": "2026-10-30",
    "posicoes": {
-    "MSBI": {
-     "qtd": 10.1,
-     "preco": 33.0,
-     "data": "2026-10-30",
-     "sinal": "MSBI|2026-10-30",
-     "stop": 31.370102163425894,
-     "objetivo": null,
-     "entrada_sinal": 33.060001373291016,
-     "acompanhar": true
-    },
     "AEYE": {
      "qtd": 23.1802,
      "preco": 14.46,
@@ -46,6 +36,16 @@
      "stop": 12.06770410484644,
      "objetivo": null,
      "entrada_sinal": 13.664999961853027,
+     "acompanhar": true
+    },
+    "TK": {
+     "qtd": 23.9038,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03",
+     "stop": 13.664339018493829,
+     "objetivo": null,
+     "entrada_sinal": 14.729999542236328,
      "acompanhar": true
     }
    },
@@ -127,6 +127,24 @@
      "preco": 13.64,
      "data": "2026-11-04",
      "sinal": "CLF|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MSBI",
+     "qtd": 10.1,
+     "preco": 33.51,
+     "data": "2026-11-04",
+     "preco_compra": 33.0,
+     "lucro": 5.150999999999954,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TK",
+     "qtd": 23.9038,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03"
     }
    ],
    "decisoes": {
@@ -135,7 +153,8 @@
     "FISI|2026-10-30": "comprei",
     "BP|2026-11-03": "comprei",
     "AEYE|2026-10-30": "comprei",
-    "CLF|2026-11-04": "comprei"
+    "CLF|2026-11-04": "comprei",
+    "TK|2026-11-03": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -154,19 +173,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.693531918201842,
+   "caixa": 4.66623791820183,
    "desde": "2026-10-30",
    "posicoes": {
-    "MSBI": {
-     "qtd": 6.0606,
-     "preco": 33.0,
-     "data": "2026-10-30",
-     "sinal": "MSBI|2026-10-30",
-     "stop": 31.370102163425894,
-     "objetivo": null,
-     "entrada_sinal": 33.060001373291016,
-     "acompanhar": true
-    },
     "BNC": {
      "qtd": 40.8997,
      "preco": 4.89,
@@ -205,6 +214,16 @@
      "stop": 12.06770410484644,
      "objetivo": null,
      "entrada_sinal": 13.664999961853027,
+     "acompanhar": true
+    },
+    "TK": {
+     "qtd": 14.437,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03",
+     "stop": 13.664339018493829,
+     "objetivo": null,
+     "entrada_sinal": 14.729999542236328,
      "acompanhar": true
     }
    },
@@ -302,6 +321,24 @@
      "preco": 13.64,
      "data": "2026-11-04",
      "sinal": "CLF|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MSBI",
+     "qtd": 6.0606,
+     "preco": 33.51,
+     "data": "2026-11-04",
+     "preco_compra": 33.0,
+     "lucro": 3.0909059999999897,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TK",
+     "qtd": 14.437,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03"
     }
    ],
    "decisoes": {
@@ -312,7 +349,8 @@
     "SMWB|2026-10-30": "comprei",
     "BP|2026-11-03": "comprei",
     "AEYE|2026-10-30": "comprei",
-    "CLF|2026-11-04": "comprei"
+    "CLF|2026-11-04": "comprei",
+    "TK|2026-11-03": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -331,19 +369,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.00035849014828670533,
+   "caixa": 2.3701364901482833,
    "desde": "2026-10-30",
    "posicoes": {
-    "MSBI": {
-     "qtd": 3.7878,
-     "preco": 33.0,
-     "data": "2026-10-30",
-     "sinal": "MSBI|2026-10-30",
-     "stop": 31.370102163425894,
-     "objetivo": null,
-     "entrada_sinal": 33.060001373291016,
-     "acompanhar": true
-    },
     "BNC": {
      "qtd": 25.5623,
      "preco": 4.89,
@@ -412,6 +440,16 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
+     "acompanhar": true
+    },
+    "TK": {
+     "qtd": 8.8971,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03",
+     "stop": 13.664339018493829,
+     "objetivo": null,
+     "entrada_sinal": 14.729999542236328,
      "acompanhar": true
     }
    },
@@ -587,6 +625,24 @@
      "preco": 72.7,
      "data": "2026-11-04",
      "sinal": "CNC|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MSBI",
+     "qtd": 3.7878,
+     "preco": 33.51,
+     "data": "2026-11-04",
+     "preco_compra": 33.0,
+     "lucro": 1.9317779999999942,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TK",
+     "qtd": 8.8971,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03"
     }
    ],
    "decisoes": {
@@ -603,7 +659,8 @@
     "BP|2026-11-03": "comprei",
     "AEYE|2026-10-30": "comprei",
     "CLF|2026-11-04": "comprei",
-    "CNC|2026-11-04": "comprei"
+    "CNC|2026-11-04": "comprei",
+    "TK|2026-11-03": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -622,7 +679,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 88.96149453591445,
+   "caixa": 0.0012945359144538315,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -713,6 +770,16 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
+     "acompanhar": true
+    },
+    "TK": {
+     "qtd": 6.3543,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03",
+     "stop": 13.664339018493829,
+     "objetivo": null,
+     "entrada_sinal": 14.729999542236328,
      "acompanhar": true
     }
    },
@@ -914,6 +981,14 @@
      "preco": 72.7,
      "data": "2026-11-04",
      "sinal": "CNC|2026-11-04"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TK",
+     "qtd": 6.3543,
+     "preco": 14.0,
+     "data": "2026-11-04",
+     "sinal": "TK|2026-11-03"
     }
    ],
    "decisoes": {
@@ -932,7 +1007,8 @@
     "BP|2026-11-03": "comprei",
     "AEYE|2026-10-30": "comprei",
     "CLF|2026-11-04": "comprei",
-    "CNC|2026-11-04": "comprei"
+    "CNC|2026-11-04": "comprei",
+    "TK|2026-11-03": "comprei"
    },
    "aguarda": null,
    "anterior": null
