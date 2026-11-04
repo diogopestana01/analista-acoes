@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.003408000000035827,
+   "caixa": 4.458705000000009,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -28,16 +28,6 @@
      "entrada_sinal": 33.060001373291016,
      "acompanhar": true
     },
-    "FISI": {
-     "qtd": 8.5703,
-     "preco": 38.89,
-     "data": "2026-10-30",
-     "sinal": "FISI|2026-10-30",
-     "stop": 37.59457648244359,
-     "objetivo": null,
-     "entrada_sinal": 39.369998931884766,
-     "acompanhar": true
-    },
     "BP": {
      "qtd": 6.9635,
      "preco": 47.78,
@@ -46,6 +36,16 @@
      "stop": 46.81062343974063,
      "objetivo": null,
      "entrada_sinal": 49.380001068115234,
+     "acompanhar": true
+    },
+    "AEYE": {
+     "qtd": 23.1802,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30",
+     "stop": 12.633171942492144,
+     "objetivo": 16.628656572779384,
+     "entrada_sinal": 13.96500015258789,
      "acompanhar": true
     }
    },
@@ -91,13 +91,32 @@
      "preco": 47.78,
      "data": "2026-11-04",
      "sinal": "BP|2026-11-03"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "FISI",
+     "qtd": 8.5703,
+     "preco": 39.63,
+     "data": "2026-11-04",
+     "preco_compra": 38.89,
+     "lucro": 6.342021999999986,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AEYE",
+     "qtd": 23.1802,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30"
     }
    ],
    "decisoes": {
     "MSBI|2026-10-30": "comprei",
     "BNC|2026-10-30": "comprei",
     "FISI|2026-10-30": "comprei",
-    "BP|2026-11-03": "comprei"
+    "BP|2026-11-03": "comprei",
+    "AEYE|2026-10-30": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -116,7 +135,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 6.23911499999997,
+   "caixa": 7.727225999999973,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -139,16 +158,6 @@
      "entrada_sinal": 4.889999866485596,
      "acompanhar": true
     },
-    "FISI": {
-     "qtd": 5.1427,
-     "preco": 38.89,
-     "data": "2026-10-30",
-     "sinal": "FISI|2026-10-30",
-     "stop": 37.59457648244359,
-     "objetivo": null,
-     "entrada_sinal": 39.369998931884766,
-     "acompanhar": true
-    },
     "RBRK": {
      "qtd": 1.6601,
      "preco": 120.47,
@@ -167,6 +176,16 @@
      "stop": 46.81062343974063,
      "objetivo": null,
      "entrada_sinal": 49.380001068115234,
+     "acompanhar": true
+    },
+    "AEYE": {
+     "qtd": 13.9915,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30",
+     "stop": 12.633171942492144,
+     "objetivo": 16.628656572779384,
+     "entrada_sinal": 13.96500015258789,
      "acompanhar": true
     }
    },
@@ -228,6 +247,24 @@
      "preco": 47.78,
      "data": "2026-11-04",
      "sinal": "BP|2026-11-03"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "FISI",
+     "qtd": 5.1427,
+     "preco": 39.63,
+     "data": "2026-11-04",
+     "preco_compra": 38.89,
+     "lucro": 3.805598000000032,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AEYE",
+     "qtd": 13.9915,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30"
     }
    ],
    "decisoes": {
@@ -236,7 +273,8 @@
     "FISI|2026-10-30": "comprei",
     "RBRK|2026-10-30": "comprei",
     "SMWB|2026-10-30": "comprei",
-    "BP|2026-11-03": "comprei"
+    "BP|2026-11-03": "comprei",
+    "AEYE|2026-10-30": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -255,7 +293,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.28725772996064336,
+   "caixa": 2.2114187299606414,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -276,16 +314,6 @@
      "stop": 4.059590720881118,
      "objetivo": null,
      "entrada_sinal": 4.889999866485596,
-     "acompanhar": true
-    },
-    "FISI": {
-     "qtd": 3.2141,
-     "preco": 38.89,
-     "data": "2026-10-30",
-     "sinal": "FISI|2026-10-30",
-     "stop": 37.59457648244359,
-     "objetivo": null,
-     "entrada_sinal": 39.369998931884766,
      "acompanhar": true
     },
     "RBRK": {
@@ -336,6 +364,16 @@
      "stop": 46.81062343974063,
      "objetivo": null,
      "entrada_sinal": 49.380001068115234,
+     "acompanhar": true
+    },
+    "AEYE": {
+     "qtd": 8.6757,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30",
+     "stop": 12.633171942492144,
+     "objetivo": 16.628656572779384,
+     "entrada_sinal": 13.96500015258789,
      "acompanhar": true
     }
    },
@@ -457,6 +495,24 @@
      "preco": 47.78,
      "data": "2026-11-04",
      "sinal": "BP|2026-11-03"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "FISI",
+     "qtd": 3.2141,
+     "preco": 39.63,
+     "data": "2026-11-04",
+     "preco_compra": 38.89,
+     "lucro": 2.378434000000013,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AEYE",
+     "qtd": 8.6757,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30"
     }
    ],
    "decisoes": {
@@ -470,7 +526,8 @@
     "NTNX|2026-10-30": "comprei",
     "FET|2026-10-30": "comprei",
     "GFR|2026-11-02": "comprei",
-    "BP|2026-11-03": "comprei"
+    "BP|2026-11-03": "comprei",
+    "AEYE|2026-10-30": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -489,7 +546,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 193.19912594209816,
+   "caixa": 93.90085994209817,
    "desde": "2026-10-30",
    "posicoes": {
     "MSBI": {
@@ -570,6 +627,16 @@
      "stop": 46.81062343974063,
      "objetivo": null,
      "entrada_sinal": 49.380001068115234,
+     "acompanhar": true
+    },
+    "AEYE": {
+     "qtd": 6.8671,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30",
+     "stop": 12.633171942492144,
+     "objetivo": 16.628656572779384,
+     "entrada_sinal": 13.96500015258789,
      "acompanhar": true
     }
    },
@@ -727,6 +794,14 @@
      "preco": 47.78,
      "data": "2026-11-04",
      "sinal": "BP|2026-11-03"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AEYE",
+     "qtd": 6.8671,
+     "preco": 14.46,
+     "data": "2026-11-04",
+     "sinal": "AEYE|2026-10-30"
     }
    ],
    "decisoes": {
@@ -742,7 +817,8 @@
     "PBYI|2026-10-30": "comprei",
     "FET|2026-10-30": "comprei",
     "GFR|2026-11-02": "comprei",
-    "BP|2026-11-03": "comprei"
+    "BP|2026-11-03": "comprei",
+    "AEYE|2026-10-30": "comprei"
    },
    "aguarda": null,
    "anterior": null
