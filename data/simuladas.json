@@ -755,7 +755,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 1.5551558557977643,
+   "caixa": 5.426195855797786,
    "desde": "2026-10-30",
    "posicoes": {
     "FISI": {
@@ -776,16 +776,6 @@
      "stop": 111.91902474602718,
      "objetivo": null,
      "entrada_sinal": 126.18499755859375,
-     "acompanhar": true
-    },
-    "SMWB": {
-     "qtd": 11.534,
-     "preco": 8.67,
-     "data": "2026-10-30",
-     "sinal": "SMWB|2026-10-30",
-     "stop": 7.820927628792613,
-     "objetivo": null,
-     "entrada_sinal": 8.654999732971191,
      "acompanhar": true
     },
     "AEYE": {
@@ -856,6 +846,16 @@
      "stop": 40.77147600796604,
      "objetivo": null,
      "entrada_sinal": 43.654998779296875,
+     "acompanhar": true
+    },
+    "FRSH": {
+     "qtd": 7.421,
+     "preco": 13.28,
+     "data": "2026-11-04",
+     "sinal": "FRSH|2026-11-04",
+     "stop": 11.650076161065204,
+     "objetivo": null,
+     "entrada_sinal": 12.819999694824219,
      "acompanhar": true
     }
    },
@@ -1119,6 +1119,24 @@
      "preco": 43.84,
      "data": "2026-11-04",
      "sinal": "EQNR|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SMWB",
+     "qtd": 11.534,
+     "preco": 8.88,
+     "data": "2026-11-04",
+     "preco_compra": 8.67,
+     "lucro": 2.422140000000013,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "FRSH",
+     "qtd": 7.421,
+     "preco": 13.28,
+     "data": "2026-11-04",
+     "sinal": "FRSH|2026-11-04"
     }
    ],
    "decisoes": {
@@ -1141,7 +1159,8 @@
     "TK|2026-11-03": "comprei",
     "VNCE|2026-11-04": "comprei",
     "DLTR|2026-11-04": "comprei",
-    "EQNR|2026-11-04": "comprei"
+    "EQNR|2026-11-04": "comprei",
+    "FRSH|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
