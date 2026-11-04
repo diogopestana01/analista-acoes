@@ -171,3 +171,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-03,HTFL,pullback,compra,54.38999938964844,,48.245699250235376,2.0,5,60.6,aberto,,,,sma5,manter,3.0,apoia,0.3,,,1.0,0.0194359267919628,ok,ok,False,,1.0,4.0,0.0,4.423641,0.00404
 2026-11-04,SM,pullback,compra,36.66999816894531,,33.85814809902509,3.0,5,63.9,aberto,,,,sma5,manter,3.0,apoia,0.3,,,1.0,0.022603343777614523,ok,ok,True,,1.0,7.0,0.0,,
 2026-11-04,FRSH,pullback,compra,14.149999618530273,,12.980076084771259,3.0,5,54.1,aberto,,,,sma5,manter,3.0,contraria,-0.4,,,0.9230769230769231,0.014473868899767168,ok,ok,True,,1.0,3.0,0.0,2.932592,
+2026-11-04,FBK.MI,rompimento,compra,22.06999969482422,23.65047291723299,21.279763083619834,5.0,5,70.4,aberto,,,,atr_3_15,manter,2.0,neutro,0.2,,,,0.01124284050452853,ok,ok,False,,0.8333333333333334,6.0,,,
