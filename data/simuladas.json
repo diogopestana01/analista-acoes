@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0008766142629497153,
+   "caixa": 0.013157472525961111,
    "desde": "2026-10-30",
    "posicoes": {
-    "CLF": {
-     "qtd": 24.2246,
-     "preco": 13.64,
-     "data": "2026-11-04",
-     "sinal": "CLF|2026-11-04",
-     "stop": 12.06770410484644,
-     "objetivo": null,
-     "entrada_sinal": 13.664999961853027,
-     "acompanhar": true
-    },
     "CNC": {
      "qtd": 4.359,
      "preco": 72.92,
@@ -46,6 +36,16 @@
      "stop": 11.928560901228268,
      "objetivo": 16.942879341952644,
      "entrada_sinal": 13.600000381469727,
+     "acompanhar": true
+    },
+    "COKE": {
+     "qtd": 1.3328,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05",
+     "stop": 207.26991851027893,
+     "objetivo": 244.35017762787967,
+     "entrada_sinal": 219.6300048828125,
      "acompanhar": true
     }
    },
@@ -199,6 +199,24 @@
      "preco": 13.65,
      "data": "2026-11-05",
      "sinal": "VNCE|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CLF",
+     "qtd": 24.2246,
+     "preco": 12.06770410484644,
+     "data": "2026-11-05",
+     "preco_compra": 13.64,
+     "lucro": -38.08823914173695,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COKE",
+     "qtd": 1.3328,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05"
     }
    ],
    "decisoes": {
@@ -211,7 +229,8 @@
     "TK|2026-11-03": "comprei",
     "FRSH|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
-    "VNCE|2026-11-04": "comprei"
+    "VNCE|2026-11-04": "comprei",
+    "COKE|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -230,19 +249,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.03509554245573554,
+   "caixa": 0.014310972120739507,
    "desde": "2026-10-30",
    "posicoes": {
-    "CLF": {
-     "qtd": 14.7727,
-     "preco": 13.64,
-     "data": "2026-11-04",
-     "sinal": "CLF|2026-11-04",
-     "stop": 12.06770410484644,
-     "objetivo": null,
-     "entrada_sinal": 13.664999961853027,
-     "acompanhar": true
-    },
     "VNCE": {
      "qtd": 15.0553,
      "preco": 13.55,
@@ -281,6 +290,16 @@
      "stop": 365.44191365904453,
      "objetivo": 425.646201978786,
      "entrada_sinal": 385.510009765625,
+     "acompanhar": true
+    },
+    "COKE": {
+     "qtd": 0.8129,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05",
+     "stop": 207.26991851027893,
+     "objetivo": 244.35017762787967,
+     "entrada_sinal": 219.6300048828125,
      "acompanhar": true
     }
    },
@@ -468,6 +487,24 @@
      "preco": 390.67,
      "data": "2026-11-05",
      "sinal": "JLL|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CLF",
+     "qtd": 14.7727,
+     "preco": 12.06770410484644,
+     "data": "2026-11-05",
+     "preco_compra": 13.64,
+     "lucro": -23.227055570334983,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COKE",
+     "qtd": 0.8129,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05"
     }
    ],
    "decisoes": {
@@ -483,7 +520,8 @@
     "VNCE|2026-11-04": "comprei",
     "FRSH|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
-    "JLL|2026-11-05": "comprei"
+    "JLL|2026-11-05": "comprei",
+    "COKE|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -502,19 +540,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 1.361114342390863,
+   "caixa": 0.016675094782272026,
    "desde": "2026-10-30",
    "posicoes": {
-    "CLF": {
-     "qtd": 9.1142,
-     "preco": 13.64,
-     "data": "2026-11-04",
-     "sinal": "CLF|2026-11-04",
-     "stop": 12.06770410484644,
-     "objetivo": null,
-     "entrada_sinal": 13.664999961853027,
-     "acompanhar": true
-    },
     "CNC": {
      "qtd": 1.6397,
      "preco": 72.7,
@@ -583,6 +611,16 @@
      "stop": 14.511761690512541,
      "objetivo": 18.301475474565738,
      "entrada_sinal": 15.774999618530273,
+     "acompanhar": true
+    },
+    "COKE": {
+     "qtd": 0.5076,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05",
+     "stop": 207.26991851027893,
+     "objetivo": 244.35017762787967,
+     "entrada_sinal": 219.6300048828125,
      "acompanhar": true
     }
    },
@@ -884,6 +922,24 @@
      "preco": 15.31,
      "data": "2026-11-04",
      "sinal": "PAYS|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CLF",
+     "qtd": 9.1142,
+     "preco": 12.06770410484644,
+     "data": "2026-11-05",
+     "preco_compra": 13.64,
+     "lucro": -14.330219247608582,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COKE",
+     "qtd": 0.5076,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05"
     }
    ],
    "decisoes": {
@@ -907,7 +963,8 @@
     "EQNR|2026-11-04": "comprei",
     "FRSH|2026-11-04": "comprei",
     "AVBH|2026-11-04": "comprei",
-    "PAYS|2026-11-04": "comprei"
+    "PAYS|2026-11-04": "comprei",
+    "COKE|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -926,19 +983,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.3371233353602605,
+   "caixa": 0.00979013067498613,
    "desde": "2026-10-30",
    "posicoes": {
-    "CLF": {
-     "qtd": 7.2269,
-     "preco": 13.64,
-     "data": "2026-11-04",
-     "sinal": "CLF|2026-11-04",
-     "stop": 12.06770410484644,
-     "objetivo": null,
-     "entrada_sinal": 13.664999961853027,
-     "acompanhar": true
-    },
     "CNC": {
      "qtd": 1.3559,
      "preco": 72.7,
@@ -1027,6 +1074,16 @@
      "stop": 66.92698011070642,
      "objetivo": 78.78603153884104,
      "entrada_sinal": 70.87999725341797,
+     "acompanhar": true
+    },
+    "COKE": {
+     "qtd": 0.4128,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05",
+     "stop": 207.26991851027893,
+     "objetivo": 244.35017762787967,
+     "entrada_sinal": 219.6300048828125,
      "acompanhar": true
     }
    },
@@ -1380,6 +1437,24 @@
      "preco": 69.28,
      "data": "2026-11-05",
      "sinal": "FRPT|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CLF",
+     "qtd": 7.2269,
+     "preco": 12.06770410484644,
+     "data": "2026-11-05",
+     "preco_compra": 13.64,
+     "lucro": -11.362825204685265,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COKE",
+     "qtd": 0.4128,
+     "preco": 219.33,
+     "data": "2026-11-05",
+     "sinal": "COKE|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1407,7 +1482,8 @@
     "PAYS|2026-11-04": "comprei",
     "AVBH|2026-11-04": "comprei",
     "JLL|2026-11-05": "comprei",
-    "FRPT|2026-11-05": "comprei"
+    "FRPT|2026-11-05": "comprei",
+    "COKE|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
