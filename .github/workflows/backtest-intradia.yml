@@ -14,13 +14,14 @@ name: Backtest intradiário
 #   spread       spread estimado: cortar ou reordenar sinais caros de entrar? (passo3l_spread.py)
 #   europa       os setups rendem na Europa depois dos custos da XTB? (passo3m_europa.py)
 #   recalcular   recalcular o sinal "do zero" todos os dias diz melhor quanto ainda vale? (passo3o_recalcular.py)
+#   regime       os sinais rendem pior com o mercado a cair? SPY/QQQ, VIX, amplitude, força relativa (passo3p_regime.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime]
         default: rompimentos
 
 permissions:
@@ -74,6 +75,8 @@ jobs:
         if: inputs.estudo == 'europa'
       - run: python passo3o_recalcular.py
         if: inputs.estudo == 'recalcular'
+      - run: python passo3p_regime.py
+        if: inputs.estudo == 'regime'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
