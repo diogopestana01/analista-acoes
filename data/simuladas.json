@@ -1116,7 +1116,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0012422730583665498,
+   "caixa": 0.0026395428057810477,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1199,16 +1199,6 @@
      "entrada_sinal": 7.710000038146973,
      "acompanhar": true
     },
-    "AVAH": {
-     "qtd": 6.0682,
-     "preco": 13.95,
-     "data": "2026-11-05",
-     "sinal": "AVAH|2026-11-05",
-     "stop": 13.49489919082222,
-     "objetivo": 15.700200245064545,
-     "entrada_sinal": 14.229999542236328,
-     "acompanhar": true
-    },
     "KOD": {
      "qtd": 0.9126,
      "preco": 93.54,
@@ -1217,6 +1207,16 @@
      "stop": 81.11463572046381,
      "objetivo": null,
      "entrada_sinal": 93.75,
+     "acompanhar": true
+    },
+    "RYZ": {
+     "qtd": 2.909,
+     "preco": 28.15,
+     "data": "2026-11-05",
+     "sinal": "RYZ|2026-11-05",
+     "stop": 26.21967618021991,
+     "objetivo": null,
+     "entrada_sinal": 29.094999313354492,
      "acompanhar": true
     }
    },
@@ -1660,6 +1660,24 @@
      "preco": 93.54,
      "data": "2026-11-05",
      "sinal": "KOD|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AVAH",
+     "qtd": 6.0682,
+     "preco": 13.49489919082222,
+     "data": "2026-11-05",
+     "preco_compra": 13.95,
+     "lucro": -2.761642730252589,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "RYZ",
+     "qtd": 2.909,
+     "preco": 28.15,
+     "data": "2026-11-05",
+     "sinal": "RYZ|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1692,7 +1710,8 @@
     "GWW|2026-11-05": "comprei",
     "FOSL|2026-11-05": "comprei",
     "AVAH|2026-11-05": "comprei",
-    "KOD|2026-11-05": "comprei"
+    "KOD|2026-11-05": "comprei",
+    "RYZ|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
