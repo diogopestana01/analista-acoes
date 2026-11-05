@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 8.771768614262953,
+   "caixa": 0.0008766142629497153,
    "desde": "2026-10-30",
    "posicoes": {
     "CLF": {
@@ -28,16 +28,6 @@
      "entrada_sinal": 13.664999961853027,
      "acompanhar": true
     },
-    "FRSH": {
-     "qtd": 22.4216,
-     "preco": 13.23,
-     "data": "2026-11-04",
-     "sinal": "FRSH|2026-11-04",
-     "stop": 11.650076161065204,
-     "objetivo": null,
-     "entrada_sinal": 12.819999694824219,
-     "acompanhar": true
-    },
     "CNC": {
      "qtd": 4.359,
      "preco": 72.92,
@@ -46,6 +36,16 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
+     "acompanhar": true
+    },
+    "VNCE": {
+     "qtd": 22.21,
+     "preco": 13.65,
+     "data": "2026-11-05",
+     "sinal": "VNCE|2026-11-04",
+     "stop": 11.928560901228268,
+     "objetivo": 16.942879341952644,
+     "entrada_sinal": 13.600000381469727,
      "acompanhar": true
     }
    },
@@ -181,6 +181,24 @@
      "preco": 72.92,
      "data": "2026-11-04",
      "sinal": "CNC|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "FRSH",
+     "qtd": 22.4216,
+     "preco": 13.13,
+     "data": "2026-11-05",
+     "preco_compra": 13.23,
+     "lucro": -2.2421600000000126,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "VNCE",
+     "qtd": 22.21,
+     "preco": 13.65,
+     "data": "2026-11-05",
+     "sinal": "VNCE|2026-11-04"
     }
    ],
    "decisoes": {
@@ -192,7 +210,8 @@
     "CLF|2026-11-04": "comprei",
     "TK|2026-11-03": "comprei",
     "FRSH|2026-11-04": "comprei",
-    "CNC|2026-11-04": "comprei"
+    "CNC|2026-11-04": "comprei",
+    "VNCE|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
