@@ -67,8 +67,10 @@ def indices(inicio: pd.Timestamp) -> pd.DataFrame:
     """SPY, QQQ e VIX do Yahoo (funciona no GitHub). Sem dados, devolve vazio e os filtros saltam."""
     try:
         import yfinance as yf
-        bruto = yf.download(["SPY", "QQQ", "^VIX"], start=inicio - pd.Timedelta(days=320), interval="1d",
-                            auto_adjust=True, progress=False)["Close"]
+        # Um de cada vez e sem threads: em lote o yfinance falhou o VIX ("database is locked").
+        bruto = pd.concat({t: yf.download(t, start=inicio - pd.Timedelta(days=320), interval="1d", auto_adjust=True,
+                                          progress=False, threads=False)["Close"].squeeze()
+                           for t in ("SPY", "QQQ", "^VIX")}, axis=1)
     except Exception as e:  # noqa: BLE001
         log.warning("Índices falharam: %s", e)
         return pd.DataFrame()
@@ -94,7 +96,8 @@ def regras(t: pd.DataFrame) -> dict[str, pd.Series]:
               "força relativa > 0": t["ret20"] > t["spy_ret20"],
               "semáforo (SPY>50d e VIX não sobe)": t["spy_sma50"] & ~t["vix_sobe"],
               "semáforo + SPY 5d > -2%": t["spy_sma50"] & ~t["vix_sobe"] & (t["spy_ret5"] > -0.02)}
-    r |= {"amplitude >= 40%": t["a50"] >= 0.4, "amplitude >= 50%": t["a50"] >= 0.5,
+    r |= {"amplitude >= 40%": t["a50"] >= 0.4, "amplitude >= 45%": t["a50"] >= 0.45,
+          "amplitude >= 50%": t["a50"] >= 0.5, "amplitude >= 55%": t["a50"] >= 0.55,
           "amplitude não a cair": t["a50_var5"] > -0.10, "amplitude 20d >= 40%": t["a20"] >= 0.4}
     return {k: v.fillna(False).astype(bool) for k, v in r.items()}
 
