@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.002451539908747691,
+   "caixa": 0.010698929951672653,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -38,14 +38,14 @@
      "entrada_sinal": 13.600000381469727,
      "acompanhar": true
     },
-    "AVBH": {
-     "qtd": 7.735,
-     "preco": 35.57,
+    "JLL": {
+     "qtd": 0.6987,
+     "preco": 379.69,
      "data": "2026-11-05",
-     "sinal": "AVBH|2026-11-04",
-     "stop": 34.29833877052914,
-     "objetivo": 37.75332474776007,
-     "entrada_sinal": 35.45000076293945,
+     "sinal": "JLL|2026-11-05",
+     "stop": 365.44191365904453,
+     "objetivo": 425.646201978786,
+     "entrada_sinal": 385.510009765625,
      "acompanhar": true
     }
    },
@@ -235,6 +235,24 @@
      "preco": 35.57,
      "data": "2026-11-05",
      "sinal": "AVBH|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AVBH",
+     "qtd": 7.735,
+     "preco": 34.29833877052914,
+     "data": "2026-11-05",
+     "preco_compra": 35.57,
+     "lucro": -9.83629960995711,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "JLL",
+     "qtd": 0.6987,
+     "preco": 379.69,
+     "data": "2026-11-05",
+     "sinal": "JLL|2026-11-05"
     }
    ],
    "decisoes": {
@@ -249,7 +267,8 @@
     "CNC|2026-11-04": "comprei",
     "VNCE|2026-11-04": "comprei",
     "COKE|2026-11-05": "comprei",
-    "AVBH|2026-11-04": "comprei"
+    "AVBH|2026-11-04": "comprei",
+    "JLL|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -268,7 +287,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.001492952894636801,
+   "caixa": 0.0015314383740872017,
    "desde": "2026-10-30",
    "posicoes": {
     "VNCE": {
@@ -311,14 +330,14 @@
      "entrada_sinal": 385.510009765625,
      "acompanhar": true
     },
-    "AVBH": {
-     "qtd": 4.7179,
-     "preco": 35.57,
+    "DLTR": {
+     "qtd": 1.1439,
+     "preco": 141.46,
      "data": "2026-11-05",
-     "sinal": "AVBH|2026-11-04",
-     "stop": 34.29833877052914,
-     "objetivo": 37.75332474776007,
-     "entrada_sinal": 35.45000076293945,
+     "sinal": "DLTR|2026-11-04",
+     "stop": 136.08651878474694,
+     "objetivo": 157.69694228890455,
+     "entrada_sinal": 143.2899932861328,
      "acompanhar": true
     }
    },
@@ -542,6 +561,24 @@
      "preco": 35.57,
      "data": "2026-11-05",
      "sinal": "AVBH|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AVBH",
+     "qtd": 4.7179,
+     "preco": 34.29833877052914,
+     "data": "2026-11-05",
+     "preco_compra": 35.57,
+     "lucro": -5.99957051452057,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DLTR",
+     "qtd": 1.1439,
+     "preco": 141.46,
+     "data": "2026-11-05",
+     "sinal": "DLTR|2026-11-04"
     }
    ],
    "decisoes": {
@@ -559,7 +596,8 @@
     "CNC|2026-11-04": "comprei",
     "JLL|2026-11-05": "comprei",
     "COKE|2026-11-05": "comprei",
-    "AVBH|2026-11-04": "comprei"
+    "AVBH|2026-11-04": "comprei",
+    "DLTR|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -578,7 +616,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.034622643854547164,
+   "caixa": 0.0003229331721001927,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -631,16 +669,6 @@
      "entrada_sinal": 12.819999694824219,
      "acompanhar": true
     },
-    "AVBH": {
-     "qtd": 3.4557,
-     "preco": 35.18,
-     "data": "2026-11-04",
-     "sinal": "AVBH|2026-11-04",
-     "stop": 34.29833877052914,
-     "objetivo": 37.75332474776007,
-     "entrada_sinal": 35.45000076293945,
-     "acompanhar": true
-    },
     "PAYS": {
      "qtd": 7.9694,
      "preco": 15.31,
@@ -659,6 +687,16 @@
      "stop": 365.44191365904453,
      "objetivo": 425.646201978786,
      "entrada_sinal": 385.510009765625,
+     "acompanhar": true
+    },
+    "FOSL": {
+     "qtd": 15.6617,
+     "preco": 7.57,
+     "data": "2026-11-05",
+     "sinal": "FOSL|2026-11-05",
+     "stop": 7.110243308672576,
+     "objetivo": 8.909513497095766,
+     "entrada_sinal": 7.710000038146973,
      "acompanhar": true
     }
    },
@@ -996,6 +1034,24 @@
      "preco": 379.44,
      "data": "2026-11-05",
      "sinal": "JLL|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AVBH",
+     "qtd": 3.4557,
+     "preco": 34.29833877052914,
+     "data": "2026-11-05",
+     "preco_compra": 35.18,
+     "lucro": -3.0467567106824447,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "FOSL",
+     "qtd": 15.6617,
+     "preco": 7.57,
+     "data": "2026-11-05",
+     "sinal": "FOSL|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1021,7 +1077,8 @@
     "AVBH|2026-11-04": "comprei",
     "PAYS|2026-11-04": "comprei",
     "COKE|2026-11-05": "comprei",
-    "JLL|2026-11-05": "comprei"
+    "JLL|2026-11-05": "comprei",
+    "FOSL|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1040,7 +1097,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 6.82090753372222e-05,
+   "caixa": 0.00040812861833217084,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1103,16 +1160,6 @@
      "entrada_sinal": 15.774999618530273,
      "acompanhar": true
     },
-    "AVBH": {
-     "qtd": 2.4681,
-     "preco": 35.18,
-     "data": "2026-11-04",
-     "sinal": "AVBH|2026-11-04",
-     "stop": 34.29833877052914,
-     "objetivo": 37.75332474776007,
-     "entrada_sinal": 35.45000076293945,
-     "acompanhar": true
-    },
     "JLL": {
      "qtd": 0.2477,
      "preco": 390.67,
@@ -1141,6 +1188,16 @@
      "stop": 7.110243308672576,
      "objetivo": 8.909513497095766,
      "entrada_sinal": 7.710000038146973,
+     "acompanhar": true
+    },
+    "AVAH": {
+     "qtd": 6.0682,
+     "preco": 13.95,
+     "data": "2026-11-05",
+     "sinal": "AVAH|2026-11-05",
+     "stop": 13.49489919082222,
+     "objetivo": 15.700200245064545,
+     "entrada_sinal": 14.229999542236328,
      "acompanhar": true
     }
    },
@@ -1548,6 +1605,24 @@
      "preco": 7.57,
      "data": "2026-11-05",
      "sinal": "FOSL|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AVBH",
+     "qtd": 2.4681,
+     "preco": 34.29833877052914,
+     "data": "2026-11-05",
+     "preco_compra": 35.18,
+     "lucro": -2.176028080457016,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AVAH",
+     "qtd": 6.0682,
+     "preco": 13.95,
+     "data": "2026-11-05",
+     "sinal": "AVAH|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1578,7 +1653,8 @@
     "FRPT|2026-11-05": "comprei",
     "COKE|2026-11-05": "comprei",
     "GWW|2026-11-05": "comprei",
-    "FOSL|2026-11-05": "comprei"
+    "FOSL|2026-11-05": "comprei",
+    "AVAH|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
