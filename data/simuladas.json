@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.013157472525961111,
+   "caixa": 0.002451539908747691,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -38,14 +38,14 @@
      "entrada_sinal": 13.600000381469727,
      "acompanhar": true
     },
-    "COKE": {
-     "qtd": 1.3328,
-     "preco": 219.33,
+    "AVBH": {
+     "qtd": 7.735,
+     "preco": 35.57,
      "data": "2026-11-05",
-     "sinal": "COKE|2026-11-05",
-     "stop": 207.26991851027893,
-     "objetivo": 244.35017762787967,
-     "entrada_sinal": 219.6300048828125,
+     "sinal": "AVBH|2026-11-04",
+     "stop": 34.29833877052914,
+     "objetivo": 37.75332474776007,
+     "entrada_sinal": 35.45000076293945,
      "acompanhar": true
     }
    },
@@ -217,6 +217,24 @@
      "preco": 219.33,
      "data": "2026-11-05",
      "sinal": "COKE|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COKE",
+     "qtd": 1.3328,
+     "preco": 206.4250030517578,
+     "data": "2026-11-05",
+     "preco_compra": 219.33,
+     "lucro": -17.19977993261722,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AVBH",
+     "qtd": 7.735,
+     "preco": 35.57,
+     "data": "2026-11-05",
+     "sinal": "AVBH|2026-11-04"
     }
    ],
    "decisoes": {
@@ -230,7 +248,8 @@
     "FRSH|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
     "VNCE|2026-11-04": "comprei",
-    "COKE|2026-11-05": "comprei"
+    "COKE|2026-11-05": "comprei",
+    "AVBH|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -249,7 +268,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.014310972120739507,
+   "caixa": 0.001492952894636801,
    "desde": "2026-10-30",
    "posicoes": {
     "VNCE": {
@@ -292,14 +311,14 @@
      "entrada_sinal": 385.510009765625,
      "acompanhar": true
     },
-    "COKE": {
-     "qtd": 0.8129,
-     "preco": 219.33,
+    "AVBH": {
+     "qtd": 4.7179,
+     "preco": 35.57,
      "data": "2026-11-05",
-     "sinal": "COKE|2026-11-05",
-     "stop": 207.26991851027893,
-     "objetivo": 244.35017762787967,
-     "entrada_sinal": 219.6300048828125,
+     "sinal": "AVBH|2026-11-04",
+     "stop": 34.29833877052914,
+     "objetivo": 37.75332474776007,
+     "entrada_sinal": 35.45000076293945,
      "acompanhar": true
     }
    },
@@ -505,6 +524,24 @@
      "preco": 219.33,
      "data": "2026-11-05",
      "sinal": "COKE|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COKE",
+     "qtd": 0.8129,
+     "preco": 206.4250030517578,
+     "data": "2026-11-05",
+     "preco_compra": 219.33,
+     "lucro": -10.490472019226104,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AVBH",
+     "qtd": 4.7179,
+     "preco": 35.57,
+     "data": "2026-11-05",
+     "sinal": "AVBH|2026-11-04"
     }
    ],
    "decisoes": {
@@ -521,7 +558,8 @@
     "FRSH|2026-11-04": "comprei",
     "CNC|2026-11-04": "comprei",
     "JLL|2026-11-05": "comprei",
-    "COKE|2026-11-05": "comprei"
+    "COKE|2026-11-05": "comprei",
+    "AVBH|2026-11-04": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -540,7 +578,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.016675094782272026,
+   "caixa": 0.034622643854547164,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -613,14 +651,14 @@
      "entrada_sinal": 15.774999618530273,
      "acompanhar": true
     },
-    "COKE": {
-     "qtd": 0.5076,
-     "preco": 219.33,
+    "JLL": {
+     "qtd": 0.2761,
+     "preco": 379.44,
      "data": "2026-11-05",
-     "sinal": "COKE|2026-11-05",
-     "stop": 207.26991851027893,
-     "objetivo": 244.35017762787967,
-     "entrada_sinal": 219.6300048828125,
+     "sinal": "JLL|2026-11-05",
+     "stop": 365.44191365904453,
+     "objetivo": 425.646201978786,
+     "entrada_sinal": 385.510009765625,
      "acompanhar": true
     }
    },
@@ -940,6 +978,24 @@
      "preco": 219.33,
      "data": "2026-11-05",
      "sinal": "COKE|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COKE",
+     "qtd": 0.5076,
+     "preco": 206.4250030517578,
+     "data": "2026-11-05",
+     "preco_compra": 219.33,
+     "lucro": -6.5505764509277356,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "JLL",
+     "qtd": 0.2761,
+     "preco": 379.44,
+     "data": "2026-11-05",
+     "sinal": "JLL|2026-11-05"
     }
    ],
    "decisoes": {
@@ -964,7 +1020,8 @@
     "FRSH|2026-11-04": "comprei",
     "AVBH|2026-11-04": "comprei",
     "PAYS|2026-11-04": "comprei",
-    "COKE|2026-11-05": "comprei"
+    "COKE|2026-11-05": "comprei",
+    "JLL|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -983,7 +1040,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.00979013067498613,
+   "caixa": 0.04608339044061438,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1076,14 +1133,14 @@
      "entrada_sinal": 70.87999725341797,
      "acompanhar": true
     },
-    "COKE": {
-     "qtd": 0.4128,
-     "preco": 219.33,
+    "GWW": {
+     "qtd": 0.0572,
+     "preco": 1489.09,
      "data": "2026-11-05",
-     "sinal": "COKE|2026-11-05",
-     "stop": 207.26991851027893,
-     "objetivo": 244.35017762787967,
-     "entrada_sinal": 219.6300048828125,
+     "sinal": "GWW|2026-11-05",
+     "stop": 1399.7685743571074,
+     "objetivo": 1561.0229098795355,
+     "entrada_sinal": 1453.52001953125,
      "acompanhar": true
     }
    },
@@ -1455,6 +1512,24 @@
      "preco": 219.33,
      "data": "2026-11-05",
      "sinal": "COKE|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COKE",
+     "qtd": 0.4128,
+     "preco": 206.4250030517578,
+     "data": "2026-11-05",
+     "preco_compra": 219.33,
+     "lucro": -5.327182740234392,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "GWW",
+     "qtd": 0.0572,
+     "preco": 1489.09,
+     "data": "2026-11-05",
+     "sinal": "GWW|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1483,7 +1558,8 @@
     "AVBH|2026-11-04": "comprei",
     "JLL|2026-11-05": "comprei",
     "FRPT|2026-11-05": "comprei",
-    "COKE|2026-11-05": "comprei"
+    "COKE|2026-11-05": "comprei",
+    "GWW|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
