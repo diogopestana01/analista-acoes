@@ -1040,7 +1040,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.04608339044061438,
+   "caixa": 6.82090753372222e-05,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1123,16 +1123,6 @@
      "entrada_sinal": 385.510009765625,
      "acompanhar": true
     },
-    "FRPT": {
-     "qtd": 1.3968,
-     "preco": 69.28,
-     "data": "2026-11-05",
-     "sinal": "FRPT|2026-11-05",
-     "stop": 66.92698011070642,
-     "objetivo": 78.78603153884104,
-     "entrada_sinal": 70.87999725341797,
-     "acompanhar": true
-    },
     "GWW": {
      "qtd": 0.0572,
      "preco": 1489.09,
@@ -1141,6 +1131,16 @@
      "stop": 1399.7685743571074,
      "objetivo": 1561.0229098795355,
      "entrada_sinal": 1453.52001953125,
+     "acompanhar": true
+    },
+    "FOSL": {
+     "qtd": 12.3553,
+     "preco": 7.57,
+     "data": "2026-11-05",
+     "sinal": "FOSL|2026-11-05",
+     "stop": 7.110243308672576,
+     "objetivo": 8.909513497095766,
+     "entrada_sinal": 7.710000038146973,
      "acompanhar": true
     }
    },
@@ -1530,6 +1530,24 @@
      "preco": 1489.09,
      "data": "2026-11-05",
      "sinal": "GWW|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "FRPT",
+     "qtd": 1.3968,
+     "preco": 66.92698011070642,
+     "data": "2026-11-05",
+     "preco_compra": 69.28,
+     "lucro": -3.2866981813652814,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "FOSL",
+     "qtd": 12.3553,
+     "preco": 7.57,
+     "data": "2026-11-05",
+     "sinal": "FOSL|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1559,7 +1577,8 @@
     "JLL|2026-11-05": "comprei",
     "FRPT|2026-11-05": "comprei",
     "COKE|2026-11-05": "comprei",
-    "GWW|2026-11-05": "comprei"
+    "GWW|2026-11-05": "comprei",
+    "FOSL|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
