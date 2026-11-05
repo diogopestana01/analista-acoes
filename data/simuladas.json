@@ -230,19 +230,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.001907561576047101,
+   "caixa": 0.03509554245573554,
    "desde": "2026-10-30",
    "posicoes": {
-    "RBRK": {
-     "qtd": 1.6601,
-     "preco": 120.47,
-     "data": "2026-10-30",
-     "sinal": "RBRK|2026-10-30",
-     "stop": 111.91902474602718,
-     "objetivo": null,
-     "entrada_sinal": 126.18499755859375,
-     "acompanhar": true
-    },
     "CLF": {
      "qtd": 14.7727,
      "preco": 13.64,
@@ -281,6 +271,16 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
+     "acompanhar": true
+    },
+    "JLL": {
+     "qtd": 0.4755,
+     "preco": 390.67,
+     "data": "2026-11-05",
+     "sinal": "JLL|2026-11-05",
+     "stop": 365.44191365904453,
+     "objetivo": 425.646201978786,
+     "entrada_sinal": 385.510009765625,
      "acompanhar": true
     }
    },
@@ -450,6 +450,24 @@
      "preco": 72.92,
      "data": "2026-11-04",
      "sinal": "CNC|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RBRK",
+     "qtd": 1.6601,
+     "preco": 111.91902474602718,
+     "data": "2026-11-05",
+     "preco_compra": 120.47,
+     "lucro": -14.195474019120297,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "JLL",
+     "qtd": 0.4755,
+     "preco": 390.67,
+     "data": "2026-11-05",
+     "sinal": "JLL|2026-11-05"
     }
    ],
    "decisoes": {
@@ -464,7 +482,8 @@
     "TK|2026-11-03": "comprei",
     "VNCE|2026-11-04": "comprei",
     "FRSH|2026-11-04": "comprei",
-    "CNC|2026-11-04": "comprei"
+    "CNC|2026-11-04": "comprei",
+    "JLL|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -907,19 +926,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 103.98359579615772,
+   "caixa": 3.3371233353602605,
    "desde": "2026-10-30",
    "posicoes": {
-    "RBRK": {
-     "qtd": 0.83,
-     "preco": 120.47,
-     "data": "2026-10-30",
-     "sinal": "RBRK|2026-10-30",
-     "stop": 111.91902474602718,
-     "objetivo": null,
-     "entrada_sinal": 126.18499755859375,
-     "acompanhar": true
-    },
     "CLF": {
      "qtd": 7.2269,
      "preco": 13.64,
@@ -998,6 +1007,26 @@
      "stop": 34.29833877052914,
      "objetivo": 37.75332474776007,
      "entrada_sinal": 35.45000076293945,
+     "acompanhar": true
+    },
+    "JLL": {
+     "qtd": 0.2477,
+     "preco": 390.67,
+     "data": "2026-11-05",
+     "sinal": "JLL|2026-11-05",
+     "stop": 365.44191365904453,
+     "objetivo": 425.646201978786,
+     "entrada_sinal": 385.510009765625,
+     "acompanhar": true
+    },
+    "FRPT": {
+     "qtd": 1.3968,
+     "preco": 69.28,
+     "data": "2026-11-05",
+     "sinal": "FRPT|2026-11-05",
+     "stop": 66.92698011070642,
+     "objetivo": 78.78603153884104,
+     "entrada_sinal": 70.87999725341797,
      "acompanhar": true
     }
    },
@@ -1325,6 +1354,32 @@
      "preco_compra": 38.89,
      "lucro": 3.9855114688568136,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RBRK",
+     "qtd": 0.83,
+     "preco": 111.91902474602718,
+     "data": "2026-11-05",
+     "preco_compra": 120.47,
+     "lucro": -7.097309460797447,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "JLL",
+     "qtd": 0.2477,
+     "preco": 390.67,
+     "data": "2026-11-05",
+     "sinal": "JLL|2026-11-05"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "FRPT",
+     "qtd": 1.3968,
+     "preco": 69.28,
+     "data": "2026-11-05",
+     "sinal": "FRPT|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1350,7 +1405,9 @@
     "EQNR|2026-11-04": "comprei",
     "FRSH|2026-11-04": "comprei",
     "PAYS|2026-11-04": "comprei",
-    "AVBH|2026-11-04": "comprei"
+    "AVBH|2026-11-04": "comprei",
+    "JLL|2026-11-05": "comprei",
+    "FRPT|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
