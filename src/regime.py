@@ -14,6 +14,8 @@ Juntas: +16,0% | +24,0% (pior queda -12%) contra +3,8% | -0,9% (pior queda -26%)
               variante E): se o SPY caiu mais de 3% em 5 dias, os pullbacks continuam a entrar mesmo com
               o mercado fraco ou o travão ligado. Comprar a queda forte é o que melhor rende
               (+1,4%/trade, ganha 74%): +16,6% | +29,6% contra +16,0% | +24,0% só com as duas regras.
+  so_em       setups que só valem num tipo de mercado (caiu_10 no forte, reversao_queda na queda forte;
+              estudo passo3u_biblioteca.py com 10 anos). Sem regime calculado, esses setups não passam.
 As posições abertas seguem as suas regras de saída; só as compras novas param. Os sinais continuam a
 ser registados em papel, para se medir o que se perdeu ou evitou.
 """
@@ -26,6 +28,9 @@ from pathlib import Path
 import pandas as pd
 
 log = logging.getLogger(__name__)
+# Por omissão (sem regime calculado): estes setups só passam com o regime a confirmar o mercado.
+SO_EM = {"caiu_10": ["forte"], "reversao_queda": ["queda"]}
+NOMES_MERCADO = {"forte": "o mercado forte", "queda": "uma queda forte do S&P 500", "fraco": "o mercado fraco"}
 
 
 def amplitude(precos: pd.DataFrame, tickers, sem_hoje: str | None = None) -> float | None:
@@ -56,6 +61,19 @@ def spy_ret5() -> float | None:
     except Exception as e:  # noqa: BLE001
         log.warning("SPY não lido: %s", e)
         return None
+
+
+def mercado_atual(precos: pd.DataFrame, tickers_eua, cfg: dict | None, sem_hoje: str | None = None,
+                  spy5=None) -> str | None:
+    """'forte', 'fraco' ou 'queda' (SPY a cair mais do que capitulacao.spy_5d em 5 dias). None se não der."""
+    cfg = cfg or {}
+    s5 = (spy5 or spy_ret5)()
+    if s5 is not None and s5 < float((cfg.get("capitulacao") or {}).get("spy_5d", -0.03)):
+        return "queda"
+    amp = amplitude(precos, tickers_eua, sem_hoje)
+    if amp is None:
+        return None
+    return "forte" if amp >= float(cfg.get("amplitude_min", 0.5)) else "fraco"
 
 
 def perda_recente(simuladas: dict, carteira: str, hoje: str, janela_dias: int) -> float | None:
@@ -96,11 +114,18 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
     travao = bool(t) and bool(ate) and hoje < ate
     amplitude_baixa = amp_min is not None and amp is not None and amp < float(amp_min)
     cap = cfg.get("capitulacao") or {}
-    s5 = spy5() if cap and (travao or amplitude_baixa) else None
+    so_em = cfg.get("so_em") or {}
+    s5 = spy5() if (cap and (travao or amplitude_baixa)) or so_em else None
     capitulacao = s5 is not None and s5 < float(cap.get("spy_5d", -0.03))
+    if s5 is not None and s5 < float(cap.get("spy_5d", -0.03)):
+        mercado = "queda"
+    elif amp is not None and amp_min is not None:
+        mercado = "fraco" if amplitude_baixa else "forte"
+    else:
+        mercado = None
     r = {"amplitude": amp, "amplitude_min": amp_min, "amplitude_baixa": amplitude_baixa,
          "perda_7d": perda, "travao": travao, "travao_ate": ate if travao else None,
-         "spy_5d": s5, "capitulacao": capitulacao, "isentos": list(cap.get("setups", [])) if capitulacao else [],
+         "spy_5d": s5, "capitulacao": capitulacao, "mercado": mercado, "so_em": so_em, "isentos": list(cap.get("setups", [])) if capitulacao else [],
          "avisado": guardado.get("avisado")}
     try:
         estado_path.write_text(json.dumps({**guardado, "travao_ate": ate, "amplitude": amp, "perda_7d": perda,
@@ -113,6 +138,10 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
 def bloqueia(r: dict | None, ticker: str, setup: str | None = None) -> str | None:
     """Motivo para não comprar `ticker` agora (None = pode). A amplitude só vale para os EUA. Com
     capitulação (SPY a cair forte), os setups isentos (pullback) passam sempre."""
+    so_em = (r or {}).get("so_em") or SO_EM
+    if setup in so_em and (not r or r.get("mercado") not in so_em[setup]):
+        quais = " ou ".join(NOMES_MERCADO.get(m, m) for m in so_em[setup])
+        return f"este tipo de sinal só vale com {quais}"
     if not r:
         return None
     if r.get("capitulacao") and setup in (r.get("isentos") or []):
@@ -137,7 +166,7 @@ def aplicar(itens: list[dict], r: dict | None) -> list[dict]:
 def texto_aviso(r: dict) -> str | None:
     """Mensagem ao dono quando a pausa começa ou acaba (uma vez por mudança)."""
     if r.get("capitulacao") and (r.get("travao") or r.get("amplitude_baixa")):
-        return (f"📉 <b>Queda forte: só pullbacks</b>\nO S&P 500 caiu {-r['spy_5d'] * 100:.1f}% em 5 dias. "
+        return (f"📉 <b>Queda forte: só pullbacks e ressaltos</b>\nO S&P 500 caiu {-r['spy_5d'] * 100:.1f}% em 5 dias. "
                 "Com o mercado assim, comprar ações boas que caíram é o que melhor rende no histórico; "
                 "os outros sinais de compra continuam em pausa.")
     if r.get("travao"):

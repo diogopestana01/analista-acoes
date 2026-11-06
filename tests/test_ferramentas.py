@@ -317,3 +317,13 @@ def test_noticias_em_modo_sombra_nao_apagam_nem_reordenam():
     assert list(out["ticker"]) == ["A", "B"] and list(out["pontuacao"]) == [60.0, 60.0]
     out = passo2_sinais.combinar(tec, av, {"peso_noticias": 15, "noticias_decidem": True})
     assert list(out["ticker"]) == ["B"]
+
+
+def test_setups_caiu_10_e_reversao_queda():
+    # tendência de subida longa e depois cai 12% em 5 dias
+    closes = np.r_[np.linspace(50, 100, 250), 100 * (0.88 ** (np.arange(1, 6) / 5))]
+    d = indicadores.calcular(_precos(closes))
+    f = sinais.detetar(d)
+    assert f["caiu_10"].iat[-1] and f["reversao_queda"].iat[-1]
+    assert not f["caiu_10"].iat[-10]
+    assert sinais.SETUPS["caiu_10"].direcao == "compra" and sinais.SETUPS["reversao_queda"].direcao == "compra"

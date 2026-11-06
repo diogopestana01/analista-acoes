@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, investigador, saude, tendencias, noticias, precos, resultados, sentimento, sinais
+from src import acompanhamento, investigador, saude, tendencias, noticias, precos, resultados, regime, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -167,6 +167,21 @@ def main() -> Path:
     # (após custos) acima da fasquia. Não há número fixo de sinais por dia.
     tecnico = tecnico[tecnico["passa_filtros"]
                       & (tecnico["retorno_esperado_liquido"] * 100 >= cfg["retorno_minimo_pct"])]
+    # Setups que só valem num tipo de mercado (sinais.regime.so_em: caiu_10 no forte, reversao_queda na queda):
+    # fora do seu mercado nem chegam a sinal, para não taparem o pullback da mesma ação nem encherem o registo.
+    so_em = (cfg.get("regime") or {}).get("so_em") or {}
+    if so_em and not tecnico.empty:
+        try:
+            eua = filtrado["ticker"][~filtrado["ticker"].str.contains(".", regex=False)]
+            agora = pd.Timestamp.now(tz="UTC")
+            merc = regime.mercado_atual(hist, eua, cfg.get("regime"),
+                                        f"{agora:%Y-%m-%d}" if acompanhamento.bolsa_aberta("SPY", agora) else None)
+        except Exception as e:  # noqa: BLE001
+            logging.warning("Tipo de mercado não calculado: %s", e)
+            merc = None
+        fora = tecnico["setup"].map(lambda st: st in so_em and merc not in so_em[st])
+        logging.info("Mercado %s: %d sinais de setups fora do seu mercado retirados", merc, int(fora.sum()))
+        tecnico = tecnico[~fora]
     tecnico = tecnico.drop_duplicates("ticker")   # vários setups na mesma ação: fica o de maior retorno esperado
     logging.info("Sinais fortes (antes das notícias): %d", len(tecnico))
     # Radar de resultados: fora os sinais técnicos de empresas que apresentam contas nos próximos dias.

@@ -1864,6 +1864,10 @@ PORQUE = {
                   "e fechou em alta. Estes saltos às vezes continuam nos dias seguintes.",
     "semana_forte": "A ação subiu 8% ou mais nesta semana, fechou perto do máximo do dia com volume forte e está "
                     "numa tendência de subida. Este impulso costuma continuar mais uns dias.",
+    "caiu_10": "A ação caiu 10% ou mais na última semana, mas continua acima da média de 200 dias e o mercado está "
+               "forte. Em 10 anos de histórico, estas quedas recuperaram em parte nos dias seguintes (+0,8% por trade).",
+    "reversao_queda": "O mercado todo caiu forte (S&P 500 mais de 3% em 5 dias) e esta ação ficou muito esticada para "
+                      "baixo. Comprar nestas alturas foi das coisas que melhor rendeu em 10 anos de histórico.",
     "gap_continuacao": "No dia anterior a ação deu um salto forte com volume e aguentou-o. Isso mostra procura firme.",
 }
 
