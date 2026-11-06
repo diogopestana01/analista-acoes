@@ -96,3 +96,17 @@ gestao:
 # Saúde: avisa o dono se uma corrida dos sinais passar deste tempo (o ciclo é de 10 min).
 saude:
   corrida_max_min: 8
+
+# Sinais em teste (src/em_teste.py, estudo passo3u_biblioteca.py, aprovado pelo Pestana a 6/11): regras novas
+# com alerta à parte só para o dono, fora dos lugares do modelo, cada uma só no mercado onde ganhou nas duas
+# metades. Registo em papel em data/sinais_teste.csv. ligado: false desliga.
+em_teste:
+  ligado: true
+  janela_min: 40        # alertas nos últimos 40 min de NY (o estudo entra ao fecho)
+  max_por_dia: 5
+  ordem: rsi2           # RSI de 2 dias mais baixo primeiro (estudo: o único que não perde numa das metades)
+  amplitude_min: 0.5
+  queda_spy_5d: -0.03
+  regras:
+    forte: [caiu_10_5d]
+    queda: [rsi2_10, rsi2_5, duplo_7, tres_quedas, ibs_baixo, bollinger, caiu_10_5d, dia_interior]
