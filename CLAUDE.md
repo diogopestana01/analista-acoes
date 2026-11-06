@@ -23,6 +23,7 @@ Modelo de sinais de curto prazo (1 dia a 1 semana) com alertas no Telegram. O do
 - Insiders e short interest (`src/insiders.py`, Nasdaq): compras de diretores em 90 dias e dias para cobrir, uma vez por dia por ação (`data/insiders.json`); só informação na lista e no registo, para medir.
 - Tendências nas redes (`src/tendencias.py`): Reddit via ApeWisdom e StockTwits, só informação no alerta e no resumo da manhã; guardadas no histórico para medir antes de mexerem na pontuação.
 - Setups em `src/sinais.py` (`SETUPS` + `detetar`).
+- Regime do mercado (`src/regime.py`, `sinais.regime`): amplitude >= 50%, travão de perdas, capitulação (SPY 5 dias < -3%: pullback e reversao_queda passam) e `so_em` (caiu_10 só no mercado forte, reversao_queda só na queda; filtrados já em `passo2_sinais.py`). Estudos `passo3p`-`passo3u` (10 anos: estudo `biblioteca10`). `src/em_teste.py` = alertas à parte de regras em teste (`em_teste.ligado`).
 - Novo setup: adicionar a `SETUPS`, a regra em `detetar`, o nome em `config.yaml`, e um teste em `tests/`.
 - Antes de mudar regras, correr o backtest (`passo3_backtest.py`, ou "Run workflow" no Actions) e comparar com `data/historico_sinais.csv` (resultados reais em papel).
 - Testes: `python -m pytest -q tests` (offline, sem internet).

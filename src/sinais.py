@@ -32,6 +32,11 @@ SETUPS = {
                              "Dia seguinte a um salto forte com volume (ex. resultados) que se aguentou"),
     "semana_forte": Setup("semana_forte", "compra",
                           "Subiu 8% ou mais numa semana, fechou no topo do dia com volume forte, em tendência"),
+    # Estudo passo3u_biblioteca.py (10 anos, aprovado 6/11): cada um só no seu tipo de mercado (sinais.regime.so_em)
+    "caiu_10": Setup("caiu_10", "compra",
+                     "Caiu 10% ou mais em 5 dias mas continua em tendência de subida (mercado forte)"),
+    "reversao_queda": Setup("reversao_queda", "compra",
+                            "Ação muito esticada para baixo durante uma queda forte do mercado"),
     "rompimento_baixa": Setup("rompimento_baixa", "venda",
                               "Fecho abaixo do mínimo de 20 dias com volume forte, em tendência de descida"),
 }
@@ -51,6 +56,13 @@ def detetar(d: pd.DataFrame) -> pd.DataFrame:
     s["gap_continuacao"] = ontem_forte.shift(1, fill_value=False) & (d["close"] >= d["close"].shift())
     s["semana_forte"] = (d["ret5"] >= 0.08) & (d["pos_fecho"] >= 0.8) & (d["vol_ratio"] >= 1.5) \
         & (d["close"] > d["sma50"]) & (d["sma50"] > d["sma200"])
+    c = d["close"]
+    alta = c > d["sma200"]
+    s["caiu_10"] = (d["ret5"] < -0.10) & alta
+    cai3 = (c < c.shift(1)) & (c.shift(1) < c.shift(2)) & (c.shift(2) < c.shift(3))
+    s["reversao_queda"] = (d["rsi2"] < 5) | (alta & (
+        (d["rsi2"] < 10) | (c <= c.rolling(7).min()) | cai3 | ((d["pos_fecho"] < 0.15) & (d["ret_dia"] < 0))
+        | (c < d["sma20"] - 2 * c.rolling(20).std()) | (d["ret5"] < -0.10)))
     s["rompimento_baixa"] = (d["close"] < d["min20"]) & (d["vol_ratio"] >= 1.5) \
         & (d["close"] < d["sma50"]) & (d["sma50"] < d["sma200"])
     return s.fillna(False)

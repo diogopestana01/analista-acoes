@@ -21,6 +21,8 @@ API = "https://api.telegram.org/bot{token}/sendMessage"
 SETUPS_PT = {"rompimento": "Rompimento em alta", "pullback": "Correção em tendência de alta",
              "gap_volume": "Salto na abertura com volume forte",
              "semana_forte": "Semana forte com volume",
+             "caiu_10": "Caiu 10% em 5 dias, em tendência de alta",
+             "reversao_queda": "Ressalto depois de uma queda forte do mercado",
              "rompimento_baixa": "Rompimento em baixa"}
 
 

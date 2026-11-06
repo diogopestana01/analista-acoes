@@ -114,3 +114,33 @@ def test_sem_queda_forte_nao_ha_capitulacao(tmp_path):
     cfg = {"travao": {"perda": 0.05}, "capitulacao": {"spy_5d": -0.03, "setups": ["pullback"]}}
     r = regime.estado(_precos(60, 40), [], cfg, "2026-11-06", False, sim, est, spy5=lambda: -0.02)
     assert not r["capitulacao"] and regime.bloqueia(r, "AAPL", "pullback")
+
+
+def test_so_em_cada_setup_no_seu_mercado():
+    forte = {"mercado": "forte", "so_em": {"caiu_10": ["forte"], "reversao_queda": ["queda"]}}
+    queda = {**forte, "mercado": "queda", "capitulacao": True, "isentos": ["pullback", "reversao_queda"],
+             "amplitude_baixa": True, "amplitude": 0.4}
+    assert regime.bloqueia(forte, "AAPL", "caiu_10") is None
+    assert "queda forte" in regime.bloqueia(forte, "AAPL", "reversao_queda")
+    assert regime.bloqueia(queda, "AAPL", "reversao_queda") is None
+    assert regime.bloqueia(queda, "AAPL", "caiu_10")
+    assert regime.bloqueia(None, "AAPL", "caiu_10")          # sem regime não passam
+    assert regime.bloqueia(None, "AAPL", "pullback") is None
+
+
+def test_estado_diz_o_mercado(tmp_path):
+    cfg = {"amplitude_min": 0.5, "so_em": {"caiu_10": ["forte"]}, "capitulacao": {"spy_5d": -0.03}}
+    sim, est = tmp_path / "s.json", tmp_path / "r.json"
+    p = _precos(60, 40)
+    assert regime.estado(p, [f"T{k}" for k in range(100)], cfg, "2026-11-06", False, sim, est,
+                         spy5=lambda: -0.01)["mercado"] == "forte"
+    assert regime.estado(p, [f"T{k}" for k in range(100)], cfg, "2026-11-06", False, sim, est,
+                         spy5=lambda: -0.05)["mercado"] == "queda"
+
+
+def test_mercado_atual():
+    p = _precos(60, 40)
+    tk = [f"T{k}" for k in range(100)]
+    assert regime.mercado_atual(p, tk, {"amplitude_min": 0.5}, spy5=lambda: 0.0) == "forte"
+    assert regime.mercado_atual(p, tk, {"amplitude_min": 0.7}, spy5=lambda: 0.0) == "fraco"
+    assert regime.mercado_atual(p, tk, {"capitulacao": {"spy_5d": -0.03}}, spy5=lambda: -0.04) == "queda"
