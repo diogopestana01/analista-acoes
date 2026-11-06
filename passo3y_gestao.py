@@ -229,7 +229,20 @@ def main() -> None:
     print("\n### Saídas escolhidas na 1.ª metade, medidas nas duas: " + " | ".join(
         f"{pn}.ª {fmt(carteira(escolher(escolha)[lambda x: x['metade'] == pn]))}" for pn in (1, 2)))
 
-    print("\n### Gestão (saídas escolhidas | saídas de hoje), 1.ª e 2.ª metade")
+    # Hipótese fixa (não escolhida pelos números): sinais de tendência deixam correr (stop que sobe),
+    # sinais de ressalto saem depressa. É a ideia do Pestana: umas trades rápidas, outras de 1-2 semanas.
+    tendencia = {"rompimento", "semana_forte", "pullback", "lider_recuo"}
+    for nome_h, sd in (("tendência a correr 15 dias (stop que sobe 3 ATR)", "segue_3_15"),
+                       ("tendência a correr 10 dias (stop que sobe 2 ATR)", "segue_2_10"),
+                       ("tendência 10 dias (stop 2 ATR)", "fecho_10")):
+        h = {s: (sd if s in tendencia else hoje[s]) for s in setups}
+        for lug in (5, 3):
+            print(f"  {nome_h}, {lug} lugares: " + " | ".join(
+                f"{pn}.ª {fmt(carteira(escolher(h)[lambda x: x['metade'] == pn], lugares=lug))}" for pn in (1, 2)))
+        if sd == "segue_3_15":
+            escolha = h      # a hipótese fixa substitui a escolha da 1.ª metade nas comparações de gestão
+
+    print("\n### Gestão (tendência a correr 15 dias | saídas de hoje), 1.ª e 2.ª metade")
     for nome, kw in (("5 lugares, igual", {}), ("5 lugares, pelo risco", {"peso": "risco"}),
                      ("5 lugares, pela ordem", {"peso": "ordem"}), ("3 lugares", {"lugares": 3}),
                      ("8 lugares", {"lugares": 8}), ("10 lugares", {"lugares": 10}),
