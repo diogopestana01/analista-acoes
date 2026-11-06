@@ -15,13 +15,14 @@ name: Backtest intradiário
 #   europa       os setups rendem na Europa depois dos custos da XTB? (passo3m_europa.py)
 #   recalcular   recalcular o sinal "do zero" todos os dias diz melhor quanto ainda vale? (passo3o_recalcular.py)
 #   regime       os sinais rendem pior com o mercado a cair? SPY/QQQ, VIX, amplitude, força relativa (passo3p_regime.py)
+#   skills       ideias das skills de day trading: setups do scanner e travão de perdas (passo3q_skills.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills]
         default: rompimentos
 
 permissions:
@@ -77,6 +78,8 @@ jobs:
         if: inputs.estudo == 'recalcular'
       - run: python passo3p_regime.py
         if: inputs.estudo == 'regime'
+      - run: python passo3q_skills.py
+        if: inputs.estudo == 'skills'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
