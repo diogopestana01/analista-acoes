@@ -23,6 +23,10 @@ SETUPS_PT = {"rompimento": "Rompimento em alta", "pullback": "Correção em tend
              "semana_forte": "Semana forte com volume",
              "caiu_10": "Caiu 10% em 5 dias, em tendência de alta",
              "reversao_queda": "Ressalto depois de uma queda forte do mercado",
+             "medo_vix": "Muito esticada para baixo com o medo do mercado alto",
+             "viragem_mes": "Correção na viragem do mês",
+             "contra_setor": "Caiu muito mais do que o setor, em tendência de alta",
+             "lider_recuo": "Líder do ano a recuar",
              "rompimento_baixa": "Rompimento em baixa"}
 
 

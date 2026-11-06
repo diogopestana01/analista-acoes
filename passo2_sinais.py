@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import yaml
 
-from src import acompanhamento, investigador, saude, tendencias, noticias, precos, resultados, regime, sentimento, sinais
+from src import acompanhamento, contexto, investigador, saude, tendencias, noticias, precos, resultados, regime, sentimento, sinais
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAIZ = Path(__file__).parent
@@ -139,6 +139,16 @@ def _saude_precos(ultimo_dia, precos_df: pd.DataFrame | None = None) -> None:
         caminho.write_text(json.dumps(cache))
 
 
+def _contexto(cfg: dict) -> dict | None:
+    """VIX e setores para os setups que olham para o mercado (src/contexto.py). None se nenhum estiver ligado."""
+    if not set(cfg["setups"]) & {"medo_vix", "contra_setor", "lider_recuo", "viragem_mes"}:
+        return None
+    v = contexto.vix()
+    sec = contexto.setores(DADOS / "setores.csv")
+    logging.info("Contexto: VIX %s, setores de %d ações", f"{v.iat[-1]:.1f}" if len(v) else "sem dados", len(sec))
+    return {"vix": v, "setor": sec}
+
+
 def main() -> Path:
     config = yaml.safe_load((RAIZ / "config.yaml").read_text())
     cfg = config["sinais"]
@@ -156,7 +166,7 @@ def main() -> Path:
     reais = acompanhamento.resultados_reais(acompanhamento.carregar(DADOS / "historico_sinais.csv"))
     logging.info("Base por setup (backtest + papel): %s",
                  {k: f"{v*100:+.2f}%" for k, v in sinais.base_ajustada(cfg, reais).items()})
-    tecnico = sinais.pontuar(sinais.sinais_hoje(hist, cfg, cfg["setups"]), cfg, reais)
+    tecnico = sinais.pontuar(sinais.sinais_hoje(hist, cfg, cfg["setups"], contexto=_contexto(cfg)), cfg, reais)
     saida = DADOS / f"sinais_{pd.Timestamp(ultimo_dia):%Y-%m-%d}.csv"
     if tecnico.empty:
         logging.info("Sem sinais técnicos hoje")

@@ -16,6 +16,8 @@ Juntas: +16,0% | +24,0% (pior queda -12%) contra +3,8% | -0,9% (pior queda -26%)
               (+1,4%/trade, ganha 74%): +16,6% | +29,6% contra +16,0% | +24,0% só com as duas regras.
   so_em       setups que só valem num tipo de mercado (caiu_10 no forte, reversao_queda na queda forte;
               estudo passo3u_biblioteca.py com 10 anos). Sem regime calculado, esses setups não passam.
+              Os que valem no mercado fraco (medo_vix, viragem_mes; estudo passo3w_carteira.py) não param
+              com a amplitude baixa: foram escolhidos para esse mercado.
 As posições abertas seguem as suas regras de saída; só as compras novas param. Os sinais continuam a
 ser registados em papel, para se medir o que se perdeu ou evitou.
 """
@@ -29,7 +31,8 @@ import pandas as pd
 
 log = logging.getLogger(__name__)
 # Por omissão (sem regime calculado): estes setups só passam com o regime a confirmar o mercado.
-SO_EM = {"caiu_10": ["forte"], "reversao_queda": ["queda"]}
+SO_EM = {"caiu_10": ["forte"], "reversao_queda": ["queda"], "medo_vix": ["forte", "fraco", "queda"],
+         "viragem_mes": ["fraco", "queda"], "contra_setor": ["forte", "queda"], "lider_recuo": ["forte"]}
 NOMES_MERCADO = {"forte": "o mercado forte", "queda": "uma queda forte do S&P 500", "fraco": "o mercado fraco"}
 
 
@@ -136,8 +139,8 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
 
 
 def bloqueia(r: dict | None, ticker: str, setup: str | None = None) -> str | None:
-    """Motivo para não comprar `ticker` agora (None = pode). A amplitude só vale para os EUA. Com
-    capitulação (SPY a cair forte), os setups isentos (pullback) passam sempre."""
+    """Motivo para não comprar `ticker` agora (None = pode). A amplitude só vale para os EUA e não para os
+    setups que `so_em` deixa no mercado fraco. Com capitulação (SPY a cair forte), os setups isentos passam sempre."""
     so_em = (r or {}).get("so_em") or SO_EM
     if setup in so_em and (not r or r.get("mercado") not in so_em[setup]):
         quais = " ou ".join(NOMES_MERCADO.get(m, m) for m in so_em[setup])
@@ -148,7 +151,7 @@ def bloqueia(r: dict | None, ticker: str, setup: str | None = None) -> str | Non
         return None
     if r.get("travao"):
         return f"travão de perdas: a carteira do modelo perdeu mais de 5% em 7 dias (até {r['travao_ate']})"
-    if r.get("amplitude_baixa") and "." not in ticker:
+    if r.get("amplitude_baixa") and "." not in ticker and "fraco" not in (so_em.get(setup) or []):
         return f"mercado fraco: só {r['amplitude'] * 100:.0f}% das ações acima da média de 50 dias"
     return None
 

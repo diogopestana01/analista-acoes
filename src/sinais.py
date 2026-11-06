@@ -37,6 +37,16 @@ SETUPS = {
                      "Caiu 10% ou mais em 5 dias mas continua em tendência de subida (mercado forte)"),
     "reversao_queda": Setup("reversao_queda", "compra",
                             "Ação muito esticada para baixo durante uma queda forte do mercado"),
+    # Estudo passo3v_avancado.py + passo3w_carteira.py (10 anos, aprovado 6/11): precisam de contexto
+    # (src/contexto.py: VIX, setor, subida de 12 meses das outras ações); cada um só no seu mercado.
+    "medo_vix": Setup("medo_vix", "compra",
+                      "Ação muito esticada para baixo (RSI2 < 5) com o medo do mercado alto (VIX acima de 30)"),
+    "viragem_mes": Setup("viragem_mes", "compra",
+                         "Recuo curto em tendência de subida na viragem do mês (último dia útil ou 3 primeiros)"),
+    "contra_setor": Setup("contra_setor", "compra",
+                          "Caiu 15 pontos mais do que o seu setor em 5 dias, mas continua em tendência de subida"),
+    "lider_recuo": Setup("lider_recuo", "compra",
+                         "Uma das 20% que mais subiram em 12 meses a recuar uns dias, em tendência"),
     "rompimento_baixa": Setup("rompimento_baixa", "venda",
                               "Fecho abaixo do mínimo de 20 dias com volume forte, em tendência de descida"),
 }
@@ -63,6 +73,17 @@ def detetar(d: pd.DataFrame) -> pd.DataFrame:
     s["reversao_queda"] = (d["rsi2"] < 5) | (alta & (
         (d["rsi2"] < 10) | (c <= c.rolling(7).min()) | cai3 | ((d["pos_fecho"] < 0.15) & (d["ret_dia"] < 0))
         | (c < d["sma20"] - 2 * c.rolling(20).std()) | (d["ret5"] < -0.10)))
+    rsi2 = d["rsi2"]
+    nan = pd.Series(float("nan"), index=d.index)
+    s["medo_vix"] = (rsi2 < 5) & (d.get("vix", nan) > 30)
+    dt = pd.to_datetime(d["data"])
+    if getattr(dt.dt, "tz", None) is not None:
+        dt = dt.dt.tz_localize(None)
+    mes = dt.dt.to_period("M")
+    viragem = (dt.groupby(mes).rank(method="dense") <= 3) | ((dt + pd.offsets.BDay(1)).dt.month != dt.dt.month)
+    s["viragem_mes"] = alta & (rsi2 < 10) & viragem
+    s["contra_setor"] = alta & (d.get("rel_setor5", nan) < -0.15)
+    s["lider_recuo"] = alta & (rsi2 < 10) & (d.get("rank252", nan) >= 0.8)
     s["rompimento_baixa"] = (d["close"] < d["min20"]) & (d["vol_ratio"] >= 1.5) \
         & (d["close"] < d["sma50"]) & (d["sma50"] < d["sma200"])
     return s.fillna(False)
@@ -128,16 +149,24 @@ def estatisticas_saida(d: pd.DataFrame, flags: pd.Series, regra: saidas.Regra) -
     }
 
 
-def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None = None) -> pd.DataFrame:
-    """Percorre todas as ações e devolve os sinais do último dia disponível."""
+def sinais_hoje(precos: pd.DataFrame, cfg: dict, setups_ativos: list[str] | None = None,
+                contexto: dict | None = None) -> pd.DataFrame:
+    """Percorre todas as ações e devolve os sinais do último dia disponível. `contexto`: {"vix": Series,
+    "setor": Series} para os setups que olham para o mercado (src/contexto.py); sem ele não dão sinal."""
     setups_ativos = setups_ativos or list(SETUPS)
     linhas = []
     acima = {"eua": [], "europa": []}
+    extra = None
+    if contexto is not None:
+        from . import contexto as ctx
+        extra = dict(tuple(ctx.tabela(precos, contexto.get("vix"), contexto.get("setor")).groupby("ticker")))
     for ticker, df in precos.sort_values("data").groupby("ticker"):
         df = df.reset_index(drop=True)
         if len(df) < 210:
             continue
         d = indicadores.calcular(df)
+        if extra is not None and ticker in extra:
+            ctx.juntar(d, extra[ticker])
         flags = detetar(d)
         hoje = d.iloc[-1]
         if pd.notna(hoje["sma50"]):

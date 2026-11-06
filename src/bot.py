@@ -1868,6 +1868,14 @@ PORQUE = {
                "forte. Em 10 anos de histórico, estas quedas recuperaram em parte nos dias seguintes (+0,8% por trade).",
     "reversao_queda": "O mercado todo caiu forte (S&P 500 mais de 3% em 5 dias) e esta ação ficou muito esticada para "
                       "baixo. Comprar nestas alturas foi das coisas que melhor rendeu em 10 anos de histórico.",
+    "medo_vix": "O medo no mercado está alto (VIX acima de 30) e esta ação ficou muito esticada para baixo. Nestas "
+                "alturas os ressaltos foram fortes: em 10 anos, +1,3% a +1,9% por trade, ganhou 2 em cada 3 vezes.",
+    "viragem_mes": "A ação recuou uns dias dentro de uma tendência de subida, na viragem do mês (último dia útil ou "
+                   "3 primeiros), quando entra dinheiro novo no mercado. Em 10 anos rendeu mesmo com o mercado fraco.",
+    "contra_setor": "A ação caiu 15 pontos mais do que as outras do seu setor em 5 dias, mas continua acima da média "
+                    "de 200 dias. Quedas assim, só dela, costumam ser corrigidas em parte (+0,8% por trade em 10 anos).",
+    "lider_recuo": "É uma das 20% que mais subiram no último ano e recuou uns dias. Com o mercado forte, os líderes "
+                   "costumam retomar a subida (+0,5% por trade em 10 anos).",
     "gap_continuacao": "No dia anterior a ação deu um salto forte com volume e aguentou-o. Isso mostra procura firme.",
 }
 

@@ -144,3 +144,13 @@ def test_mercado_atual():
     assert regime.mercado_atual(p, tk, {"amplitude_min": 0.5}, spy5=lambda: 0.0) == "forte"
     assert regime.mercado_atual(p, tk, {"amplitude_min": 0.7}, spy5=lambda: 0.0) == "fraco"
     assert regime.mercado_atual(p, tk, {"capitulacao": {"spy_5d": -0.03}}, spy5=lambda: -0.04) == "queda"
+
+
+def test_setups_do_mercado_fraco_passam_a_amplitude():
+    so_em = {"medo_vix": ["forte", "fraco", "queda"], "viragem_mes": ["fraco", "queda"], "lider_recuo": ["forte"]}
+    fraco = {"mercado": "fraco", "so_em": so_em, "amplitude_baixa": True, "amplitude": 0.4}
+    assert regime.bloqueia(fraco, "AAPL", "medo_vix") is None
+    assert regime.bloqueia(fraco, "AAPL", "viragem_mes") is None
+    assert regime.bloqueia(fraco, "AAPL", "lider_recuo")
+    assert "mercado fraco" in regime.bloqueia(fraco, "AAPL", "pullback")
+    assert regime.bloqueia({**fraco, "travao": True, "travao_ate": "2026-11-11"}, "AAPL", "viragem_mes")
