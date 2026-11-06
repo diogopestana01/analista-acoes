@@ -15,7 +15,7 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import (acompanhamento, bot, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
+from src import (acompanhamento, bot, regime, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
                  spread as spread_mod,
                  insiders, telegram, trocas, vigia)
 
@@ -193,6 +193,7 @@ PENDENTES = DADOS / "sinais_pendentes.json"
 LISTA = DADOS / "lista_sinais.json"
 INSIDERS = DADOS / "insiders.json"
 SPREADS = DADOS / "spreads.csv"
+REGIME = DADOS / "regime.json"
 
 
 def enriquecer_insiders(hist: pd.DataFrame, agora: pd.Timestamp) -> tuple[pd.DataFrame, dict]:
@@ -242,7 +243,7 @@ def medir_spreads(hist: pd.DataFrame, agora: pd.Timestamp) -> tuple[pd.DataFrame
 
 
 def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Timestamp,
-                  extra: dict | None = None, spreads: dict | None = None) -> None:
+                  extra: dict | None = None, spreads: dict | None = None, reg: dict | None = None) -> None:
     """A lista de sinais, reavaliada nesta corrida com o preço de agora: um só sítio que a calcula,
     e o bot, os alertas e os resumos leem-na (data/lista_sinais.json)."""
     try:
@@ -253,7 +254,8 @@ def guardar_lista(hist: pd.DataFrame, dados: dict, config: dict, agora: pd.Times
         for s in itens:   # insiders e short interest (só informação)
             info = (extra or {}).get(s["ticker"]) or {}
             s["insiders"], s["short"], s["insiders_texto"] = info.get("insiders"), info.get("short"), info.get("texto", "")
-        LISTA.write_text(json.dumps({"gerada_em": agora.isoformat(), "itens": itens}, ensure_ascii=False,
+        itens = regime.aplicar(itens, reg)   # amplitude e travão de perdas (src/regime.py)
+        LISTA.write_text(json.dumps({"gerada_em": agora.isoformat(), "itens": itens, "regime": reg}, ensure_ascii=False,
                                     default=str))
         logging.info("Lista de sinais: %d (%d para comprar)", len(itens),
                      sum(s["estado_lista"] == "comprar" for s in itens))
@@ -276,7 +278,8 @@ def guardar_pendentes(sinais: pd.DataFrame) -> None:
 
 
 def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | None, dono: str | None,
-                     precos: pd.DataFrame, trocas_avisadas: set | None = None, cfg: dict | None = None) -> None:
+                     precos: pd.DataFrame, trocas_avisadas: set | None = None, cfg: dict | None = None,
+                     reg: dict | None = None) -> None:
     """Na primeira corrida com a bolsa aberta e a entrada já à abertura no registo, envia os sinais da
     noite numa ronda só, com o preço de abertura, stop e objetivo atualizados. Os que abriram já acima
     do limite de compra (src/lista_sinais.limite) não são enviados: ficam só na lista, em andamento."""
@@ -295,6 +298,9 @@ def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | Non
         resolvido = str(h.get("entrada_na_abertura")).strip().lower() in ("false", "0", "0.0")
         if not acompanhamento.bolsa_aberta(t, agora) or not resolvido:
             restam[t] = r
+            continue
+        if regime.bloqueia(reg, t):
+            logging.info("%s não enviado: %s", t, regime.bloqueia(reg, t))
             continue
         lim = lista_sinais.limite(h["entrada"], h["objetivo"], h["stop"], h.get("setup"), cfg, h.get("preco_sinal"))
         if lim is not None and h["entrada"] > lim:
@@ -324,6 +330,24 @@ def avisar_se_lenta(tempos: dict, limite_min: float) -> None:
     saude.avisar([("corrida_lenta", f"A corrida dos sinais demorou {total / 60:.1f} min (limite {limite_min:g}; "
                                     f"o ciclo é de 10). Partes: {partes}.")], cache, f"{pd.Timestamp.now(tz='UTC'):%Y-%m-%d}")
     (DADOS / "avaliacoes_cache.json").write_text(json.dumps(cache))
+
+
+def estado_regime(precos: pd.DataFrame, config: dict, agora: pd.Timestamp) -> dict | None:
+    """Amplitude do mercado dos EUA e travão de perdas nesta corrida; avisa o dono quando muda."""
+    try:
+        uni = pd.read_csv(DADOS / "universo_filtrado.csv")["ticker"]
+        eua = uni[~uni.str.contains(".", regex=False)]
+        reg = regime.estado(precos, eua, config["sinais"].get("regime"), f"{agora:%Y-%m-%d}",
+                            acompanhamento.bolsa_aberta("SPY", agora), DADOS / "simuladas.json", REGIME)
+        logging.info("Regime: amplitude %s, perda 7 dias %s, travão %s", reg["amplitude"], reg["perda_7d"],
+                     reg["travao_ate"] or "não")
+        dono = os.environ.get("TELEGRAM_CHAT_ID")
+        if dono:
+            regime.avisar(reg, REGIME, lambda txt: telegram.enviar(txt, dono))
+        return reg
+    except Exception as e:  # noqa: BLE001 — o regime nunca pode parar os sinais
+        logging.warning("Regime do mercado não calculado: %s", e)
+        return None
 
 
 def main() -> None:
@@ -380,6 +404,14 @@ def main() -> None:
         else pd.Series(dtype=bool)
     agora_ja, para_depois = (novos[aberta], novos[~aberta]) if not novos.empty else (novos, novos)
     guardar_pendentes(para_depois)
+    # Regime do mercado (src/regime.py): com amplitude baixa ou o travão de perdas, os sinais são registados
+    # em papel mas não se enviam nem ficam para comprar.
+    reg = estado_regime(precos, config, agora)
+    if not agora_ja.empty:
+        motivos = agora_ja["ticker"].map(lambda t: regime.bloqueia(reg, t))
+        if motivos.notna().any():
+            logging.info("Sinais não enviados (regime): %s", ", ".join(agora_ja.loc[motivos.notna(), "ticker"]))
+        agora_ja = agora_ja[motivos.isna()]
 
     trocas_avisadas = set(_ler_cache().get("trocas_avisadas", []))
     if not agora_ja.empty or os.path.exists(DADOS / "sinais_pendentes.json"):
@@ -401,12 +433,12 @@ def main() -> None:
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"], agora)
     # Depois de registar: os sinais da noite guardados nesta corrida já estão no registo (antes, eram
     # tomados por fechados e apagados da lista de espera sem nunca serem enviados).
-    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"])
+    enviar_pendentes(hist, agora, estado, dono, precos, trocas_avisadas, config["sinais"], reg)
     _guardar_trocas(trocas_avisadas)
     hist, info_insiders = enriquecer_insiders(hist, agora)
     hist, spreads = medir_spreads(hist, agora)
     hist.to_csv(HIST, index=False)
-    guardar_lista(hist, dados, config, agora, info_insiders, spreads)
+    guardar_lista(hist, dados, config, agora, info_insiders, spreads, reg)
     tempos["registo, lista e avisos"] = time.monotonic() - t0 - sum(tempos.values())
     avisar_se_lenta(tempos, config.get("saude", {}).get("corrida_max_min", 8))
 
