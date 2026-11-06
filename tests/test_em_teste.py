@@ -4,7 +4,7 @@ import pandas as pd
 
 from src import em_teste
 
-CFG = {"ligado": True, "janela_min": 40, "max_por_dia": 5, "ordem": "ret5", "amplitude_min": 0.5,
+CFG = {"ligado": True, "janela_min": 40, "max_por_dia": 5, "ordem": "rsi2", "amplitude_min": 0.5,
        "queda_spy_5d": -0.03, "regras": {"forte": ["caiu_10_5d"], "queda": ["rsi2_10", "caiu_10_5d"]}}
 
 

@@ -51,6 +51,9 @@ HISTORICO = {
     ("queda", "bollinger"): "+0,50% | +6,43%, ganha 83%",
     ("queda", "dia_interior"): "+2,22% | +2,06%, ganha 66%",
 }
+# Com 5 por dia escolhidas pelo RSI de 2 dias mais baixo (secção 3 do estudo): média e o pior 1 em 10
+CINCO_POR_DIA = {"forte": "+1,52% | +0,02% por trade; 1 em cada 10 perdeu mais de 13%",
+                 "queda": "+3,75% | +5,31% por trade, ganha 74%; 1 em cada 10 perdeu mais de 9% (só 17 dias assim)"}
 TEXTO_MERCADO = {"forte": "mercado forte", "queda": "queda forte do mercado (S&P 500 a cair mais de 3% em 5 dias)"}
 
 
@@ -131,7 +134,8 @@ def texto_alerta(mercado: str, escolhidos: pd.DataFrame, nomes: dict | None = No
     nomes = nomes or {}
     linhas = [f"🧪 <b>Sinais em teste</b> ({TEXTO_MERCADO.get(mercado, mercado)})",
               "Regras novas a ser medidas: não ocupam os lugares do modelo. Entrada perto do fecho de hoje; "
-              "sai quando fechar acima da média de 5 dias, stop a 2 ATR, no máximo 5 dias."]
+              "sai quando fechar acima da média de 5 dias, stop a 2 ATR, no máximo 5 dias.",
+              f"No histórico, as 5 do dia: {CINCO_POR_DIA.get(mercado, 'sem histórico')}. Risco alto: usa pouco dinheiro."]
     for r in escolhidos.itertuples():
         nome = f" ({nomes[r.ticker]})" if nomes.get(r.ticker) else ""
         regras = "; ".join(f"{NOMES[x]} [{HISTORICO.get((mercado, x), 'sem histórico')}]" for x in r.regras)

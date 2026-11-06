@@ -104,7 +104,7 @@ em_teste:
   ligado: true
   janela_min: 40        # alertas nos últimos 40 min de NY (o estudo entra ao fecho)
   max_por_dia: 5
-  ordem: ret5           # as que mais caíram em 5 dias primeiro
+  ordem: rsi2           # RSI de 2 dias mais baixo primeiro (estudo: o único que não perde numa das metades)
   amplitude_min: 0.5
   queda_spy_5d: -0.03
   regras:
