@@ -10,6 +10,10 @@ Duas regras (aprovadas pelo Pestana a 6/11; estudos passo3p_regime.py e passo3q_
               (5%) do capital inicial, não se abre nada durante `pausa_dias` (5) dias de calendário.
               Ideia do "Risk Manager" das skills de day trading (limite de perda por período).
 Juntas: +16,0% | +24,0% (pior queda -12%) contra +3,8% | -0,9% (pior queda -26%) sem nada.
+  capitulação exceção às duas (pedido do Pestana, "não quero o bot parado"; estudo passo3s_restritas.py,
+              variante E): se o SPY caiu mais de 3% em 5 dias, os pullbacks continuam a entrar mesmo com
+              o mercado fraco ou o travão ligado. Comprar a queda forte é o que melhor rende
+              (+1,4%/trade, ganha 74%): +16,6% | +29,6% contra +16,0% | +24,0% só com as duas regras.
 As posições abertas seguem as suas regras de saída; só as compras novas param. Os sinais continuam a
 ser registados em papel, para se medir o que se perdeu ou evitou.
 """
@@ -42,6 +46,18 @@ def amplitude(precos: pd.DataFrame, tickers, sem_hoje: str | None = None) -> flo
     return float(ultimo["acima"].mean()) if len(ultimo) >= 50 else None
 
 
+def spy_ret5() -> float | None:
+    """Variação do SPY nos últimos 5 dias de bolsa (com o preço de agora, se a bolsa estiver aberta)."""
+    try:
+        import yfinance as yf
+        c = yf.download("SPY", period="1mo", interval="1d", auto_adjust=True, progress=False,
+                        threads=False)["Close"].squeeze().dropna()
+        return float(c.iat[-1] / c.iat[-6] - 1) if len(c) >= 6 else None
+    except Exception as e:  # noqa: BLE001
+        log.warning("SPY não lido: %s", e)
+        return None
+
+
 def perda_recente(simuladas: dict, carteira: str, hoje: str, janela_dias: int) -> float | None:
     """Soma do lucro das vendas dos últimos `janela_dias`, a dividir pelo capital inicial (negativo = perda)."""
     c = (simuladas.get("carteiras") or {}).get(str(carteira))
@@ -57,7 +73,7 @@ def perda_recente(simuladas: dict, carteira: str, hoje: str, janela_dias: int) -
 
 
 def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa_aberta: bool,
-           simuladas_path: Path, estado_path: Path) -> dict:
+           simuladas_path: Path, estado_path: Path, spy5=spy_ret5) -> dict:
     """Estado do regime nesta corrida. Grava em `estado_path` até quando dura o travão."""
     cfg = cfg or {}
     try:
@@ -79,8 +95,12 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
             log.info("Travão de perdas: vendas de 7 dias %.1f%% -> sem compras novas até %s", perda * 100, ate)
     travao = bool(t) and bool(ate) and hoje < ate
     amplitude_baixa = amp_min is not None and amp is not None and amp < float(amp_min)
+    cap = cfg.get("capitulacao") or {}
+    s5 = spy5() if cap and (travao or amplitude_baixa) else None
+    capitulacao = s5 is not None and s5 < float(cap.get("spy_5d", -0.03))
     r = {"amplitude": amp, "amplitude_min": amp_min, "amplitude_baixa": amplitude_baixa,
          "perda_7d": perda, "travao": travao, "travao_ate": ate if travao else None,
+         "spy_5d": s5, "capitulacao": capitulacao, "isentos": list(cap.get("setups", [])) if capitulacao else [],
          "avisado": guardado.get("avisado")}
     try:
         estado_path.write_text(json.dumps({**guardado, "travao_ate": ate, "amplitude": amp, "perda_7d": perda,
@@ -90,9 +110,12 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
     return r
 
 
-def bloqueia(r: dict | None, ticker: str) -> str | None:
-    """Motivo para não comprar `ticker` agora (None = pode). A amplitude só vale para os EUA."""
+def bloqueia(r: dict | None, ticker: str, setup: str | None = None) -> str | None:
+    """Motivo para não comprar `ticker` agora (None = pode). A amplitude só vale para os EUA. Com
+    capitulação (SPY a cair forte), os setups isentos (pullback) passam sempre."""
     if not r:
+        return None
+    if r.get("capitulacao") and setup in (r.get("isentos") or []):
         return None
     if r.get("travao"):
         return f"travão de perdas: a carteira do modelo perdeu mais de 5% em 7 dias (até {r['travao_ate']})"
@@ -104,7 +127,7 @@ def bloqueia(r: dict | None, ticker: str) -> str | None:
 def aplicar(itens: list[dict], r: dict | None) -> list[dict]:
     """Na lista de sinais, os que dariam para comprar passam a 'andamento', com o motivo em 'pausa_mercado'."""
     for s in itens:
-        motivo = bloqueia(r, s.get("ticker", ""))
+        motivo = bloqueia(r, s.get("ticker", ""), s.get("setup"))
         s["pausa_mercado"] = motivo
         if motivo and s.get("estado_lista") == "comprar":
             s["estado_lista"] = "andamento"
@@ -113,6 +136,10 @@ def aplicar(itens: list[dict], r: dict | None) -> list[dict]:
 
 def texto_aviso(r: dict) -> str | None:
     """Mensagem ao dono quando a pausa começa ou acaba (uma vez por mudança)."""
+    if r.get("capitulacao") and (r.get("travao") or r.get("amplitude_baixa")):
+        return (f"📉 <b>Queda forte: só pullbacks</b>\nO S&P 500 caiu {-r['spy_5d'] * 100:.1f}% em 5 dias. "
+                "Com o mercado assim, comprar ações boas que caíram é o que melhor rende no histórico; "
+                "os outros sinais de compra continuam em pausa.")
     if r.get("travao"):
         return (f"⏸️ <b>Compras em pausa até {r['travao_ate']}</b>\nA carteira que segue o modelo perdeu "
                 f"{-r['perda_7d'] * 100:.1f}% em 7 dias. As posições abertas seguem as regras de saída; "
@@ -124,6 +151,8 @@ def texto_aviso(r: dict) -> str | None:
 
 
 def chave(r: dict) -> str:
+    if r.get("capitulacao") and (r.get("travao") or r.get("amplitude_baixa")):
+        return "capitulacao"
     return "travao" if r.get("travao") else "amplitude" if r.get("amplitude_baixa") else "livre"
 
 

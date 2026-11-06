@@ -299,8 +299,8 @@ def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | Non
         if not acompanhamento.bolsa_aberta(t, agora) or not resolvido:
             restam[t] = r
             continue
-        if regime.bloqueia(reg, t):
-            logging.info("%s não enviado: %s", t, regime.bloqueia(reg, t))
+        if regime.bloqueia(reg, t, h.get("setup")):
+            logging.info("%s não enviado: %s", t, regime.bloqueia(reg, t, h.get("setup")))
             continue
         lim = lista_sinais.limite(h["entrada"], h["objetivo"], h["stop"], h.get("setup"), cfg, h.get("preco_sinal"))
         if lim is not None and h["entrada"] > lim:
@@ -339,8 +339,8 @@ def estado_regime(precos: pd.DataFrame, config: dict, agora: pd.Timestamp) -> di
         eua = uni[~uni.str.contains(".", regex=False)]
         reg = regime.estado(precos, eua, config["sinais"].get("regime"), f"{agora:%Y-%m-%d}",
                             acompanhamento.bolsa_aberta("SPY", agora), DADOS / "simuladas.json", REGIME)
-        logging.info("Regime: amplitude %s, perda 7 dias %s, travão %s", reg["amplitude"], reg["perda_7d"],
-                     reg["travao_ate"] or "não")
+        logging.info("Regime: amplitude %s, perda 7 dias %s, travão %s, SPY 5 dias %s (capitulação %s)",
+                     reg["amplitude"], reg["perda_7d"], reg["travao_ate"] or "não", reg["spy_5d"], reg["capitulacao"])
         dono = os.environ.get("TELEGRAM_CHAT_ID")
         if dono:
             regime.avisar(reg, REGIME, lambda txt: telegram.enviar(txt, dono))
@@ -408,7 +408,8 @@ def main() -> None:
     # em papel mas não se enviam nem ficam para comprar.
     reg = estado_regime(precos, config, agora)
     if not agora_ja.empty:
-        motivos = agora_ja["ticker"].map(lambda t: regime.bloqueia(reg, t))
+        motivos = pd.Series([regime.bloqueia(reg, t, st) for t, st in zip(agora_ja["ticker"], agora_ja["setup"])],
+                            index=agora_ja.index)
         if motivos.notna().any():
             logging.info("Sinais não enviados (regime): %s", ", ".join(agora_ja.loc[motivos.notna(), "ticker"]))
         agora_ja = agora_ja[motivos.isna()]
