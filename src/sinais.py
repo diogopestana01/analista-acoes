@@ -285,7 +285,9 @@ def pontuar(sinais: pd.DataFrame, cfg: dict, reais: dict | None = None) -> pd.Da
         + 20 * np.clip(pd.Series(forca, index=s.index).fillna(0) / 0.2 + 0.5, 0, 1)
     ).round(1)
     # Prazo estimado: mediana histórica, ou 5 dias se não houver histórico.
-    s["dias_estimados"] = s["dias_mediana"].fillna(cfg["max_dias"]).clip(1, cfg["max_dias"])
+    teto = (pd.to_numeric(s["max_dias"], errors="coerce").fillna(cfg["max_dias"]) if "max_dias" in s
+            else cfg["max_dias"])
+    s["dias_estimados"] = s["dias_mediana"].fillna(teto).clip(lower=1, upper=teto)
 
     # Retorno esperado: média histórica desta ação neste setup, puxada para a média
     # do setup em todo o mercado (backtest) quando há poucos casos; menos custos XTB.

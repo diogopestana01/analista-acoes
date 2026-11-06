@@ -34,10 +34,12 @@ def balde(ganho: float, atr_pct: float, limites: list[float]) -> int:
     return int(np.digitize(ganho / max(atr_pct, 1e-4), limites))
 
 
-def atr_pct(setup: str, entrada: float, stop: float, cfg: dict) -> float | None:
-    """ATR em % do preço, a partir do stop do alerta (stop = entrada - k x ATR)."""
+def atr_pct(setup: str, entrada: float, stop: float, cfg: dict, saida: str | None = None) -> float | None:
+    """ATR em % do preço, a partir do stop do alerta (stop = entrada - k x ATR). Com `saida` (a regra que o
+    sinal levou), usa o k dessa regra: um sinal antigo continua certo depois de o setup mudar de saída."""
     from src import saidas
-    k = saidas.regra_do_setup(setup, cfg).mult_stop
+    regra = saidas.REGRAS.get(saida) if isinstance(saida, str) else None
+    k = (regra if regra and regra.mult_stop else saidas.regra_do_setup(setup, cfg)).mult_stop
     try:
         a = (float(entrada) - float(stop)) / k / float(entrada)
     except (TypeError, ValueError, ZeroDivisionError):
@@ -54,7 +56,7 @@ def valor_que_falta(setup: str, dias_usados: int, ganho: float, atr: float | Non
     if atr is None:
         return media
     b = balde(ganho, atr, modelo["limites"])
-    return modelo["tabela"].get(f"{setup}|{min(dias_usados, 5)}|{b}", media)
+    return modelo["tabela"].get(f"{setup}|{min(dias_usados, 10)}|{b}", media)
 
 
 def vale_trocar(setup_novo: str, falta_fraca: float | None, modelo: dict,

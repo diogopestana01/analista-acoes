@@ -1155,7 +1155,8 @@ def forcas(u: dict, hist: pd.DataFrame | None, hoje: str) -> list[dict]:
         sinal = _linha_sinal(t, p, hist)
         falta = None
         if modelo and sinal and isinstance(sinal.get("setup"), str):
-            atr = trocas.atr_pct(sinal["setup"], sinal.get("entrada"), sinal.get("stop"), _cfg_sinais())
+            atr = trocas.atr_pct(sinal["setup"], sinal.get("entrada"), sinal.get("stop"), _cfg_sinais(),
+                                 sinal.get("saida"))
             falta = trocas.valor_que_falta(sinal["setup"], usados, ganho, atr, modelo)
         out.append({"ticker": t, "usados": usados, "preco": preco, "pct": ganho * 100, "falta": falta})
     return sorted(out, key=lambda x: (x["falta"] is None, x["falta"] or 0, u["posicoes"][x["ticker"]].get("data", "")))
@@ -1703,7 +1704,8 @@ def limite_compra(s: dict) -> float | None:
     if "limite" in s:  # já calculado pela lista (src/lista_sinais.avaliar)
         return _num(s["limite"])
     return lista_sinais.limite(_num(s.get("entrada_sinal")) or _num(s.get("entrada")), s.get("objetivo"),
-                               s.get("stop"), s.get("setup"), _cfg_sinais(), s.get("preco_sinal"))
+                               s.get("stop"), s.get("setup"), _cfg_sinais(), s.get("preco_sinal"),
+                               s.get("saida") if isinstance(s.get("saida"), str) else None)
 
 
 def _atr_sinal(s: dict) -> float | None:
@@ -1714,7 +1716,7 @@ def _atr_sinal(s: dict) -> float | None:
     e = _num(s.get("entrada_sinal")) or _num(s.get("entrada"))
     if not e or not isinstance(s.get("setup"), str) or _num(s.get("stop")) is None:
         return None
-    return trocas.atr_pct(s["setup"], e, s["stop"], _cfg_sinais())
+    return trocas.atr_pct(s["setup"], e, s["stop"], _cfg_sinais(), s.get("saida"))
 
 
 LIXO_NOME = re.compile(r"\s*[-,]?\s*(Class [A-Z] )?(Common Stock|Ordinary Shares|Common Shares|American Depositary"
@@ -1783,6 +1785,8 @@ def sinal_simples(u: dict, s: dict, t: dict, livre: float, rank: str) -> str:
                           f"objetivo móvel, vende quando fechar acima da média dos últimos dias (eu aviso-te)")
         else:
             linhas.append(f"🎯 Vender: {regra.texto_alerta()} (eu aviso-te)")
+    elif regra:
+        linhas.append(f"🎯 Sem objetivo fixo: deixa correr e {regra.texto_alerta()} (eu aviso-te)")
     if stop:
         linhas.append(f"🛑 Vender para travar a perda a <b>{cart.fmt(stop)}</b> ({cart.sinal_fmt((stop / e - 1) * 100, 1)}%)")
     r_txt = risco.texto(_atr_sinal(s))
@@ -2057,7 +2061,8 @@ def _linha_compra(k: int, s: dict) -> str:
         partes.append(f"até {cart.fmt(s['limite'])}")
     o, st = _num(s.get("objetivo")), _num(s.get("stop"))
     regra = saidas.REGRAS.get(s.get("saida") or "")
-    partes.append(f"🎯 {cart.fmt(o)}" if o else "🎯 quando recuperar" if regra and regra.sair_se else "")
+    partes.append(f"🎯 {cart.fmt(o)}" if o else "🎯 quando recuperar" if regra and regra.sair_se
+                  else f"🎯 deixa correr {regra.max_dias} dias" if regra else "")
     partes.append(f"🛑 {cart.fmt(st)}" if st else "")
     if _a_espera_da_abertura(s):
         partes.append("à abertura")
@@ -2093,6 +2098,8 @@ def _cartao_ranking(k: int, s: dict) -> str:
         precos.append(f"🎯 ~{cart.fmt(alvo)}" + (f" ({cart.sinal_fmt((alvo / base - 1) * 100, 0)}%)" if base else ""))
     elif regra and regra.sair_se:
         precos.append("🎯 aviso quando vender")
+    elif regra:
+        precos.append(f"🎯 deixa correr {regra.max_dias} dias")
     if st:
         precos.append(f"🛑 {cart.fmt(st)}" + (f" ({cart.sinal_fmt((st / base - 1) * 100, 0)}%)" if base else ""))
     modelo = []

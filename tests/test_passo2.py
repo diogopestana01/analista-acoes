@@ -1,5 +1,6 @@
 """Testes offline do passo 2 com preços sintéticos."""
 import numpy as np
+import pytest
 import pandas as pd
 import yaml
 from pathlib import Path
@@ -27,7 +28,7 @@ def test_rsi_e_atr_valores_basicos():
     assert np.isclose(indicadores.atr(df).iloc[-1], 2.0, atol=1e-6)  # high-low = 2
 
 
-def test_rompimento_detetado_com_objetivo_acima_e_stop_abaixo():
+def test_rompimento_detetado_com_stop_abaixo_e_10_dias():
     rng = np.random.default_rng(0)
     base = 100 * np.cumprod(1 + 0.001 + rng.normal(0, 0.01, 300))
     base[-1] = base[-21:-1].max() * 1.05  # rompe o máximo de 20 dias
@@ -35,7 +36,9 @@ def test_rompimento_detetado_com_objetivo_acima_e_stop_abaixo():
     s = sinais.sinais_hoje(precos, CFG, ["rompimento"])
     assert len(s) == 1
     r = s.iloc[0]
-    assert r["direcao"] == "compra" and r["objetivo"] > r["entrada"] > r["stop"]
+    # tendência: sem objetivo fixo, deixa correr até 10 dias com stop 2xATR (estudo passo3y_gestao.py)
+    assert r["direcao"] == "compra" and np.isnan(r["objetivo"]) and r["entrada"] > r["stop"]
+    assert r["saida"] == "fecho_10" and r["max_dias"] == 10
 
 
 def test_resultado_trade_objetivo_e_stop():
@@ -71,3 +74,10 @@ def test_sentimento_sem_chave_fica_neutro(monkeypatch):
                          "fonte": ["X"], "data": [pd.Timestamp.now(tz="UTC")]})
     av = sentimento.avaliar({"ticker": "A", "direcao": "compra"}, news)
     assert av.sentimento == 0 and av.impacto == "neutro" and av.verificacao == "sem_claude"
+
+
+def test_atr_do_sinal_usa_a_regra_que_o_sinal_levou():
+    from src import trocas
+    # sinal antigo de rompimento com atr_3_15 (stop a 1,5 ATR): ATR 2% mesmo depois de o setup passar a fecho_10
+    assert trocas.atr_pct("rompimento", 100.0, 97.0, CFG, "atr_3_15") == pytest.approx(0.02)
+    assert trocas.atr_pct("rompimento", 100.0, 96.0, CFG) == pytest.approx(0.02)   # fecho_10: stop a 2 ATR
