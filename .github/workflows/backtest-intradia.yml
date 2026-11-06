@@ -17,13 +17,14 @@ name: Backtest intradiário
 #   regime       os sinais rendem pior com o mercado a cair? SPY/QQQ, VIX, amplitude, força relativa (passo3p_regime.py)
 #   skills       ideias das skills de day trading: setups do scanner e travão de perdas (passo3q_skills.py)
 #   vendas       vendas a descoberto (CFD) com o mercado fraco (passo3r_vendas.py)
+#   restritas    mercado fraco: só compras de capitulação em vez de parar; vender o índice (passo3s_restritas.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas]
         default: rompimentos
 
 permissions:
@@ -83,6 +84,8 @@ jobs:
         if: inputs.estudo == 'skills'
       - run: python passo3r_vendas.py
         if: inputs.estudo == 'vendas'
+      - run: python passo3s_restritas.py
+        if: inputs.estudo == 'restritas'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
