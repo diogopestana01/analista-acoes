@@ -39,6 +39,8 @@ SAIDAS = {  # nome: (objetivo ATR, stop ATR, dias, condição, stop que sobe ATR
     "atr_3_15": (3.0, 1.5, 5, None, None), "atr_3_15_10": (3.0, 1.5, 10, None, None),
     "segue_2_10": (None, 2.0, 10, None, 2.0), "segue_3_15": (None, 3.0, 15, None, 3.0),
     "fecho_10": (None, 2.0, 10, None, None),
+    "fecho_15": (None, 2.0, 15, None, None), "fecho_20": (None, 2.5, 20, None, None),
+    "segue_25_20": (None, 2.5, 20, None, 2.5),
 }
 HOJE = {"rompimento": "atr_3_15", "semana_forte": "atr_3_15"}   # o resto: sma5_5
 
