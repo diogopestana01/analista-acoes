@@ -41,6 +41,8 @@ REGRAS = {
                   None, 2.0, 5, "acima_sma5"),
     "rsi2": Regra("rsi2", "Vende quando o RSI de 2 dias passa 70; stop 2xATR; 5 dias",
                   None, 2.0, 5, "rsi2_70"),
+    # tendências (estudo passo3y_gestao.py, 10 anos): deixar correr até 10 dias rende mais nas 2 metades
+    "fecho_10": Regra("fecho_10", "Sem objetivo, stop 2xATR, vende ao fim de 10 dias", None, 2.0, 10),
 }
 
 

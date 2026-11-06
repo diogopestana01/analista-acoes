@@ -78,7 +78,7 @@ def tabelas(trades: list[dict]) -> tuple[dict, dict, dict]:
             if k == 0:
                 continue
             g = preco / t["entrada"] - 1
-            resto[(t["setup"], min(k, 5), balde(g, t["atr_pct"]))].append(fim / preco - 1)
+            resto[(t["setup"], min(k, 10), balde(g, t["atr_pct"]))].append(fim / preco - 1)
     valor = {k: float(np.mean(v)) for k, v in resto.items() if len(v) >= 30}
     df = pd.DataFrame([{"setup": t["setup"], "ret": t["ret"]} for t in trades])
     media = df.groupby("setup")["ret"].mean().to_dict()
@@ -167,7 +167,7 @@ def main() -> None:
     nomes = ["< -1", "-1..-0,25", "~0", "0,25..1", "1..2", "> 2"]
     for s in sorted(media):
         print(f"{s}: retorno médio do trade inteiro {media[s]*100:+.2f}%, {ganha[s]*100:.0f}% a ganhar")
-        for k in range(1, 6):
+        for k in range(1, 11):
             cel = [f"{nomes[b]}: {valor[(s, k, b)]*100:+.2f}%" for b in range(6) if (s, k, b) in valor]
             if cel:
                 print(f"  dia {k}: " + " | ".join(cel))

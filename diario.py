@@ -302,7 +302,8 @@ def enviar_pendentes(hist: pd.DataFrame, agora: pd.Timestamp, estado: dict | Non
         if regime.bloqueia(reg, t, h.get("setup")):
             logging.info("%s não enviado: %s", t, regime.bloqueia(reg, t, h.get("setup")))
             continue
-        lim = lista_sinais.limite(h["entrada"], h["objetivo"], h["stop"], h.get("setup"), cfg, h.get("preco_sinal"))
+        lim = lista_sinais.limite(h["entrada"], h["objetivo"], h["stop"], h.get("setup"), cfg, h.get("preco_sinal"),
+                                  h.get("saida") if isinstance(h.get("saida"), str) else None)
         if lim is not None and h["entrada"] > lim:
             logging.info("%s abriu a %.2f, acima do limite de compra %.2f: não enviado", t, h["entrada"], lim)
             continue

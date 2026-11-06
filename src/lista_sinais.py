@@ -35,7 +35,7 @@ def _num(x) -> float | None:
 
 
 def limite(entrada, objetivo, stop, setup: str | None = None, cfg: dict | None = None,
-           preco_sinal=None) -> float | None:
+           preco_sinal=None, saida: str | None = None) -> float | None:
     """Preço máximo de compra: entrada + metade do caminho até ao objetivo. Sem objetivo (saída pela
     regra), conta como objetivo a mesma distância do stop para cima.
     Com o setup e a config (sinais.limite_compra_atr), também nunca mais de k ATR acima do preço a que
@@ -48,7 +48,7 @@ def limite(entrada, objetivo, stop, setup: str | None = None, cfg: dict | None =
     lim = round(e + FUGIU * (alvo - e), 2) if e and alvo and alvo > e else None
     k = _num(((cfg or {}).get("limite_compra_atr") or {}).get(setup))
     if k is not None and e and st:
-        atr = trocas.atr_pct(setup, e, st, cfg)
+        atr = trocas.atr_pct(setup, e, st, cfg, saida)
         if atr:
             teto = round((_num(preco_sinal) or e) + k * atr * e, 2)
             lim = teto if lim is None else min(lim, teto)
@@ -111,7 +111,8 @@ def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: di
     dias = int(np.busday_count(data, hoje)) if hoje >= data else 0
     max_dias = int(_num(r.get("max_dias")) or 5)
     setup = r.get("setup") if isinstance(r.get("setup"), str) else ""
-    lim = limite(e, o, st, setup, cfg, r.get("preco_sinal"))
+    saida = r.get("saida") if isinstance(r.get("saida"), str) else None
+    lim = limite(e, o, st, setup, cfg, r.get("preco_sinal"), saida)
     forca = None
     if modelo:
         if dias >= max_dias:
@@ -119,7 +120,7 @@ def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: di
         elif dias < 1:
             forca = modelo["media"].get(setup)
         else:
-            atr = trocas.atr_pct(setup, e, st, cfg) if st else None
+            atr = trocas.atr_pct(setup, e, st, cfg, saida) if st else None
             forca = trocas.valor_que_falta(setup, dias, preco / e - 1, atr, modelo)
     ask, spread = _num(ask), _num(spread)
     paga = forca is None or not modelo or forca > modelo.get("custo", 0.0)
@@ -127,7 +128,7 @@ def avaliar_um(r: dict, p: float | None, hoje: str, modelo: dict | None, cfg: di
     compra = ask or preco
     estado = ("comprar" if (lim is None or compra <= lim) and dias < max_dias and paga and not spread_alto
               else "andamento")
-    atr_sinal = trocas.atr_pct(setup, e, st, cfg) if st and setup else None
+    atr_sinal = trocas.atr_pct(setup, e, st, cfg, saida) if st and setup else None
     return {**r, "ticker": t, "data_sinal": data, "entrada_sinal": e, "entrada": preco, "preco": preco,
             "risco": risco.nivel(atr_sinal), "perda_dia_mau": risco.perda_dia_mau(atr_sinal),
             "sem_preco": p is None, "ganho": preco / e - 1, "dias_usados": dias, "max_dias": max_dias,

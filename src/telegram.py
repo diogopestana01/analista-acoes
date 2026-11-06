@@ -47,7 +47,7 @@ def formatar_sinal(s: dict) -> str:
     ]
     if tem_obj:
         linhas.append(f"Objetivo: <b>{_num(s['objetivo'])}</b> (+{abs(s['objetivo'] / s['entrada'] - 1) * 100:.1f}%)")
-    if regra and regra.sair_se:
+    if regra and (regra.sair_se or not tem_obj):
         linhas.append(f"Saída: <b>{regra.texto_alerta()}</b> (aviso-te quando for)")
     if tem_stop:
         linhas.append(f"Stop-loss: {_num(s['stop'])} (−{abs(s['stop'] / s['entrada'] - 1) * 100:.1f}%)")
