@@ -19,13 +19,14 @@ name: Backtest intradiário
 #   vendas       vendas a descoberto (CFD) com o mercado fraco (passo3r_vendas.py)
 #   restritas    mercado fraco: só compras de capitulação em vez de parar; vender o índice (passo3s_restritas.py)
 #   dados        resultados das empresas, setor e força contra o mercado, para compras e vendas (passo3t_dados.py)
+#   biblioteca   muitas regras de compra e venda, cada uma por tipo de mercado (passo3u_biblioteca.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas, dados]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas, dados, biblioteca]
         default: rompimentos
 
 permissions:
@@ -89,6 +90,8 @@ jobs:
         if: inputs.estudo == 'restritas'
       - run: python passo3t_dados.py
         if: inputs.estudo == 'dados'
+      - run: python passo3u_biblioteca.py
+        if: inputs.estudo == 'biblioteca'
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
