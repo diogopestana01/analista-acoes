@@ -154,3 +154,22 @@ def test_setups_do_mercado_fraco_passam_a_amplitude():
     assert regime.bloqueia(fraco, "AAPL", "lider_recuo")
     assert "mercado fraco" in regime.bloqueia(fraco, "AAPL", "pullback")
     assert regime.bloqueia({**fraco, "travao": True, "travao_ate": "2026-11-11"}, "AAPL", "viragem_mes")
+
+
+def test_travao_recomecado_esquece_a_pausa_e_as_vendas_antigas(tmp_path):
+    import json
+    sim = tmp_path / "s.json"
+    sim.write_text(json.dumps({"carteiras": {"5": {"regras": {"capital_inicial": 1000},
+                                                   "operacoes": [{"tipo": "venda", "data": "2026-11-06", "lucro": -80}]}}}))
+    est = tmp_path / "e.json"
+    est.write_text(json.dumps({"travao_ate": "2026-11-11"}))
+    cfg = {"travao": {"perda": 0.05, "janela_dias": 7, "pausa_dias": 5, "carteira": "5", "desde": "2026-11-07"}}
+    r = regime.estado(pd.DataFrame(columns=["data", "ticker", "close"]), [], cfg, "2026-11-07", False, sim, est,
+                      spy5=lambda: None)
+    assert not r["travao"] and r["perda_7d"] == 0
+    # sem 'desde', a mesma venda liga o travão
+    est.write_text("{}")
+    cfg["travao"].pop("desde")
+    r = regime.estado(pd.DataFrame(columns=["data", "ticker", "close"]), [], cfg, "2026-11-07", False, sim, est,
+                      spy5=lambda: None)
+    assert r["travao"]
