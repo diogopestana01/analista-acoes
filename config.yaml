@@ -26,7 +26,7 @@ precos:
   lote_rapido: 1000     # tickers por pedido nas atualizações de hora a hora
 
 sinais:
-  setups: [rompimento, pullback, semana_forte, caiu_10, reversao_queda]   # caiu_10 e reversao_queda: estudo passo3u_biblioteca.py (10 anos), só no seu mercado (regime.so_em). semana_forte: estudo 28/10 +0,53% (4969 trades), positivo nas duas metades. rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
+  setups: [rompimento, pullback, semana_forte, caiu_10, reversao_queda, medo_vix, viragem_mes, contra_setor, lider_recuo]   # medo_vix, viragem_mes, contra_setor, lider_recuo: estudos passo3v_avancado.py + passo3w_carteira.py (10 anos, carteira 5 lugares +55,7%|+56,3% contra -22,1%|+47,9%), precisam de src/contexto.py. caiu_10 e reversao_queda: estudo passo3u_biblioteca.py (10 anos), só no seu mercado (regime.so_em). semana_forte: estudo 28/10 +0,53% (4969 trades), positivo nas duas metades. rompimento_baixa (venda via CFD) desligado: backtest 2024-26 com retorno médio -0,33%
   mult_objetivo: 2.0     # só para setups de venda; as compras usam a regra de saída do setup (qualidade.*.saida)
   mult_stop: 1.0
   max_dias: 5            # horizonte máximo (dias úteis)
@@ -40,7 +40,7 @@ sinais:
   # acima de 0,5 ATR ~0% em todos.
   # Probabilidade de ganhar de cada setup (backtest, período de teste) para a ordem equilibrada da lista
   # (src/lista_sinais.ordenar: ganho esperado + probabilidade de ganhar; estudo passo3j_ordem.py).
-  ganha_setup: {pullback: 0.66, rompimento: 0.47, semana_forte: 0.46, caiu_10: 0.63, reversao_queda: 0.64}
+  ganha_setup: {pullback: 0.66, rompimento: 0.47, semana_forte: 0.46, caiu_10: 0.63, reversao_queda: 0.64, medo_vix: 0.72, viragem_mes: 0.68, contra_setor: 0.60, lider_recuo: 0.64}
   # Regime do mercado (src/regime.py; estudos passo3p_regime.py e passo3q_skills.py, aprovado 6/11):
   # sem compras novas nos EUA com menos de 50% das ações acima da média de 50 dias, e nenhuma durante 5 dias
   # depois de a carteira simulada de 5 lugares perder mais de 5% em vendas de 7 dias. Carteira de 5 lugares
@@ -48,18 +48,18 @@ sinais:
   regime:
     amplitude_min: 0.5
     travao: {perda: 0.05, janela_dias: 7, pausa_dias: 5, carteira: "5"}
-    capitulacao: {spy_5d: -0.03, setups: [pullback, reversao_queda]}
+    capitulacao: {spy_5d: -0.03, setups: [pullback, reversao_queda, medo_vix, viragem_mes, contra_setor]}
     # Setups que só valem num tipo de mercado (forte: amplitude >= amplitude_min; queda: SPY 5 dias < spy_5d;
     # fraco: o resto). Estudo passo3u_biblioteca.py, 10 anos: carteira 5 lugares +41,2%|+63,3% com estes contra
     # -35,9%|+10,4% só com os de antes. Aprovado pelo Pestana a 6/11.
-    so_em: {caiu_10: [forte], reversao_queda: [queda]}   # SPY a cair > 3% em 5 dias: pullbacks passam (estudo passo3s_restritas.py, variante E)
+    so_em: {caiu_10: [forte], reversao_queda: [queda], medo_vix: [forte, fraco, queda], viragem_mes: [fraco, queda], contra_setor: [forte, queda], lider_recuo: [forte]}   # SPY a cair > 3% em 5 dias: pullbacks passam (estudo passo3s_restritas.py, variante E)
   # Europa (estudo passo3m_europa.py, 30/10): só ações em EUR e só rompimentos (+0,47% depois do spread,
   # positivo nas 2 metades). Pullback em EUR -0,08%; Londres/Estocolmo/Suíça negativos com o câmbio de 0,5%/lado.
   europa: {zonas: [euro], setups: [rompimento]}
   # Spread medido acima disto -> o sinal não aparece para comprar (estudo passo3l_spread.py: cortar >1% ganha
   # nas duas metades da carteira de 5 lugares, +30%/+13% contra +17%/-6,5% sem corte).
   spread_max: 0.01
-  limite_compra_atr: {pullback: 0.2, rompimento: 0.5, semana_forte: 0.5, caiu_10: 0.2, reversao_queda: 0.2}
+  limite_compra_atr: {pullback: 0.2, rompimento: 0.5, semana_forte: 0.5, caiu_10: 0.2, reversao_queda: 0.2, medo_vix: 0.2, viragem_mes: 0.2, contra_setor: 0.2, lider_recuo: 0.2}
   qualidade:                    # média do backtest por setup (bruta, %), regra de saída (src/saidas.py) e filtros [mín, máx]
     pullback: {retorno_base_pct: 0.42, saida: sma5, filtros: {}}          # backtest 22/10: sma5 +0,42% vs atual +0,37%, ganha 64%
     # Rompimento e semana forte: só se o gráfico SEMANAL não estiver esticado (RSI semanal < 70).
@@ -71,6 +71,13 @@ sinais:
     # reversao_queda (RSI2, duplo 7, 3 dias a cair, IBS, Bollinger, caiu 10%) na queda: +0,1% a +1,6%, ganha 63-66%.
     caiu_10: {retorno_base_pct: 1.1, saida: sma5, filtros: {}}
     reversao_queda: {retorno_base_pct: 1.0, saida: sma5, filtros: {}}
+    # Estudo passo3v_avancado.py (10 anos, líquido de 0,3%, 1.ª|2.ª metade), saída sma5:
+    # medo_vix fraco +0,95|+2,08, queda +1,35|+3,44; viragem_mes fraco +0,62|+0,36, queda +0,87|+1,00;
+    # contra_setor (-15 pts) forte +0,57|+0,98, queda +0,28|+1,25; lider_recuo forte +0,26|+0,73.
+    medo_vix: {retorno_base_pct: 1.8, saida: sma5, filtros: {}}
+    viragem_mes: {retorno_base_pct: 0.9, saida: sma5, filtros: {}}
+    contra_setor: {retorno_base_pct: 1.1, saida: sma5, filtros: {}}
+    lider_recuo: {retorno_base_pct: 0.8, saida: sma5, filtros: {}}
     gap_volume: {retorno_base_pct: 0.19, filtros: {}}
     gap_continuacao: {retorno_base_pct: 0.04, filtros: {}}   # backtest 2024-26: +0,04% (738 trades), desligado
   filtro_queda_com_noticia: false   # true = retira pullbacks cuja queda tem notícia concreta (fica registado no CSV)

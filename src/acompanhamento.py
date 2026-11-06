@@ -207,6 +207,8 @@ def resultados_reais(hist: pd.DataFrame) -> dict[str, tuple[int, float]]:
 
 SETUPS_PT = {"rompimento": "Rompimento", "pullback": "Correção em tendência", "semana_forte": "Semana forte",
              "caiu_10": "Caiu 10%", "reversao_queda": "Ressalto na queda",
+             "medo_vix": "Medo alto", "viragem_mes": "Viragem do mês", "contra_setor": "Contra o setor",
+             "lider_recuo": "Líder a recuar",
              "gap_volume": "Salto com volume", "gap_continuacao": "Continuação de salto"}
 
 

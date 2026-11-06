@@ -327,3 +327,49 @@ def test_setups_caiu_10_e_reversao_queda():
     assert f["caiu_10"].iat[-1] and f["reversao_queda"].iat[-1]
     assert not f["caiu_10"].iat[-10]
     assert sinais.SETUPS["caiu_10"].direcao == "compra" and sinais.SETUPS["reversao_queda"].direcao == "compra"
+
+
+def test_setups_com_contexto_vix_setor_lider_e_viragem():
+    from src import contexto
+    n = 300
+    datas = pd.bdate_range("2025-01-01", periods=n)
+    partes = []
+    for k in range(6):   # 6 ações do mesmo setor a subir; a X0 cai 20% nos últimos 5 dias e subiu mais no ano
+        c = np.linspace(50, 100 + 100 * (k == 0), n)
+        if k == 0:
+            c[-5:] = c[-6] * (0.8 ** (np.arange(1, 6) / 5))
+        p = _precos(c)
+        p["ticker"], p["data"] = f"X{k}", datas
+        partes.append(p)
+    precos = pd.concat(partes, ignore_index=True)
+    vix = pd.Series(35.0, index=datas)
+    t = contexto.tabela(precos, vix, pd.Series({f"X{k}": "Tec" for k in range(6)}))
+    d = contexto.juntar(indicadores.calcular(partes[0]), t[t["ticker"] == "X0"])
+    assert d["rel_setor5"].iat[-1] < -0.15 and d["vix"].iat[-1] == 35.0
+    f = sinais.detetar(d)
+    assert f["contra_setor"].iat[-1] and f["medo_vix"].iat[-1] and f["lider_recuo"].iat[-1]
+    assert not f["contra_setor"].iat[-10]
+    # sem contexto, nada
+    f0 = sinais.detetar(indicadores.calcular(partes[0]))
+    assert not f0[["medo_vix", "contra_setor", "lider_recuo"]].any().any()
+    # viragem do mês: recuo em tendência no 1.º dia útil do mês
+    c = np.r_[np.linspace(50, 100, 260), [99, 97, 95]]
+    p = _precos(c)
+    p["data"] = pd.bdate_range(end="2026-11-03", periods=len(c))   # 2/11 e 3/11 = 1.º e 2.º dias úteis
+    f = sinais.detetar(indicadores.calcular(p))
+    assert f["viragem_mes"].iat[-1]
+    p["data"] = pd.bdate_range(end="2026-11-18", periods=len(c))
+    assert not sinais.detetar(indicadores.calcular(p))["viragem_mes"].iat[-1]
+
+
+def test_setores_usa_a_cache_recente(tmp_path, monkeypatch):
+    from src import contexto
+    f = tmp_path / "setores.csv"
+    pd.DataFrame({"ticker": [f"T{i}" for i in range(150)], "sector": "Tec",
+                  "atualizado": f"{pd.Timestamp.now():%Y-%m-%d}"}).to_csv(f, index=False)
+    monkeypatch.setattr(contexto.requests, "get", lambda *a, **k: (_ for _ in ()).throw(AssertionError("não devia ir à rede")))
+    s = contexto.setores(f)
+    assert s["T3"] == "Tec" and len(s) == 150
+    pd.DataFrame({"ticker": ["A"], "sector": ["Tec"], "atualizado": ["2020-01-01"]}).to_csv(f, index=False)
+    monkeypatch.setattr(contexto.requests, "get", lambda *a, **k: (_ for _ in ()).throw(OSError("sem rede")))
+    assert contexto.setores(f)["A"] == "Tec"          # rede em baixo: usa a cache velha
