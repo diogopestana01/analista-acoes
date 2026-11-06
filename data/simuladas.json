@@ -287,7 +287,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0015314383740872017,
+   "caixa": 155.6709002762461,
    "desde": "2026-10-30",
    "posicoes": {
     "VNCE": {
@@ -328,16 +328,6 @@
      "stop": 365.44191365904453,
      "objetivo": 425.646201978786,
      "entrada_sinal": 385.510009765625,
-     "acompanhar": true
-    },
-    "DLTR": {
-     "qtd": 1.1439,
-     "preco": 141.46,
-     "data": "2026-11-05",
-     "sinal": "DLTR|2026-11-04",
-     "stop": 136.08651878474694,
-     "objetivo": 157.69694228890455,
-     "entrada_sinal": 143.2899932861328,
      "acompanhar": true
     }
    },
@@ -579,6 +569,16 @@
      "preco": 141.46,
      "data": "2026-11-05",
      "sinal": "DLTR|2026-11-04"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DLTR",
+     "qtd": 1.1439,
+     "preco": 136.08651878474694,
+     "data": "2026-11-06",
+     "preco_compra": 141.46,
+     "lucro": -6.146725162127979,
+     "motivo": "stop"
     }
    ],
    "decisoes": {
