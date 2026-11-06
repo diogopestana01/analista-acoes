@@ -15,7 +15,7 @@ import yaml
 
 import passo1_universo
 import passo2_sinais
-from src import (acompanhamento, bot, regime, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
+from src import (acompanhamento, bot, em_teste, regime, cofre, cotacoes, grafico, lista_sinais, precos as precos_mod, resultados,
                  spread as spread_mod,
                  insiders, telegram, trocas, vigia)
 
@@ -350,6 +350,21 @@ def estado_regime(precos: pd.DataFrame, config: dict, agora: pd.Timestamp) -> di
         return None
 
 
+def sinais_em_teste(precos: pd.DataFrame, config: dict, agora: pd.Timestamp, reg: dict | None,
+                    hist: pd.DataFrame) -> None:
+    """Regras novas em teste (src/em_teste.py): alertas à parte só para o dono, registo em papel próprio."""
+    try:
+        dono = os.environ.get("TELEGRAM_CHAT_ID")
+        uni = pd.read_csv(DADOS / "universo_filtrado.csv")["ticker"]
+        eua = list(uni[~uni.str.contains(".", regex=False)])
+        abertos = set(hist.loc[hist["estado"] == "aberto", "ticker"])
+        em_teste.correr(precos, eua, config.get("em_teste"), agora, reg, DADOS / "sinais_teste.csv",
+                        lambda txt: telegram.enviar(txt, dono) if dono else False, abertos,
+                        getattr(bot, "NOMES", None), regime.spy_ret5)
+    except Exception as e:  # noqa: BLE001 — os sinais em teste nunca podem parar os do modelo
+        logging.warning("Sinais em teste falharam: %s", e)
+
+
 def main() -> None:
     import time
     t0 = time.monotonic()
@@ -431,6 +446,7 @@ def main() -> None:
     _guardar_trocas(trocas_avisadas)
 
     vigiar_posicoes(hist, data, dono, config)
+    sinais_em_teste(precos, config, agora, reg, hist)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"], agora)
     # Depois de registar: os sinais da noite guardados nesta corrida já estão no registo (antes, eram
     # tomados por fechados e apagados da lista de espera sem nunca serem enviados).
