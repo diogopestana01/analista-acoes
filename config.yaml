@@ -48,6 +48,7 @@ sinais:
   regime:
     amplitude_min: 0.5
     travao: {perda: 0.05, janela_dias: 7, pausa_dias: 5, carteira: "5"}
+    capitulacao: {spy_5d: -0.03, setups: [pullback]}   # SPY a cair > 3% em 5 dias: pullbacks passam (estudo passo3s_restritas.py, variante E)
   # Europa (estudo passo3m_europa.py, 30/10): só ações em EUR e só rompimentos (+0,47% depois do spread,
   # positivo nas 2 metades). Pullback em EUR -0,08%; Londres/Estocolmo/Suíça negativos com o câmbio de 0,5%/lado.
   europa: {zonas: [euro], setups: [rompimento]}

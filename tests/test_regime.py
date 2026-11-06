@@ -92,3 +92,25 @@ def test_aviso_so_quando_muda(tmp_path):
     assert len(enviados) == 1 and "pausa" in enviados[0]
     regime.avisar({"travao": False, "amplitude_baixa": False, "avisado": "travao"}, est, enviados.append)
     assert len(enviados) == 2 and "retomadas" in enviados[1]
+
+
+def test_capitulacao_deixa_passar_pullbacks(tmp_path):
+    sim, est = tmp_path / "sim.json", tmp_path / "reg.json"
+    sim.write_text(json.dumps(_sim([("2026-11-05", -60)])))
+    cfg = {"travao": {"perda": 0.05}, "capitulacao": {"spy_5d": -0.03, "setups": ["pullback"]}}
+    r = regime.estado(_precos(60, 40), [], cfg, "2026-11-06", False, sim, est, spy5=lambda: -0.04)
+    assert r["travao"] and r["capitulacao"]
+    assert regime.bloqueia(r, "AAPL", "pullback") is None
+    assert "travão" in regime.bloqueia(r, "AAPL", "rompimento")
+    itens = regime.aplicar([{"ticker": "AAPL", "setup": "pullback", "estado_lista": "comprar"},
+                            {"ticker": "MSFT", "setup": "rompimento", "estado_lista": "comprar"}], r)
+    assert [s["estado_lista"] for s in itens] == ["comprar", "andamento"]
+    assert regime.chave(r) == "capitulacao" and "pullbacks" in regime.texto_aviso(r)
+
+
+def test_sem_queda_forte_nao_ha_capitulacao(tmp_path):
+    sim, est = tmp_path / "sim.json", tmp_path / "reg.json"
+    sim.write_text(json.dumps(_sim([("2026-11-05", -60)])))
+    cfg = {"travao": {"perda": 0.05}, "capitulacao": {"spy_5d": -0.03, "setups": ["pullback"]}}
+    r = regime.estado(_precos(60, 40), [], cfg, "2026-11-06", False, sim, est, spy5=lambda: -0.02)
+    assert not r["capitulacao"] and regime.bloqueia(r, "AAPL", "pullback")
