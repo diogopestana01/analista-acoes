@@ -47,7 +47,7 @@ sinais:
   # no histórico: +16,0%|+24,0% (pior queda -12%) contra +3,8%|-0,9% (-26%). Tirar a chave = desligar.
   regime:
     amplitude_min: 0.5
-    travao: {perda: 0.05, janela_dias: 7, pausa_dias: 5, carteira: "5"}
+    travao: {perda: 0.05, janela_dias: 7, pausa_dias: 5, carteira: "5", desde: "2026-11-07"}   # desde: recomeçado a pedido do Pestana (6/11, recomeçou a carteira); vendas antes não contam
     capitulacao: {spy_5d: -0.03, setups: [pullback, reversao_queda, medo_vix, viragem_mes, contra_setor]}
     # Setups que só valem num tipo de mercado (forte: amplitude >= amplitude_min; queda: SPY 5 dias < spy_5d;
     # fraco: o resto). Estudo passo3u_biblioteca.py, 10 anos: carteira 5 lugares +41,2%|+63,3% com estes contra

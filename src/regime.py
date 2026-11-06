@@ -79,8 +79,9 @@ def mercado_atual(precos: pd.DataFrame, tickers_eua, cfg: dict | None, sem_hoje:
     return "forte" if amp >= float(cfg.get("amplitude_min", 0.5)) else "fraco"
 
 
-def perda_recente(simuladas: dict, carteira: str, hoje: str, janela_dias: int) -> float | None:
-    """Soma do lucro das vendas dos últimos `janela_dias`, a dividir pelo capital inicial (negativo = perda)."""
+def perda_recente(simuladas: dict, carteira: str, hoje: str, janela_dias: int, desde: str | None = None) -> float | None:
+    """Soma do lucro das vendas dos últimos `janela_dias`, a dividir pelo capital inicial (negativo = perda).
+    `desde` (AAAA-MM-DD): vendas antes desta data não contam (travão recomeçado)."""
     c = (simuladas.get("carteiras") or {}).get(str(carteira))
     if not c:
         return None
@@ -88,6 +89,8 @@ def perda_recente(simuladas: dict, carteira: str, hoje: str, janela_dias: int) -
     if capital <= 0:
         return None
     inicio = (pd.Timestamp(hoje) - pd.Timedelta(days=janela_dias)).strftime("%Y-%m-%d")
+    if desde:
+        inicio = max(inicio, (pd.Timestamp(desde) - pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
     lucro = sum(float(o.get("lucro") or 0) for o in c.get("operacoes") or []
                 if o.get("tipo") == "venda" and inicio < str(o.get("data"))[:10] <= hoje)
     return lucro / capital
@@ -105,12 +108,16 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
     amp = amplitude(precos, tickers_eua, hoje if bolsa_aberta else None) if amp_min is not None else None
     t = cfg.get("travao") or {}
     perda, ate = None, guardado.get("travao_ate")
+    desde = str(t.get("desde") or "") or None
+    if desde and guardado.get("travao_desde") != desde:
+        ate = None          # travão recomeçado (sinais.regime.travao.desde): a pausa antiga acaba
+        log.info("Travão recomeçado: só contam as vendas desde %s", desde)
     if t:
         try:
             sim = json.loads(simuladas_path.read_text()) if simuladas_path.exists() else {}
         except (ValueError, OSError):
             sim = {}
-        perda = perda_recente(sim, t.get("carteira", "5"), hoje, int(t.get("janela_dias", 7)))
+        perda = perda_recente(sim, t.get("carteira", "5"), hoje, int(t.get("janela_dias", 7)), desde)
         if (not ate or hoje >= ate) and perda is not None and perda < -float(t.get("perda", 0.05)):
             ate = (pd.Timestamp(hoje) + pd.Timedelta(days=int(t.get("pausa_dias", 5)))).strftime("%Y-%m-%d")
             log.info("Travão de perdas: vendas de 7 dias %.1f%% -> sem compras novas até %s", perda * 100, ate)
@@ -132,7 +139,7 @@ def estado(precos: pd.DataFrame, tickers_eua, cfg: dict | None, hoje: str, bolsa
          "avisado": guardado.get("avisado")}
     try:
         estado_path.write_text(json.dumps({**guardado, "travao_ate": ate, "amplitude": amp, "perda_7d": perda,
-                                           "atualizado": hoje}))
+                                           "atualizado": hoje, "travao_desde": desde}))
     except OSError as e:
         log.warning("Estado do regime não gravado: %s", e)
     return r
