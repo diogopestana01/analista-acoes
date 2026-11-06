@@ -616,7 +616,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0068545495427514425,
+   "caixa": 0.3823685495427469,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -637,16 +637,6 @@
      "stop": 11.928560901228268,
      "objetivo": 16.942879341952644,
      "entrada_sinal": 13.600000381469727,
-     "acompanhar": true
-    },
-    "DLTR": {
-     "qtd": 0.8708,
-     "preco": 144.5,
-     "data": "2026-11-04",
-     "sinal": "DLTR|2026-11-04",
-     "stop": 136.08651878474694,
-     "objetivo": 157.69694228890455,
-     "entrada_sinal": 143.2899932861328,
      "acompanhar": true
     },
     "EQNR": {
@@ -697,6 +687,16 @@
      "stop": 81.11463572046381,
      "objetivo": null,
      "entrada_sinal": 93.75,
+     "acompanhar": true
+    },
+    "RYZ": {
+     "qtd": 4.4357,
+     "preco": 26.42,
+     "data": "2026-11-06",
+     "sinal": "RYZ|2026-11-05",
+     "stop": 26.21967618021991,
+     "objetivo": null,
+     "entrada_sinal": 29.094999313354492,
      "acompanhar": true
     }
    },
@@ -1070,6 +1070,24 @@
      "preco": 93.54,
      "data": "2026-11-05",
      "sinal": "KOD|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DLTR",
+     "qtd": 0.8708,
+     "preco": 135.01,
+     "data": "2026-11-06",
+     "preco_compra": 144.5,
+     "lucro": -8.263892000000013,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "RYZ",
+     "qtd": 4.4357,
+     "preco": 26.42,
+     "data": "2026-11-06",
+     "sinal": "RYZ|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1097,7 +1115,8 @@
     "COKE|2026-11-05": "comprei",
     "JLL|2026-11-05": "comprei",
     "FOSL|2026-11-05": "comprei",
-    "KOD|2026-11-05": "comprei"
+    "KOD|2026-11-05": "comprei",
+    "RYZ|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1116,7 +1135,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0026395428057810477,
+   "caixa": 0.002478542805761208,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1137,16 +1156,6 @@
      "stop": 11.928560901228268,
      "objetivo": 16.942879341952644,
      "entrada_sinal": 13.600000381469727,
-     "acompanhar": true
-    },
-    "DLTR": {
-     "qtd": 0.6859,
-     "preco": 144.5,
-     "data": "2026-11-04",
-     "sinal": "DLTR|2026-11-04",
-     "stop": 136.08651878474694,
-     "objetivo": 157.69694228890455,
-     "entrada_sinal": 143.2899932861328,
      "acompanhar": true
     },
     "EQNR": {
@@ -1217,6 +1226,16 @@
      "stop": 26.21967618021991,
      "objetivo": null,
      "entrada_sinal": 29.094999313354492,
+     "acompanhar": true
+    },
+    "VAC": {
+     "qtd": 0.864,
+     "preco": 107.18,
+     "data": "2026-11-06",
+     "sinal": "VAC|2026-11-05",
+     "stop": 101.0951131414886,
+     "objetivo": null,
+     "entrada_sinal": 110.12999725341797,
      "acompanhar": true
     }
    },
@@ -1678,6 +1697,24 @@
      "preco": 28.15,
      "data": "2026-11-05",
      "sinal": "RYZ|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DLTR",
+     "qtd": 0.6859,
+     "preco": 135.01,
+     "data": "2026-11-06",
+     "preco_compra": 144.5,
+     "lucro": -6.5091910000000155,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "VAC",
+     "qtd": 0.864,
+     "preco": 107.18,
+     "data": "2026-11-06",
+     "sinal": "VAC|2026-11-05"
     }
    ],
    "decisoes": {
@@ -1711,7 +1748,8 @@
     "FOSL|2026-11-05": "comprei",
     "AVAH|2026-11-05": "comprei",
     "KOD|2026-11-05": "comprei",
-    "RYZ|2026-11-05": "comprei"
+    "RYZ|2026-11-05": "comprei",
+    "VAC|2026-11-05": "comprei"
    },
    "aguarda": null,
    "anterior": null
