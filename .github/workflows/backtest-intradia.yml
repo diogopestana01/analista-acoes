@@ -22,13 +22,14 @@ name: Backtest intradiário
 #   biblioteca   muitas regras de compra e venda, cada uma por tipo de mercado (passo3u_biblioteca.py)
 #   biblioteca10 o mesmo com 10 anos de preços do Yahoo (1500 ações dos EUA mais negociadas)
 #   avancado     setor, momento de 12 meses, calendário, VIX e um modelo que junta tudo, 10 anos (passo3v_avancado.py)
+#   carteira_avancada  as regras novas do avancado na carteira de 5 lugares, 10 anos (passo3w_carteira.py)
 on:
   workflow_dispatch:
     inputs:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas, dados, biblioteca, biblioteca10, avancado]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas, dados, biblioteca, biblioteca10, avancado, carteira_avancada]
         default: rompimentos
 
 permissions:
@@ -99,6 +100,9 @@ jobs:
         env: {ANOS: "10", ACOES: "1500"}
       - run: pip install scikit-learn && python passo3v_avancado.py
         if: inputs.estudo == 'avancado'
+        env: {ANOS: "10", ACOES: "1500"}
+      - run: python passo3w_carteira.py
+        if: inputs.estudo == 'carteira_avancada'
         env: {ANOS: "10", ACOES: "1500"}
       - uses: actions/upload-artifact@v4
         with:

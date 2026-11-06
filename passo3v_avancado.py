@@ -77,13 +77,8 @@ def preparar(precos: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     return pd.concat(partes, ignore_index=True), por_ticker
 
 
-def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    precos = carregar()
-    todos, por_ticker = preparar(precos)
-    print(f"Ações: {todos['ticker'].nunique()}, linhas {len(todos)}, de {todos['data'].min():%Y-%m-%d} "
-          f"a {todos['data'].max():%Y-%m-%d}")
-    # Mercado e setor
+def enriquecer(todos: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Junta mercado (amplitude, SPY, VIX), setor, força contra o setor, rank de 12 meses e metade."""
     todos["acima50"] = (todos["close"] > todos["sma50"]).astype(float)
     todos["a50"] = todos.groupby("data")["acima50"].transform("mean")
     m = p3p.indices(todos["data"].min())
@@ -103,28 +98,41 @@ def main() -> None:
     todos["metade"] = np.where(todos["data"] < meio, 1, 2)
     print(f"Metades a partir de {meio:%Y-%m-%d}; setores conhecidos {(todos['setor'] != '?').mean() * 100:.0f}%; "
           f"VIX {'OK' if not m.empty else 'SEM DADOS'}")
+    return todos, m
 
-    # Regras 1-4
+
+def regras_avancadas(todos: pd.DataFrame) -> dict[str, pd.Series]:
     alta = todos["close"] > todos["sma200"]
     recuo = alta & (todos["rsi2"] < 10)
     dia = todos["data"]
     ultimo_mes = dia.groupby(dia.dt.to_period("M")).transform("max") == dia
     pos_mes = dia.groupby(dia.dt.to_period("M")).rank(method="dense")
     viragem = ultimo_mes | (pos_mes <= 3)
-    regras = {
+    return {
         "1 contra o setor (-8 pts em 5d)": alta & (todos["rel_setor5"] < -0.08),
         "1b contra o setor (-15 pts em 5d)": alta & (todos["rel_setor5"] < -0.15),
         "2 líder do ano a recuar": (todos["rank252"] >= 0.8) & (todos["rsi2"] < 10),
         "2b líder do ano a recuar, em tendência": (todos["rank252"] >= 0.8) & recuo,
         "3 recuo na viragem do mês": recuo & viragem,
         "3 recuo no resto do mês": recuo & ~viragem,
-        "3 recuo à segunda": recuo & (dia.dt.dayofweek == 0),
-        "3 recuo à sexta": recuo & (dia.dt.dayofweek == 4),
+        "3 recuo à segunda": recuo & (dia.dt.day_of_week == 0),
+        "3 recuo à sexta": recuo & (dia.dt.day_of_week == 4),
         "4 recuo com o VIX a disparar": recuo & (todos["vix_rel"] > 1.1),
         "4 recuo com o VIX > 30": recuo & (todos["vix"] > 30),
         "4b RSI2 < 5 com o VIX > 30": (todos["rsi2"] < 5) & (todos["vix"] > 30),
         "referência: recuo (RSI2 < 10 em tendência)": recuo,
     }
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    precos = carregar()
+    todos, por_ticker = preparar(precos)
+    print(f"Ações: {todos['ticker'].nunique()}, linhas {len(todos)}, de {todos['data'].min():%Y-%m-%d} "
+          f"a {todos['data'].max():%Y-%m-%d}")
+    todos, m = enriquecer(todos)
+    # Regras 1-4
+    regras = regras_avancadas(todos)
     linhas = []
     base_de = todos.reset_index().groupby("ticker")["index"].min().to_dict()
     for nome, flag in regras.items():
