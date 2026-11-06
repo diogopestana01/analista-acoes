@@ -159,20 +159,30 @@ def main() -> None:
     atual = t["setup"].str.startswith("atual") & ((t["mercado"] == "forte") |
                                                    ((t["mercado"] == "queda") & (t["setup"] == "atual: pullback")))
     bib = pd.Series([(s, mk) in escolhidas for s, mk in zip(t["setup"], t["mercado"])], index=t.index)
+    forte, queda = t["mercado"] == "forte", t["mercado"] == "queda"
+    caiu10 = (t["setup"] == "caiu 10% em 5 dias em alta") & forte
+    mr = t["setup"].isin(["rsi2<10 em alta", "rsi2<5 sem tendência", "duplo 7 em alta", "3 dias a cair em alta",
+                          "IBS<0,15 em alta", "abaixo da Bollinger em alta", "caiu 10% em 5 dias em alta"])
+    m1 = treino.groupby(["setup", "mercado"])["ret"].agg(["mean", "size"])
+    fortes1 = {k for k, v in m1.iterrows() if v["size"] >= 40 and v["mean"] > 0.005}
+    bib5 = pd.Series([(s, mk) in fortes1 for s, mk in zip(t["setup"], t["mercado"])], index=t.index)
     variantes = {"hoje (atuais no forte + pullbacks na queda)": atual,
-                 "biblioteca escolhida na 1.ª metade": bib,
-                 "biblioteca + hoje": bib | atual,
-                 "biblioteca só compras": bib & ~t["setup"].str.startswith("V "),
+                 "hoje + caiu 10% em 5 dias (forte)": atual | caiu10,
+                 "hoje + caiu 10% + reversão na queda": atual | caiu10 | (mr & queda),
+                 "hoje + reversão na queda": atual | (mr & queda),
+                 "escolhidas na 1.ª com > 0,5%": bib5,
+                 "escolhidas na 1.ª com > 0,15%": bib,
                  "sem filtros (todas as regras sempre)": pd.Series(True, index=t.index)}
-    print(f"\n### 2. Carteira de 5 lugares na 2.ª metade (ordem equilibrada). Escolhidas na 1.ª: {len(escolhidas)}")
-    for s, mk in sorted(escolhidas):
-        print(f"    - {s} [{mk}]")
-    seg = t[t["metade"] == 2]
+    print(f"\n### 2. Carteira de 5 lugares (ordem equilibrada), 1.ª e 2.ª metade. Escolhidas na 1.ª (>0,15%): "
+          f"{len(escolhidas)}; com > 0,5%: {sorted(fortes1)}")
     for nome, ok in variantes.items():
-        r = p3p.carteira(seg.assign(peso=ok.loc[seg.index].astype(float), ret=seg["ret"] + p3p.CUSTO))
-        x = seg[ok.loc[seg.index]]
-        print(f"  {nome:45s} {r['total']*100:+6.1f}% (desc {r['descida']*100:+5.1f}%, {r['n']} trades) | "
-              f"dias com sinal {x['entrada_data'].nunique()}/{seg['entrada_data'].nunique()}")
+        txt = []
+        for pn in (1, 2):
+            seg = t[t["metade"] == pn]
+            r = p3p.carteira(seg.assign(peso=ok.loc[seg.index].astype(float), ret=seg["ret"] + p3p.CUSTO))
+            txt.append(f"{pn}.ª {r['total']*100:+6.1f}% (desc {r['descida']*100:+5.1f}%, {r['n']} trades, "
+                       f"{seg[ok.loc[seg.index]]['entrada_data'].nunique()}/{seg['entrada_data'].nunique()} dias)")
+        print(f"  {nome:42s} " + " | ".join(txt))
 
 
 if __name__ == "__main__":
