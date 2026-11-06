@@ -1,0 +1,27 @@
+estudo,ficheiro,variantes,nota
+backtest,passo3_backtest.py,6,setups iniciais (pullback/rompimento/venda) e saídas
+intradia,passo3b_intradia.py,6,momento de entrada
+rompimentos,passo3c_rompimentos.py,12,filtros multi-tempo e setups novos (max52; NR7; rs_pullback; compressão; semana_forte)
+confianca,passo3d_confianca.py,3,regressão logística vs só o setup
+trocas,passo3e_trocas.py,8,regras de troca
+forca,passo3f_forca.py,6,o que ordena os sinais
+reavaliar,passo3g_reavaliar.py,8,reavaliação por preço e dias
+abertura,passo3h_abertura.py,6,limites de compra à abertura
+risco,passo3i_risco.py,4,medidas de risco
+ordem,passo3j_ordem.py,5,ordens da lista
+saidas_risco,passo3k_saidas_risco.py,6,prazos e stop à entrada
+spread,passo3l_spread.py,5,cortes de spread
+europa,passo3m_europa.py,8,bolsas e setups na Europa
+posicoes,passo3n_posicoes.py,6,1/2/3/5/8/10 lugares
+recalcular,passo3o_recalcular.py,6,recalcular do zero
+regime,passo3p_regime.py,20,SPY/QQQ médias; VIX; amplitude 40-55%; força relativa
+skills,passo3q_skills.py,6,4 setups do scanner + travão
+vendas,passo3r_vendas.py,4,vendas CFD e short SPY
+restritas,passo3s_restritas.py,6,variantes A-F
+dados,passo3t_dados.py,8,resultados; setor; força vs mercado
+biblioteca,passo3u_biblioteca.py,40,muitas regras por mercado (15 meses e 10 anos)
+avancado,passo3v_avancado.py,20,setor; momento 12m; calendário; VIX; modelo de 20 variáveis
+carteira_avancada,passo3w_carteira.py,8,regras novas na carteira
+daytrade,passo3x_daytrade.py,6,regras intradiárias
+gestao,passo3y_gestao.py,25,11 saídas por setup; tamanhos; lugares; reinvestir
+crise,outra thread 6/11,8,travão da carteira; CFD S&P; tamanhos menores; prazos 15-20; stops; lugares fixos
