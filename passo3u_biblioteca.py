@@ -106,7 +106,8 @@ def recolher(precos: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.Series]:
                 if liq is None:
                     continue
                 linhas.append({"ticker": ticker, "setup": nome, "entrada_data": d["data"].iat[i],
-                               "saida_data": d["data"].iat[i + liq[1]], "ret": liq[0], "atr_pct": d["atr_pct"].iat[i]})
+                               "saida_data": d["data"].iat[i + liq[1]], "ret": liq[0], "atr_pct": d["atr_pct"].iat[i],
+                               "rsi2": d["rsi2"].iat[i], "ret5": d["ret5"].iat[i], "vol_ratio": d["vol_ratio"].iat[i]})
     amp = pd.concat(acima).dropna().groupby("data")["a50"].mean()
     return pd.DataFrame(linhas), amp
 
@@ -183,6 +184,27 @@ def main() -> None:
             txt.append(f"{pn}.ª {r['total']*100:+6.1f}% (desc {r['descida']*100:+5.1f}%, {r['n']} trades, "
                        f"{seg[ok.loc[seg.index]]['entrada_data'].nunique()}/{seg['entrada_data'].nunique()} dias)")
         print(f"  {nome:42s} " + " | ".join(txt))
+
+    # 3. Sinais à parte (em teste): no máximo 5 ações por dia; que ordem escolhe melhor?
+    print("\n### 3. Em teste: 5 ações por dia (uma linha por ação, com o melhor resultado das regras que deu)")
+    conjuntos = {"forte": (forte, ["caiu 10% em 5 dias em alta", "rsi2<5 sem tendência"]),
+                 "forte só caiu 10%": (forte, ["caiu 10% em 5 dias em alta"]),
+                 "queda": (queda, ["rsi2<10 em alta", "rsi2<5 sem tendência", "duplo 7 em alta", "3 dias a cair em alta",
+                                   "IBS<0,15 em alta", "abaixo da Bollinger em alta", "caiu 10% em 5 dias em alta",
+                                   "rompe dia interior em alta", "atual: pullback"])}
+    for nome, (mk, regras) in conjuntos.items():
+        x = t[mk & t["setup"].isin(regras)]
+        x = x.assign(n_regras=x.groupby(["entrada_data", "ticker"])["setup"].transform("size"))
+        x = x.sort_values("ret").drop_duplicates(["entrada_data", "ticker"])   # pior caso entre as regras da ação
+        for ordem, col, asc in (("mais caiu em 5 dias", "ret5", True), ("RSI2 mais baixo", "rsi2", True),
+                                ("mais regras", "n_regras", False), ("mais volátil", "atr_pct", False),
+                                ("menos volátil", "atr_pct", True), ("ao acaso", None, True)):
+            y = x.sample(frac=1, random_state=1) if col is None else x.sort_values(col, ascending=asc, kind="stable")
+            top = y.groupby("entrada_data").head(5)
+            a, b = top[top["metade"] == 1], top[top["metade"] == 2]
+            print(f"  {nome:18s} {ordem:20s} n={len(top):5d} ({top['entrada_data'].nunique()} dias) "
+                  f"{top['ret'].mean()*100:+.2f}% ({a['ret'].mean()*100:+.2f}|{b['ret'].mean()*100:+.2f}) "
+                  f"ganha {(top['ret'] > 0).mean()*100:.0f}% | pior 10% {p3j.pior10(top['ret'])*100:+.1f}%")
 
 
 if __name__ == "__main__":
