@@ -13,8 +13,13 @@ Para não escolher à sorte: as regras são ESCOLHIDAS só com a 1.ª metade (m�
 e a carteira de 5 lugares é medida na 2.ª metade, contra as regras de hoje (atuais no mercado forte, pullbacks
 na queda). Só EUA. Só mede.
 Uso:  python passo3u_biblioteca.py   (depois de passo1_universo.py)
+      ANOS=10 ACOES=1500 python passo3u_biblioteca.py   (10 anos do Yahoo, as 1500 ações dos EUA com mais
+      dinheiro negociado: apanha 2018, 2020 e 2022; pedido do Pestana "há coisas que nos estão a escapar")
 """
 from __future__ import annotations
+
+import logging
+import os
 
 import numpy as np
 import pandas as pd
@@ -118,6 +123,15 @@ def main() -> None:
     filtrado = pd.read_csv(DADOS / "universo_filtrado.csv")
     eua = filtrado["ticker"][~filtrado["ticker"].str.contains(".", regex=False)]
     precos = precos[precos["ticker"].isin(eua)].copy()
+    anos = int(os.environ.get("ANOS", "0") or 0)
+    if anos:
+        from src import precos as precos_mod
+        logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+        p = precos.assign(dinheiro=precos["close"] * precos["volume"])
+        p = p[pd.to_datetime(p["data"]) >= pd.to_datetime(p["data"]).max() - pd.Timedelta(days=90)]
+        top = p.groupby("ticker")["dinheiro"].median().nlargest(int(os.environ.get("ACOES", "1500"))).index
+        precos = precos_mod.descarregar(sorted(top), periodo=f"{anos}y")
+        print(f"{anos} anos do Yahoo: {precos['ticker'].nunique()} ações, {len(precos)} linhas")
     precos["data"] = p3p._sem_fuso(precos["data"])
 
     t, amp = recolher(precos, cfg)
