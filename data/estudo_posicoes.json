@@ -1,69 +1,69 @@
 {
- "gerado_em": "2026-10-31T08:07:27.781408+00:00",
- "desde": "2026-04-29",
- "ate": "2026-10-29",
- "meses": 6,
+ "gerado_em": "2026-11-07T08:08:22.297121+00:00",
+ "desde": "2026-04-17",
+ "ate": "2026-11-05",
+ "meses": 7,
  "custo": 0.003,
  "por_n": {
   "1": {
-   "total": -0.051,
-   "descida": -0.3751,
-   "trades": 40,
-   "media": -0.0013,
-   "perde": 0.425,
-   "total_1": 0.3542,
-   "total_2": -0.4052,
-   "acaso_meio": 0.0044
+   "total": -0.3281,
+   "descida": -0.7417,
+   "trades": 52,
+   "media": -0.0063,
+   "perde": 0.442,
+   "total_1": -0.6672,
+   "total_2": 0.339,
+   "acaso_meio": -0.109
   },
   "2": {
-   "total": 0.2839,
-   "descida": -0.1509,
-   "trades": 86,
-   "media": 0.0066,
-   "perde": 0.349,
-   "total_1": 0.3419,
-   "total_2": -0.0554,
-   "acaso_meio": 0.0262
+   "total": -0.2545,
+   "descida": -0.4553,
+   "trades": 98,
+   "media": -0.0052,
+   "perde": 0.439,
+   "total_1": -0.2177,
+   "total_2": -0.0085,
+   "acaso_meio": 0.1389
   },
   "3": {
-   "total": 0.3994,
-   "descida": -0.1205,
-   "trades": 132,
-   "media": 0.0091,
-   "perde": 0.356,
-   "total_1": 0.3635,
-   "total_2": 0.0347,
-   "acaso_meio": 0.04
+   "total": -0.4066,
+   "descida": -0.486,
+   "trades": 144,
+   "media": -0.0085,
+   "perde": 0.458,
+   "total_1": -0.1812,
+   "total_2": -0.2935,
+   "acaso_meio": -0.003
   },
   "5": {
-   "total": 0.2634,
-   "descida": -0.0901,
-   "trades": 216,
-   "media": 0.0061,
-   "perde": 0.375,
-   "total_1": 0.2699,
-   "total_2": 0.0004,
-   "acaso_meio": -0.0073
+   "total": -0.262,
+   "descida": -0.4061,
+   "trades": 242,
+   "media": -0.0054,
+   "perde": 0.463,
+   "total_1": -0.0955,
+   "total_2": -0.1606,
+   "acaso_meio": 0.0298
   },
   "8": {
-   "total": 0.0792,
-   "descida": -0.1619,
-   "trades": 336,
-   "media": 0.0019,
-   "perde": 0.414,
-   "total_1": 0.1875,
-   "total_2": -0.0566,
-   "acaso_meio": 0.0381
+   "total": -0.101,
+   "descida": -0.3461,
+   "trades": 393,
+   "media": -0.0021,
+   "perde": 0.427,
+   "total_1": 0.1265,
+   "total_2": -0.2287,
+   "acaso_meio": -0.0017
   },
   "10": {
-   "total": 0.0332,
-   "descida": -0.1821,
-   "trades": 420,
-   "media": 0.0008,
-   "perde": 0.426,
-   "total_1": 0.1853,
-   "total_2": -0.1218,
-   "acaso_meio": -0.0348
+   "total": -0.1212,
+   "descida": -0.379,
+   "trades": 487,
+   "media": -0.0025,
+   "perde": 0.419,
+   "total_1": 0.1385,
+   "total_2": -0.2597,
+   "acaso_meio": -0.061
   }
  }
 }
