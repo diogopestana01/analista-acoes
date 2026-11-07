@@ -25,3 +25,4 @@ carteira_avancada,passo3w_carteira.py,8,regras novas na carteira
 daytrade,passo3x_daytrade.py,6,regras intradiárias
 gestao,passo3y_gestao.py,25,11 saídas por setup; tamanhos; lugares; reinvestir
 crise,outra thread 6/11,8,travão da carteira; CFD S&P; tamanhos menores; prazos 15-20; stops; lugares fixos
+melhorias,passo3za_melhorias.py,5,setor 1/2/3 por carteira; exposição pelo VIX; setor2+vix
