@@ -1420,7 +1420,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.016890930982271,
+   "caixa": 1.2151159309822788,
    "desde": "2026-10-30",
    "posicoes": {
     "JLL": {
@@ -1431,16 +1431,6 @@
      "stop": 365.44191365904453,
      "objetivo": 425.646201978786,
      "entrada_sinal": 385.510009765625,
-     "acompanhar": true
-    },
-    "GWW": {
-     "qtd": 0.0572,
-     "preco": 1489.09,
-     "data": "2026-11-05",
-     "sinal": "GWW|2026-11-05",
-     "stop": 1399.7685743571074,
-     "objetivo": 1561.0229098795355,
-     "entrada_sinal": 1453.52001953125,
      "acompanhar": true
     },
     "VAC": {
@@ -1521,6 +1511,16 @@
      "stop": 28.528078798632222,
      "objetivo": null,
      "entrada_sinal": 34.04999923706055,
+     "acompanhar": true
+    },
+    "PBYI": {
+     "qtd": 10.6107,
+     "preco": 8.37,
+     "data": "2026-11-09",
+     "sinal": "PBYI|2026-11-09",
+     "stop": 7.094741880164205,
+     "objetivo": null,
+     "entrada_sinal": 8.260000228881836,
      "acompanhar": true
     }
    },
@@ -2126,6 +2126,24 @@
      "preco": 34.1,
      "data": "2026-11-09",
      "sinal": "ASX|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "GWW",
+     "qtd": 0.0572,
+     "preco": 1451.22,
+     "data": "2026-11-09",
+     "preco_compra": 1489.09,
+     "lucro": -2.166163999999995,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PBYI",
+     "qtd": 10.6107,
+     "preco": 8.37,
+     "data": "2026-11-09",
+     "sinal": "PBYI|2026-11-09"
     }
    ],
    "decisoes": {
@@ -2167,7 +2185,8 @@
     "CAI|2026-11-09": "comprei",
     "TRMD|2026-11-09": "comprei",
     "PCLA|2026-11-09": "comprei",
-    "ASX|2026-11-09": "comprei"
+    "ASX|2026-11-09": "comprei",
+    "PBYI|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
