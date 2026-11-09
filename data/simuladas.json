@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 28.220284546231483,
+   "caixa": 304.55656358523294,
    "desde": "2026-10-30",
    "posicoes": {
     "CAI": {
@@ -26,16 +26,6 @@
      "stop": 20.557315990135624,
      "objetivo": null,
      "entrada_sinal": 25.094999313354492,
-     "acompanhar": true
-    },
-    "PCLA": {
-     "qtd": 42.7104,
-     "preco": 6.205,
-     "data": "2026-11-09",
-     "sinal": "PCLA|2026-11-09",
-     "stop": 4.3243524170698935,
-     "objetivo": null,
-     "entrada_sinal": 6.15500020980835,
      "acompanhar": true
     },
     "TRMD": {
@@ -307,6 +297,16 @@
      "preco": 35.55,
      "data": "2026-11-09",
      "sinal": "TRMD|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PCLA",
+     "qtd": 42.7104,
+     "preco": 6.46999979019165,
+     "data": "2026-11-09",
+     "preco_compra": 6.205,
+     "lucro": 11.318247039001449,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -344,7 +344,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 14.180695712508054,
+   "caixa": 192.35219693478473,
    "desde": "2026-10-30",
    "posicoes": {
     "JLL": {
@@ -375,16 +375,6 @@
      "stop": 20.557315990135624,
      "objetivo": null,
      "entrada_sinal": 25.094999313354492,
-     "acompanhar": true
-    },
-    "PCLA": {
-     "qtd": 27.5381,
-     "preco": 6.205,
-     "data": "2026-11-09",
-     "sinal": "PCLA|2026-11-09",
-     "stop": 4.3243524170698935,
-     "objetivo": null,
-     "entrada_sinal": 6.15500020980835,
      "acompanhar": true
     },
     "TRMD": {
@@ -708,6 +698,16 @@
      "preco": 35.55,
      "data": "2026-11-09",
      "sinal": "TRMD|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PCLA",
+     "qtd": 27.5381,
+     "preco": 6.46999979019165,
+     "data": "2026-11-09",
+     "preco_compra": 6.205,
+     "lucro": 7.297590722276681,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -749,7 +749,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.42069782402379,
+   "caixa": 110.17051836235386,
    "desde": "2026-10-30",
    "posicoes": {
     "OSPN": {
@@ -800,16 +800,6 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
-    "PCLA": {
-     "qtd": 16.4992,
-     "preco": 6.205,
-     "data": "2026-11-09",
-     "sinal": "PCLA|2026-11-09",
-     "stop": 4.3243524170698935,
-     "objetivo": null,
-     "entrada_sinal": 6.15500020980835,
      "acompanhar": true
     },
     "ASX": {
@@ -1365,6 +1355,16 @@
      "preco": 8.13,
      "data": "2026-11-09",
      "sinal": "PBYI|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PCLA",
+     "qtd": 16.4992,
+     "preco": 6.46999979019165,
+     "data": "2026-11-09",
+     "preco_compra": 6.205,
+     "lucro": 4.372284538330078,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1420,7 +1420,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 1.2151159309822788,
+   "caixa": 193.94683938321654,
    "desde": "2026-10-30",
    "posicoes": {
     "JLL": {
@@ -1431,16 +1431,6 @@
      "stop": 365.44191365904453,
      "objetivo": 425.646201978786,
      "entrada_sinal": 385.510009765625,
-     "acompanhar": true
-    },
-    "VAC": {
-     "qtd": 0.864,
-     "preco": 107.18,
-     "data": "2026-11-06",
-     "sinal": "VAC|2026-11-05",
-     "stop": 101.0951131414886,
-     "objetivo": null,
-     "entrada_sinal": 110.12999725341797,
      "acompanhar": true
     },
     "OSPN": {
@@ -1491,16 +1481,6 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
-    "PCLA": {
-     "qtd": 14.3961,
-     "preco": 6.205,
-     "data": "2026-11-09",
-     "sinal": "PCLA|2026-11-09",
-     "stop": 4.3243524170698935,
-     "objetivo": null,
-     "entrada_sinal": 6.15500020980835,
      "acompanhar": true
     },
     "ASX": {
@@ -2144,6 +2124,26 @@
      "preco": 8.37,
      "data": "2026-11-09",
      "sinal": "PBYI|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "VAC",
+     "qtd": 0.864,
+     "preco": 115.26499938964844,
+     "data": "2026-11-09",
+     "preco_compra": 107.18,
+     "lucro": 6.985439472656239,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PCLA",
+     "qtd": 14.3961,
+     "preco": 6.46999979019165,
+     "data": "2026-11-09",
+     "preco_compra": 6.205,
+     "lucro": 3.8149634795780116,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
