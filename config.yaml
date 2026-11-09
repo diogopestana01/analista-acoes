@@ -42,11 +42,11 @@ sinais:
   # (src/lista_sinais.ordenar: ganho esperado + probabilidade de ganhar; estudo passo3j_ordem.py).
   ganha_setup: {pullback: 0.48, rompimento: 0.48, semana_forte: 0.48, caiu_10: 0.63, reversao_queda: 0.64, medo_vix: 0.72, viragem_mes: 0.68, contra_setor: 0.60, lider_recuo: 0.51}
   # Regime do mercado (src/regime.py; estudos passo3p_regime.py e passo3q_skills.py, aprovado 6/11):
-  # sem compras novas nos EUA com menos de 50% das ações acima da média de 50 dias (exceto as regras que valem
+  # sem compras novas nos EUA com menos de 45% das ações acima da média de 50 dias (exceto as regras que valem
   # no mercado fraco). O travão de perdas foi desligado a 7/11. Carteira de 5 lugares
   # no histórico: +16,0%|+24,0% (pior queda -12%) contra +3,8%|-0,9% (-26%). Tirar a chave = desligar.
   regime:
-    amplitude_min: 0.5
+    amplitude_min: 0.45   # 50% -> 45% a pedido do Pestana (9/11); estudo passo3p: robusto entre 40% e 55%
     # travão de perdas DESLIGADO a pedido do Pestana (7/11: "não quero ter isso"). Para voltar a ligar:
     # travao: {perda: 0.05, janela_dias: 7, pausa_dias: 5, carteira: "5", desde: "AAAA-MM-DD"}
     capitulacao: {spy_5d: -0.03, setups: [pullback, reversao_queda, medo_vix, viragem_mes, contra_setor]}
