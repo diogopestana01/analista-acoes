@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0005445462314810356,
+   "caixa": 28.220284546231483,
    "desde": "2026-10-30",
    "posicoes": {
-    "CNC": {
-     "qtd": 4.359,
-     "preco": 72.92,
-     "data": "2026-11-04",
-     "sinal": "CNC|2026-11-04",
-     "stop": 68.37013229913742,
-     "objetivo": 81.23974638805326,
-     "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
     "CAI": {
      "qtd": 10.4555,
      "preco": 25.34,
@@ -46,6 +36,16 @@
      "stop": 4.3243524170698935,
      "objetivo": null,
      "entrada_sinal": 6.15500020980835,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 7.8494,
+     "preco": 35.55,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -289,6 +289,24 @@
      "preco": 6.205,
      "data": "2026-11-09",
      "sinal": "PCLA|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CNC",
+     "qtd": 4.359,
+     "preco": 70.49,
+     "data": "2026-11-09",
+     "preco_compra": 72.92,
+     "lucro": -10.592370000000017,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 7.8494,
+     "preco": 35.55,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -306,7 +324,8 @@
     "AVBH|2026-11-04": "comprei",
     "JLL|2026-11-05": "comprei",
     "CAI|2026-11-09": "comprei",
-    "PCLA|2026-11-09": "comprei"
+    "PCLA|2026-11-09": "comprei",
+    "TRMD|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -325,19 +344,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0005137125080807436,
+   "caixa": 14.180695712508054,
    "desde": "2026-10-30",
    "posicoes": {
-    "CNC": {
-     "qtd": 2.7053,
-     "preco": 72.92,
-     "data": "2026-11-04",
-     "sinal": "CNC|2026-11-04",
-     "stop": 68.37013229913742,
-     "objetivo": 81.23974638805326,
-     "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
     "JLL": {
      "qtd": 0.4755,
      "preco": 390.67,
@@ -376,6 +385,16 @@
      "stop": 4.3243524170698935,
      "objetivo": null,
      "entrada_sinal": 6.15500020980835,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 4.9653,
+     "preco": 35.55,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -671,6 +690,24 @@
      "preco": 6.205,
      "data": "2026-11-09",
      "sinal": "PCLA|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CNC",
+     "qtd": 2.7053,
+     "preco": 70.49,
+     "data": "2026-11-09",
+     "preco_compra": 72.92,
+     "lucro": -6.573879000000034,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 4.9653,
+     "preco": 35.55,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -692,7 +729,8 @@
     "DLTR|2026-11-04": "comprei",
     "OSPN|2026-11-06": "comprei",
     "CAI|2026-11-09": "comprei",
-    "PCLA|2026-11-09": "comprei"
+    "PCLA|2026-11-09": "comprei",
+    "TRMD|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -711,7 +749,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0002218240237965574,
+   "caixa": 0.0016518240237957116,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -722,16 +760,6 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
-    "JLL": {
-     "qtd": 0.2761,
-     "preco": 379.44,
-     "data": "2026-11-05",
-     "sinal": "JLL|2026-11-05",
-     "stop": 365.44191365904453,
-     "objetivo": 425.646201978786,
-     "entrada_sinal": 385.510009765625,
      "acompanhar": true
     },
     "OSPN": {
@@ -792,6 +820,16 @@
      "stop": 4.3243524170698935,
      "objetivo": null,
      "entrada_sinal": 6.15500020980835,
+     "acompanhar": true
+    },
+    "ASX": {
+     "qtd": 3.0573,
+     "preco": 34.1,
+     "data": "2026-11-09",
+     "sinal": "ASX|2026-11-09",
+     "stop": 28.528078798632222,
+     "objetivo": null,
+     "entrada_sinal": 34.04999923706055,
      "acompanhar": true
     }
    },
@@ -1291,6 +1329,24 @@
      "preco": 6.205,
      "data": "2026-11-09",
      "sinal": "PCLA|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "JLL",
+     "qtd": 0.2761,
+     "preco": 377.6,
+     "data": "2026-11-09",
+     "preco_compra": 379.44,
+     "lucro": -0.5080239999999918,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ASX",
+     "qtd": 3.0573,
+     "preco": 34.1,
+     "data": "2026-11-09",
+     "sinal": "ASX|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1325,7 +1381,8 @@
     "ABNB|2026-11-06": "comprei",
     "CAI|2026-11-09": "comprei",
     "TRMD|2026-11-09": "comprei",
-    "PCLA|2026-11-09": "comprei"
+    "PCLA|2026-11-09": "comprei",
+    "ASX|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1344,19 +1401,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.46777993098226034,
+   "caixa": 7.016890930982271,
    "desde": "2026-10-30",
    "posicoes": {
-    "CNC": {
-     "qtd": 1.3559,
-     "preco": 72.7,
-     "data": "2026-11-04",
-     "sinal": "CNC|2026-11-04",
-     "stop": 68.37013229913742,
-     "objetivo": 81.23974638805326,
-     "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
     "JLL": {
      "qtd": 0.2477,
      "preco": 390.67,
@@ -1445,6 +1492,16 @@
      "stop": 4.3243524170698935,
      "objetivo": null,
      "entrada_sinal": 6.15500020980835,
+     "acompanhar": true
+    },
+    "ASX": {
+     "qtd": 2.6108,
+     "preco": 34.1,
+     "data": "2026-11-09",
+     "sinal": "ASX|2026-11-09",
+     "stop": 28.528078798632222,
+     "objetivo": null,
+     "entrada_sinal": 34.04999923706055,
      "acompanhar": true
     }
    },
@@ -2032,6 +2089,24 @@
      "preco": 6.205,
      "data": "2026-11-09",
      "sinal": "PCLA|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CNC",
+     "qtd": 1.3559,
+     "preco": 70.49,
+     "data": "2026-11-09",
+     "preco_compra": 72.7,
+     "lucro": -2.9965390000000127,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ASX",
+     "qtd": 2.6108,
+     "preco": 34.1,
+     "data": "2026-11-09",
+     "sinal": "ASX|2026-11-09"
     }
    ],
    "decisoes": {
@@ -2072,7 +2147,8 @@
     "ABNB|2026-11-06": "comprei",
     "CAI|2026-11-09": "comprei",
     "TRMD|2026-11-09": "comprei",
-    "PCLA|2026-11-09": "comprei"
+    "PCLA|2026-11-09": "comprei",
+    "ASX|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
