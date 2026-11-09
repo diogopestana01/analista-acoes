@@ -749,19 +749,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0016518240237957116,
+   "caixa": 3.42069782402379,
    "desde": "2026-10-30",
    "posicoes": {
-    "CNC": {
-     "qtd": 1.6397,
-     "preco": 72.7,
-     "data": "2026-11-04",
-     "sinal": "CNC|2026-11-04",
-     "stop": 68.37013229913742,
-     "objetivo": 81.23974638805326,
-     "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
     "OSPN": {
      "qtd": 5.3834,
      "preco": 21.65,
@@ -830,6 +820,16 @@
      "stop": 28.528078798632222,
      "objetivo": null,
      "entrada_sinal": 34.04999923706055,
+     "acompanhar": true
+    },
+    "PBYI": {
+     "qtd": 13.7559,
+     "preco": 8.13,
+     "data": "2026-11-09",
+     "sinal": "PBYI|2026-11-09",
+     "stop": 7.094741880164205,
+     "objetivo": null,
+     "entrada_sinal": 8.260000228881836,
      "acompanhar": true
     }
    },
@@ -1347,6 +1347,24 @@
      "preco": 34.1,
      "data": "2026-11-09",
      "sinal": "ASX|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CNC",
+     "qtd": 1.6397,
+     "preco": 70.29,
+     "data": "2026-11-09",
+     "preco_compra": 72.7,
+     "lucro": -3.9516770000000037,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PBYI",
+     "qtd": 13.7559,
+     "preco": 8.13,
+     "data": "2026-11-09",
+     "sinal": "PBYI|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1382,7 +1400,8 @@
     "CAI|2026-11-09": "comprei",
     "TRMD|2026-11-09": "comprei",
     "PCLA|2026-11-09": "comprei",
-    "ASX|2026-11-09": "comprei"
+    "ASX|2026-11-09": "comprei",
+    "PBYI|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
