@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.010698929951672653,
+   "caixa": 0.001666546231490429,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -28,16 +28,6 @@
      "entrada_sinal": 72.66000366210938,
      "acompanhar": true
     },
-    "VNCE": {
-     "qtd": 22.21,
-     "preco": 13.65,
-     "data": "2026-11-05",
-     "sinal": "VNCE|2026-11-04",
-     "stop": 11.928560901228268,
-     "objetivo": 16.942879341952644,
-     "entrada_sinal": 13.600000381469727,
-     "acompanhar": true
-    },
     "JLL": {
      "qtd": 0.6987,
      "preco": 379.69,
@@ -46,6 +36,16 @@
      "stop": 365.44191365904453,
      "objetivo": 425.646201978786,
      "entrada_sinal": 385.510009765625,
+     "acompanhar": true
+    },
+    "CAI": {
+     "qtd": 10.4555,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09",
+     "stop": 20.557315990135624,
+     "objetivo": null,
+     "entrada_sinal": 25.094999313354492,
      "acompanhar": true
     }
    },
@@ -253,6 +253,24 @@
      "preco": 379.69,
      "data": "2026-11-05",
      "sinal": "JLL|2026-11-05"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "VNCE",
+     "qtd": 22.21,
+     "preco": 11.928560901228268,
+     "data": "2026-11-09",
+     "preco_compra": 13.65,
+     "lucro": -38.233162383720185,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CAI",
+     "qtd": 10.4555,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09"
     }
    ],
    "decisoes": {
@@ -268,7 +286,8 @@
     "VNCE|2026-11-04": "comprei",
     "COKE|2026-11-05": "comprei",
     "AVBH|2026-11-04": "comprei",
-    "JLL|2026-11-05": "comprei"
+    "JLL|2026-11-05": "comprei",
+    "CAI|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -287,19 +306,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0009052762461294606,
+   "caixa": 0.00185421250807849,
    "desde": "2026-10-30",
    "posicoes": {
-    "VNCE": {
-     "qtd": 15.0553,
-     "preco": 13.55,
-     "data": "2026-11-04",
-     "sinal": "VNCE|2026-11-04",
-     "stop": 11.928560901228268,
-     "objetivo": 16.942879341952644,
-     "entrada_sinal": 13.600000381469727,
-     "acompanhar": true
-    },
     "FRSH": {
      "qtd": 14.1217,
      "preco": 13.23,
@@ -338,6 +347,16 @@
      "stop": 18.867439849038533,
      "objetivo": null,
      "entrada_sinal": 21.399999618530273,
+     "acompanhar": true
+    },
+    "CAI": {
+     "qtd": 7.0871,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09",
+     "stop": 20.557315990135624,
+     "objetivo": null,
+     "entrada_sinal": 25.094999313354492,
      "acompanhar": true
     }
    },
@@ -597,6 +616,24 @@
      "preco": 21.65,
      "data": "2026-11-09",
      "sinal": "OSPN|2026-11-06"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "VNCE",
+     "qtd": 15.0553,
+     "preco": 11.928560901228268,
+     "data": "2026-11-09",
+     "preco_compra": 13.55,
+     "lucro": -24.41125206373806,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CAI",
+     "qtd": 7.0871,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09"
     }
    ],
    "decisoes": {
@@ -616,7 +653,8 @@
     "COKE|2026-11-05": "comprei",
     "AVBH|2026-11-04": "comprei",
     "DLTR|2026-11-04": "comprei",
-    "OSPN|2026-11-06": "comprei"
+    "OSPN|2026-11-06": "comprei",
+    "CAI|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -635,7 +673,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.001090953511521775,
+   "caixa": 0.0008678240237856016,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -646,26 +684,6 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
-    "VNCE": {
-     "qtd": 9.2468,
-     "preco": 13.55,
-     "data": "2026-11-04",
-     "sinal": "VNCE|2026-11-04",
-     "stop": 11.928560901228268,
-     "objetivo": 16.942879341952644,
-     "entrada_sinal": 13.600000381469727,
-     "acompanhar": true
-    },
-    "EQNR": {
-     "qtd": 2.8414,
-     "preco": 43.84,
-     "data": "2026-11-04",
-     "sinal": "EQNR|2026-11-04",
-     "stop": 40.77147600796604,
-     "objetivo": null,
-     "entrada_sinal": 43.654998779296875,
      "acompanhar": true
     },
     "FRSH": {
@@ -716,6 +734,26 @@
      "stop": 176.641960613454,
      "objetivo": null,
      "entrada_sinal": 190.26010131835938,
+     "acompanhar": true
+    },
+    "CAI": {
+     "qtd": 4.4825,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09",
+     "stop": 20.557315990135624,
+     "objetivo": null,
+     "entrada_sinal": 25.094999313354492,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 3.1601,
+     "preco": 35.62,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -1161,6 +1199,42 @@
      "preco": 192.01,
      "data": "2026-11-09",
      "sinal": "ABNB|2026-11-06"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "VNCE",
+     "qtd": 9.2468,
+     "preco": 11.928560901228268,
+     "data": "2026-11-09",
+     "preco_compra": 13.55,
+     "lucro": -14.993123058522457,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "EQNR",
+     "qtd": 2.8414,
+     "preco": 40.77147600796604,
+     "data": "2026-11-09",
+     "preco_compra": 43.84,
+     "lucro": -8.718904070965309,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CAI",
+     "qtd": 4.4825,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 3.1601,
+     "preco": 35.62,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1192,7 +1266,9 @@
     "RYZ|2026-11-05": "comprei",
     "OSPN|2026-11-06": "comprei",
     "PAYC|2026-11-06": "comprei",
-    "ABNB|2026-11-06": "comprei"
+    "ABNB|2026-11-06": "comprei",
+    "CAI|2026-11-09": "comprei",
+    "TRMD|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1211,7 +1287,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.012061336099677078,
+   "caixa": 0.001480430982269354,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1222,26 +1298,6 @@
      "stop": 68.37013229913742,
      "objetivo": 81.23974638805326,
      "entrada_sinal": 72.66000366210938,
-     "acompanhar": true
-    },
-    "VNCE": {
-     "qtd": 7.2863,
-     "preco": 13.55,
-     "data": "2026-11-04",
-     "sinal": "VNCE|2026-11-04",
-     "stop": 11.928560901228268,
-     "objetivo": 16.942879341952644,
-     "entrada_sinal": 13.600000381469727,
-     "acompanhar": true
-    },
-    "EQNR": {
-     "qtd": 2.2424,
-     "preco": 43.84,
-     "data": "2026-11-04",
-     "sinal": "EQNR|2026-11-04",
-     "stop": 40.77147600796604,
-     "objetivo": null,
-     "entrada_sinal": 43.654998779296875,
      "acompanhar": true
     },
     "FRSH": {
@@ -1312,6 +1368,26 @@
      "stop": 176.641960613454,
      "objetivo": null,
      "entrada_sinal": 190.26010131835938,
+     "acompanhar": true
+    },
+    "CAI": {
+     "qtd": 3.5597,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09",
+     "stop": 20.557315990135624,
+     "objetivo": null,
+     "entrada_sinal": 25.094999313354492,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 2.4747,
+     "preco": 35.62,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -1845,6 +1921,42 @@
      "preco": 192.01,
      "data": "2026-11-09",
      "sinal": "ABNB|2026-11-06"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "VNCE",
+     "qtd": 7.2863,
+     "preco": 11.928560901228268,
+     "data": "2026-11-09",
+     "preco_compra": 13.55,
+     "lucro": -11.81429170538047,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "EQNR",
+     "qtd": 2.2424,
+     "preco": 40.77147600796604,
+     "data": "2026-11-09",
+     "preco_compra": 43.84,
+     "lucro": -6.880858199736977,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "CAI",
+     "qtd": 3.5597,
+     "preco": 25.34,
+     "data": "2026-11-09",
+     "sinal": "CAI|2026-11-09"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 2.4747,
+     "preco": 35.62,
+     "data": "2026-11-09",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1882,7 +1994,9 @@
     "VAC|2026-11-05": "comprei",
     "OSPN|2026-11-06": "comprei",
     "PAYC|2026-11-06": "comprei",
-    "ABNB|2026-11-06": "comprei"
+    "ABNB|2026-11-06": "comprei",
+    "CAI|2026-11-09": "comprei",
+    "TRMD|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
