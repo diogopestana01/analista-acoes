@@ -616,7 +616,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 123.14696232243092,
+   "caixa": 238.74130195351154,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -677,16 +677,6 @@
      "stop": 7.110243308672576,
      "objetivo": 8.909513497095766,
      "entrada_sinal": 7.710000038146973,
-     "acompanhar": true
-    },
-    "RYZ": {
-     "qtd": 4.4357,
-     "preco": 26.42,
-     "data": "2026-11-06",
-     "sinal": "RYZ|2026-11-05",
-     "stop": 26.21967618021991,
-     "objetivo": null,
-     "entrada_sinal": 29.094999313354492,
      "acompanhar": true
     }
    },
@@ -1088,6 +1078,16 @@
      "preco_compra": 93.54,
      "lucro": 7.121091772888178,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RYZ",
+     "qtd": 4.4357,
+     "preco": 26.059999465942383,
+     "data": "2026-11-09",
+     "preco_compra": 26.42,
+     "lucro": -1.5968543689193808,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1135,7 +1135,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 90.62366132783994,
+   "caixa": 166.89669933609966,
    "desde": "2026-10-30",
    "posicoes": {
     "CNC": {
@@ -1206,16 +1206,6 @@
      "stop": 7.110243308672576,
      "objetivo": 8.909513497095766,
      "entrada_sinal": 7.710000038146973,
-     "acompanhar": true
-    },
-    "RYZ": {
-     "qtd": 2.909,
-     "preco": 28.15,
-     "data": "2026-11-05",
-     "sinal": "RYZ|2026-11-05",
-     "stop": 26.21967618021991,
-     "objetivo": null,
-     "entrada_sinal": 29.094999313354492,
      "acompanhar": true
     },
     "VAC": {
@@ -1715,6 +1705,16 @@
      "preco_compra": 93.54,
      "lucro": 5.256578785034179,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RYZ",
+     "qtd": 2.909,
+     "preco": 26.21967618021991,
+     "data": "2026-11-09",
+     "preco_compra": 28.15,
+     "lucro": -5.6153119917402705,
+     "motivo": "stop"
     }
    ],
    "decisoes": {
