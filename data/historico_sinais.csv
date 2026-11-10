@@ -258,3 +258,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-10,DCTH,semana_forte,compra,20.270000457763672,,18.427074680634075,10.0,10,76.7,aberto,,,,fecho_10,manter,2.0,apoia,0.9,,,0.8571428571428571,0.036843451406046,ok,ok,True,,0.75,4.0,0.0,6.24047,
 2026-11-10,ROIV,rompimento,compra,40.66999816894531,,37.47468648394015,10.0,10,66.8,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,0.9,0.028866075506115384,ok,ok,True,,0.7333333333333333,15.0,0.0,7.886581,
 2026-11-10,BMPS.MI,rompimento,compra,11.704000473022461,,11.161407204891411,10.0,10,65.3,aberto,,,,fecho_10,manter,2.0,neutro,0.0,,,,0.01636661477666128,ok,ok,False,,0.875,8.0,,,
+2026-11-10,ABN.AS,rompimento,compra,43.459999084472656,,41.275797403439604,10.0,10,60.1,aberto,,,,fecho_10,manter,2.0,apoia,0.3,,,,0.010354124297619035,ok,ok,False,,0.8,5.0,,,
