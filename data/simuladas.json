@@ -1610,19 +1610,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.00019938321652546165,
+   "caixa": 5.2583113832165225,
    "desde": "2026-10-30",
    "posicoes": {
-    "OSPN": {
-     "qtd": 4.2528,
-     "preco": 21.65,
-     "data": "2026-11-09",
-     "sinal": "OSPN|2026-11-06",
-     "stop": 18.867439849038533,
-     "objetivo": null,
-     "entrada_sinal": 21.399999618530273,
-     "acompanhar": true
-    },
     "PAYC": {
      "qtd": 0.3836,
      "preco": 240.0,
@@ -1711,6 +1701,16 @@
      "stop": 5.828988321060514,
      "objetivo": null,
      "entrada_sinal": 6.554999828338623,
+     "acompanhar": true
+    },
+    "GRAL": {
+     "qtd": 0.7008,
+     "preco": 126.55,
+     "data": "2026-11-10",
+     "sinal": "GRAL|2026-11-10",
+     "stop": 101.31713960043461,
+     "objetivo": null,
+     "entrada_sinal": 125.0,
      "acompanhar": true
     }
    },
@@ -2406,6 +2406,24 @@
      "preco": 6.45,
      "data": "2026-11-10",
      "sinal": "NAT|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "OSPN",
+     "qtd": 4.2528,
+     "preco": 22.09,
+     "data": "2026-11-10",
+     "preco_compra": 21.65,
+     "lucro": 1.8712320000000062,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "GRAL",
+     "qtd": 0.7008,
+     "preco": 126.55,
+     "data": "2026-11-10",
+     "sinal": "GRAL|2026-11-10"
     }
    ],
    "decisoes": {
@@ -2452,7 +2470,8 @@
     "KFRC|2026-11-06": "comprei",
     "REPX|2026-11-09": "comprei",
     "RLAY|2026-11-09": "comprei",
-    "NAT|2026-11-09": "comprei"
+    "NAT|2026-11-09": "comprei",
+    "GRAL|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
