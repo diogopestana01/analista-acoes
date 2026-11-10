@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 304.55656358523294,
+   "caixa": 21.739312585232938,
    "desde": "2026-10-30",
    "posicoes": {
     "CAI": {
@@ -36,6 +36,16 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
+     "acompanhar": true
+    },
+    "KFRC": {
+     "qtd": 5.2113,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06",
+     "stop": 50.44555971507465,
+     "objetivo": null,
+     "entrada_sinal": 54.97999954223633,
      "acompanhar": true
     }
    },
@@ -307,6 +317,14 @@
      "preco_compra": 6.205,
      "lucro": 11.318247039001449,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "KFRC",
+     "qtd": 5.2113,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06"
     }
    ],
    "decisoes": {
@@ -325,7 +343,8 @@
     "JLL|2026-11-05": "comprei",
     "CAI|2026-11-09": "comprei",
     "PCLA|2026-11-09": "comprei",
-    "TRMD|2026-11-09": "comprei"
+    "TRMD|2026-11-09": "comprei",
+    "KFRC|2026-11-06": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -344,7 +363,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 192.35219693478473,
+   "caixa": 14.379158934784726,
    "desde": "2026-10-30",
    "posicoes": {
     "JLL": {
@@ -385,6 +404,16 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
+     "acompanhar": true
+    },
+    "KFRC": {
+     "qtd": 3.2794,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06",
+     "stop": 50.44555971507465,
+     "objetivo": null,
+     "entrada_sinal": 54.97999954223633,
      "acompanhar": true
     }
    },
@@ -708,6 +737,14 @@
      "preco_compra": 6.205,
      "lucro": 7.297590722276681,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "KFRC",
+     "qtd": 3.2794,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06"
     }
    ],
    "decisoes": {
@@ -730,7 +767,8 @@
     "OSPN|2026-11-06": "comprei",
     "CAI|2026-11-09": "comprei",
     "PCLA|2026-11-09": "comprei",
-    "TRMD|2026-11-09": "comprei"
+    "TRMD|2026-11-09": "comprei",
+    "KFRC|2026-11-06": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -749,7 +787,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 110.17051836235386,
+   "caixa": 0.0024183623538647225,
    "desde": "2026-10-30",
    "posicoes": {
     "OSPN": {
@@ -820,6 +858,16 @@
      "stop": 7.094741880164205,
      "objetivo": null,
      "entrada_sinal": 8.260000228881836,
+     "acompanhar": true
+    },
+    "KFRC": {
+     "qtd": 2.03,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06",
+     "stop": 50.44555971507465,
+     "objetivo": null,
+     "entrada_sinal": 54.97999954223633,
      "acompanhar": true
     }
    },
@@ -1365,6 +1413,14 @@
      "preco_compra": 6.205,
      "lucro": 4.372284538330078,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "KFRC",
+     "qtd": 2.03,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06"
     }
    ],
    "decisoes": {
@@ -1401,7 +1457,8 @@
     "TRMD|2026-11-09": "comprei",
     "PCLA|2026-11-09": "comprei",
     "ASX|2026-11-09": "comprei",
-    "PBYI|2026-11-09": "comprei"
+    "PBYI|2026-11-09": "comprei",
+    "KFRC|2026-11-06": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1420,7 +1477,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 193.94683938321654,
+   "caixa": 14.171434383216535,
    "desde": "2026-10-30",
    "posicoes": {
     "JLL": {
@@ -1501,6 +1558,26 @@
      "stop": 7.094741880164205,
      "objetivo": null,
      "entrada_sinal": 8.260000228881836,
+     "acompanhar": true
+    },
+    "KFRC": {
+     "qtd": 1.6563,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06",
+     "stop": 50.44555971507465,
+     "objetivo": null,
+     "entrada_sinal": 54.97999954223633,
+     "acompanhar": true
+    },
+    "REPX": {
+     "qtd": 2.2244,
+     "preco": 40.41,
+     "data": "2026-11-10",
+     "sinal": "REPX|2026-11-09",
+     "stop": 36.36901136807032,
+     "objetivo": null,
+     "entrada_sinal": 40.69499969482422,
      "acompanhar": true
     }
    },
@@ -2144,6 +2221,22 @@
      "preco_compra": 6.205,
      "lucro": 3.8149634795780116,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "KFRC",
+     "qtd": 1.6563,
+     "preco": 54.27,
+     "data": "2026-11-10",
+     "sinal": "KFRC|2026-11-06"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "REPX",
+     "qtd": 2.2244,
+     "preco": 40.41,
+     "data": "2026-11-10",
+     "sinal": "REPX|2026-11-09"
     }
    ],
    "decisoes": {
@@ -2186,7 +2279,9 @@
     "TRMD|2026-11-09": "comprei",
     "PCLA|2026-11-09": "comprei",
     "ASX|2026-11-09": "comprei",
-    "PBYI|2026-11-09": "comprei"
+    "PBYI|2026-11-09": "comprei",
+    "KFRC|2026-11-06": "comprei",
+    "REPX|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
