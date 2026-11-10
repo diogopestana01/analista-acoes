@@ -863,19 +863,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.032339362353852,
+   "caixa": 10.290217362353829,
    "desde": "2026-10-30",
    "posicoes": {
-    "PAYC": {
-     "qtd": 0.4856,
-     "preco": 240.0,
-     "data": "2026-11-09",
-     "sinal": "PAYC|2026-11-06",
-     "stop": 220.50840491384776,
-     "objetivo": null,
-     "entrada_sinal": 240.88999938964844,
-     "acompanhar": true
-    },
     "TRMD": {
      "qtd": 3.1601,
      "preco": 35.62,
@@ -944,6 +934,16 @@
      "stop": 5.828988321060514,
      "objetivo": null,
      "entrada_sinal": 6.554999828338623,
+     "acompanhar": true
+    },
+    "GRAL": {
+     "qtd": 0.8977,
+     "preco": 125.06,
+     "data": "2026-11-10",
+     "sinal": "GRAL|2026-11-10",
+     "stop": 101.31713960043461,
+     "objetivo": null,
+     "entrada_sinal": 125.0,
      "acompanhar": true
     }
    },
@@ -1551,6 +1551,24 @@
      "preco": 6.45,
      "data": "2026-11-10",
      "sinal": "NAT|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PAYC",
+     "qtd": 0.4856,
+     "preco": 237.9,
+     "data": "2026-11-10",
+     "preco_compra": 240.0,
+     "lucro": -1.019760000000005,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "GRAL",
+     "qtd": 0.8977,
+     "preco": 125.06,
+     "data": "2026-11-10",
+     "sinal": "GRAL|2026-11-10"
     }
    ],
    "decisoes": {
@@ -1591,7 +1609,8 @@
     "KFRC|2026-11-06": "comprei",
     "REPX|2026-11-09": "comprei",
     "RLAY|2026-11-09": "comprei",
-    "NAT|2026-11-09": "comprei"
+    "NAT|2026-11-09": "comprei",
+    "GRAL|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1610,19 +1629,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 5.2583113832165225,
+   "caixa": 7.908027383216535,
    "desde": "2026-10-30",
    "posicoes": {
-    "PAYC": {
-     "qtd": 0.3836,
-     "preco": 240.0,
-     "data": "2026-11-09",
-     "sinal": "PAYC|2026-11-06",
-     "stop": 220.50840491384776,
-     "objetivo": null,
-     "entrada_sinal": 240.88999938964844,
-     "acompanhar": true
-    },
     "CAI": {
      "qtd": 3.5597,
      "preco": 25.34,
@@ -1711,6 +1720,16 @@
      "stop": 101.31713960043461,
      "objetivo": null,
      "entrada_sinal": 125.0,
+     "acompanhar": true
+    },
+    "ORKA": {
+     "qtd": 0.8084,
+     "preco": 109.61,
+     "data": "2026-11-10",
+     "sinal": "ORKA|2026-11-10",
+     "stop": 99.34365215881259,
+     "objetivo": null,
+     "entrada_sinal": 110.34500122070312,
      "acompanhar": true
     }
    },
@@ -2424,6 +2443,24 @@
      "preco": 126.55,
      "data": "2026-11-10",
      "sinal": "GRAL|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PAYC",
+     "qtd": 0.3836,
+     "preco": 237.9,
+     "data": "2026-11-10",
+     "preco_compra": 240.0,
+     "lucro": -0.8055599999999856,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ORKA",
+     "qtd": 0.8084,
+     "preco": 109.61,
+     "data": "2026-11-10",
+     "sinal": "ORKA|2026-11-10"
     }
    ],
    "decisoes": {
@@ -2471,7 +2508,8 @@
     "REPX|2026-11-09": "comprei",
     "RLAY|2026-11-09": "comprei",
     "NAT|2026-11-09": "comprei",
-    "GRAL|2026-11-10": "comprei"
+    "GRAL|2026-11-10": "comprei",
+    "ORKA|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
