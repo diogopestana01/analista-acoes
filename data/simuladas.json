@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 1.4925365852329833,
+   "caixa": 293.21289289016465,
    "desde": "2026-10-30",
    "posicoes": {
     "TRMD": {
@@ -36,16 +36,6 @@
      "stop": 50.44555971507465,
      "objetivo": null,
      "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
-    "REPX": {
-     "qtd": 7.0532,
-     "preco": 39.93,
-     "data": "2026-11-10",
-     "sinal": "REPX|2026-11-09",
-     "stop": 36.36901136807032,
-     "objetivo": null,
-     "entrada_sinal": 40.69499969482422,
      "acompanhar": true
     }
    },
@@ -343,6 +333,16 @@
      "preco": 39.93,
      "data": "2026-11-10",
      "sinal": "REPX|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "REPX",
+     "qtd": 7.0532,
+     "preco": 41.36000061035156,
+     "data": "2026-11-10",
+     "preco_compra": 39.93,
+     "lucro": 10.08608030493167,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -382,7 +382,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.681722934784716,
+   "caixa": 182.80361357809525,
    "desde": "2026-10-30",
    "posicoes": {
     "TRMD": {
@@ -403,16 +403,6 @@
      "stop": 50.44555971507465,
      "objetivo": null,
      "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
-    "REPX": {
-     "qtd": 4.3308,
-     "preco": 39.93,
-     "data": "2026-11-10",
-     "sinal": "REPX|2026-11-09",
-     "stop": 36.36901136807032,
-     "objetivo": null,
-     "entrada_sinal": 40.69499969482422,
      "acompanhar": true
     },
     "RLAY": {
@@ -818,6 +808,16 @@
      "preco": 6.45,
      "data": "2026-11-10",
      "sinal": "NAT|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "REPX",
+     "qtd": 4.3308,
+     "preco": 41.36000061035156,
+     "data": "2026-11-10",
+     "preco_compra": 39.93,
+     "lucro": 6.193046643310538,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -863,7 +863,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 10.290217362353829,
+   "caixa": 234.5422696713901,
    "desde": "2026-10-30",
    "posicoes": {
     "TRMD": {
@@ -874,16 +874,6 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
-    "ASX": {
-     "qtd": 3.0573,
-     "preco": 34.1,
-     "data": "2026-11-09",
-     "sinal": "ASX|2026-11-09",
-     "stop": 28.528078798632222,
-     "objetivo": null,
-     "entrada_sinal": 34.04999923706055,
      "acompanhar": true
     },
     "PBYI": {
@@ -904,16 +894,6 @@
      "stop": 50.44555971507465,
      "objetivo": null,
      "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
-    "REPX": {
-     "qtd": 2.7993,
-     "preco": 39.93,
-     "data": "2026-11-10",
-     "sinal": "REPX|2026-11-09",
-     "stop": 36.36901136807032,
-     "objetivo": null,
-     "entrada_sinal": 40.69499969482422,
      "acompanhar": true
     },
     "RLAY": {
@@ -1569,6 +1549,26 @@
      "preco": 125.06,
      "data": "2026-11-10",
      "sinal": "GRAL|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ASX",
+     "qtd": 3.0573,
+     "preco": 35.47999954223633,
+     "data": "2026-11-10",
+     "preco_compra": 34.1,
+     "lucro": 4.219072600479123,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "REPX",
+     "qtd": 2.7993,
+     "preco": 41.36000061035156,
+     "data": "2026-11-10",
+     "preco_compra": 39.93,
+     "lucro": 4.003000708557138,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1629,7 +1629,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.908027383216535,
+   "caixa": 192.54039554575314,
    "desde": "2026-10-30",
    "posicoes": {
     "CAI": {
@@ -1652,16 +1652,6 @@
      "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     },
-    "ASX": {
-     "qtd": 2.6108,
-     "preco": 34.1,
-     "data": "2026-11-09",
-     "sinal": "ASX|2026-11-09",
-     "stop": 28.528078798632222,
-     "objetivo": null,
-     "entrada_sinal": 34.04999923706055,
-     "acompanhar": true
-    },
     "PBYI": {
      "qtd": 10.6107,
      "preco": 8.37,
@@ -1680,16 +1670,6 @@
      "stop": 50.44555971507465,
      "objetivo": null,
      "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
-    "REPX": {
-     "qtd": 2.2244,
-     "preco": 40.41,
-     "data": "2026-11-10",
-     "sinal": "REPX|2026-11-09",
-     "stop": 36.36901136807032,
-     "objetivo": null,
-     "entrada_sinal": 40.69499969482422,
      "acompanhar": true
     },
     "RLAY": {
@@ -2461,6 +2441,26 @@
      "preco": 109.61,
      "data": "2026-11-10",
      "sinal": "ORKA|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ASX",
+     "qtd": 2.6108,
+     "preco": 35.47999954223633,
+     "data": "2026-11-10",
+     "preco_compra": 34.1,
+     "lucro": 3.6029028048706095,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "REPX",
+     "qtd": 2.2244,
+     "preco": 41.36000061035156,
+     "data": "2026-11-10",
+     "preco_compra": 40.41,
+     "lucro": 2.113181357666022,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
