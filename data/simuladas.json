@@ -382,19 +382,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 1.9838699347847353,
+   "caixa": 0.0019699347847108584,
    "desde": "2026-10-30",
    "posicoes": {
-    "OSPN": {
-     "qtd": 7.1903,
-     "preco": 21.65,
-     "data": "2026-11-09",
-     "sinal": "OSPN|2026-11-06",
-     "stop": 18.867439849038533,
-     "objetivo": null,
-     "entrada_sinal": 21.399999618530273,
-     "acompanhar": true
-    },
     "CAI": {
      "qtd": 7.0871,
      "preco": 25.34,
@@ -433,6 +423,16 @@
      "stop": 36.36901136807032,
      "objetivo": null,
      "entrada_sinal": 40.69499969482422,
+     "acompanhar": true
+    },
+    "RLAY": {
+     "qtd": 8.0759,
+     "preco": 20.1,
+     "data": "2026-11-10",
+     "sinal": "RLAY|2026-11-09",
+     "stop": 17.809772262660328,
+     "objetivo": null,
+     "entrada_sinal": 20.135000228881836,
      "acompanhar": true
     }
    },
@@ -782,6 +782,24 @@
      "preco": 39.93,
      "data": "2026-11-10",
      "sinal": "REPX|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "OSPN",
+     "qtd": 7.1903,
+     "preco": 22.3,
+     "data": "2026-11-10",
+     "preco_compra": 21.65,
+     "lucro": 4.673695000000038,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "RLAY",
+     "qtd": 8.0759,
+     "preco": 20.1,
+     "data": "2026-11-10",
+     "sinal": "RLAY|2026-11-09"
     }
    ],
    "decisoes": {
@@ -806,7 +824,8 @@
     "PCLA|2026-11-09": "comprei",
     "TRMD|2026-11-09": "comprei",
     "KFRC|2026-11-06": "comprei",
-    "REPX|2026-11-09": "comprei"
+    "REPX|2026-11-09": "comprei",
+    "RLAY|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -825,19 +844,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0009693623538709062,
+   "caixa": 7.454609362353864,
    "desde": "2026-10-30",
    "posicoes": {
-    "OSPN": {
-     "qtd": 5.3834,
-     "preco": 21.65,
-     "data": "2026-11-09",
-     "sinal": "OSPN|2026-11-06",
-     "stop": 18.867439849038533,
-     "objetivo": null,
-     "entrada_sinal": 21.399999618530273,
-     "acompanhar": true
-    },
     "PAYC": {
      "qtd": 0.4856,
      "preco": 240.0,
@@ -906,6 +915,16 @@
      "stop": 36.36901136807032,
      "objetivo": null,
      "entrada_sinal": 40.69499969482422,
+     "acompanhar": true
+    },
+    "RLAY": {
+     "qtd": 5.6018,
+     "preco": 20.1,
+     "data": "2026-11-10",
+     "sinal": "RLAY|2026-11-09",
+     "stop": 17.809772262660328,
+     "objetivo": null,
+     "entrada_sinal": 20.135000228881836,
      "acompanhar": true
     }
    },
@@ -1477,6 +1496,24 @@
      "preco": 39.93,
      "data": "2026-11-10",
      "sinal": "REPX|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "OSPN",
+     "qtd": 5.3834,
+     "preco": 22.3,
+     "data": "2026-11-10",
+     "preco_compra": 21.65,
+     "lucro": 3.499210000000005,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "RLAY",
+     "qtd": 5.6018,
+     "preco": 20.1,
+     "data": "2026-11-10",
+     "sinal": "RLAY|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1515,7 +1552,8 @@
     "ASX|2026-11-09": "comprei",
     "PBYI|2026-11-09": "comprei",
     "KFRC|2026-11-06": "comprei",
-    "REPX|2026-11-09": "comprei"
+    "REPX|2026-11-09": "comprei",
+    "RLAY|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1534,19 +1572,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 14.171434383216535,
+   "caixa": 9.630289383216535,
    "desde": "2026-10-30",
    "posicoes": {
-    "JLL": {
-     "qtd": 0.2477,
-     "preco": 390.67,
-     "data": "2026-11-05",
-     "sinal": "JLL|2026-11-05",
-     "stop": 365.44191365904453,
-     "objetivo": 425.646201978786,
-     "entrada_sinal": 385.510009765625,
-     "acompanhar": true
-    },
     "OSPN": {
      "qtd": 4.2528,
      "preco": 21.65,
@@ -1635,6 +1663,16 @@
      "stop": 36.36901136807032,
      "objetivo": null,
      "entrada_sinal": 40.69499969482422,
+     "acompanhar": true
+    },
+    "RLAY": {
+     "qtd": 4.4091,
+     "preco": 20.1,
+     "data": "2026-11-10",
+     "sinal": "RLAY|2026-11-09",
+     "stop": 17.809772262660328,
+     "objetivo": null,
+     "entrada_sinal": 20.135000228881836,
      "acompanhar": true
     }
    },
@@ -2294,6 +2332,24 @@
      "preco": 40.41,
      "data": "2026-11-10",
      "sinal": "REPX|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "JLL",
+     "qtd": 0.2477,
+     "preco": 339.45,
+     "data": "2026-11-10",
+     "preco_compra": 390.67,
+     "lucro": -12.687194000000005,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "RLAY",
+     "qtd": 4.4091,
+     "preco": 20.1,
+     "data": "2026-11-10",
+     "sinal": "RLAY|2026-11-09"
     }
    ],
    "decisoes": {
@@ -2338,7 +2394,8 @@
     "ASX|2026-11-09": "comprei",
     "PBYI|2026-11-09": "comprei",
     "KFRC|2026-11-06": "comprei",
-    "REPX|2026-11-09": "comprei"
+    "REPX|2026-11-09": "comprei",
+    "RLAY|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
