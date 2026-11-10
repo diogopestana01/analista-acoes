@@ -273,3 +273,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-10,FA,pullback,compra,21.15999984741211,,18.995779474980704,10.0,10,80.8,aberto,,,,fecho_10,rejeitar,8.0,contraria,-0.3,,,1.0,0.01877058746182923,ok,ok,False,,0.8333333333333334,6.0,0.0,5.232941,0.00095
 2026-11-10,GEO,semana_forte,compra,31.19499969482422,,28.158787875638573,10.0,10,54.7,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,0.75,0.02910232532880547,ok,ok,False,,1.0,3.0,0.0,,0.00256
 2026-11-10,NVCT,semana_forte,compra,21.209999084472656,,17.98610845171216,10.0,10,58.6,aberto,,,,fecho_10,manter,2.0,neutro,0.2,,,1.0,0.019873607601855015,ok,ok,False,,0.5,10.0,0.0,13.929455,0.02177
+2026-11-10,UFCS,caiu_10,compra,50.310001373291016,,46.29402395689249,2.5,5,43.5,aberto,,,,sma5,manter,2.0,apoia,0.2,,,0.6,0.019847933508209264,ok,ok,False,,1.0,4.0,0.0,3.615071,0.01378
