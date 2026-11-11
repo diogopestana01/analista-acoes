@@ -937,7 +937,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.406637671390101,
+   "caixa": 8.2061696713901,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -948,16 +948,6 @@
      "stop": 17.809772262660328,
      "objetivo": null,
      "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
-    "NAT": {
-     "qtd": 17.4256,
-     "preco": 6.45,
-     "data": "2026-11-10",
-     "sinal": "NAT|2026-11-09",
-     "stop": 5.828988321060514,
-     "objetivo": null,
-     "entrada_sinal": 6.554999828338623,
      "acompanhar": true
     },
     "GRAL": {
@@ -1018,6 +1008,16 @@
      "stop": 99.34365215881259,
      "objetivo": null,
      "entrada_sinal": 110.34500122070312,
+     "acompanhar": true
+    },
+    "DCTH": {
+     "qtd": 5.6994,
+     "preco": 20.1,
+     "data": "2026-11-11",
+     "sinal": "DCTH|2026-11-10",
+     "stop": 18.357074985809856,
+     "objetivo": null,
+     "entrada_sinal": 20.200000762939453,
      "acompanhar": true
     }
    },
@@ -1733,6 +1733,24 @@
      "preco": 110.0,
      "data": "2026-11-11",
      "sinal": "ORKA|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "NAT",
+     "qtd": 17.4256,
+     "preco": 6.62,
+     "data": "2026-11-11",
+     "preco_compra": 6.45,
+     "lucro": 2.9623519999999957,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DCTH",
+     "qtd": 5.6994,
+     "preco": 20.1,
+     "data": "2026-11-11",
+     "sinal": "DCTH|2026-11-10"
     }
    ],
    "decisoes": {
@@ -1778,7 +1796,8 @@
     "SMWB|2026-11-10": "comprei",
     "ROIV|2026-11-10": "comprei",
     "BXC|2026-11-09": "comprei",
-    "ORKA|2026-11-10": "comprei"
+    "ORKA|2026-11-10": "comprei",
+    "DCTH|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1797,19 +1816,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 13.955557545753166,
+   "caixa": 14.298573545753158,
    "desde": "2026-10-30",
    "posicoes": {
-    "CAI": {
-     "qtd": 3.5597,
-     "preco": 25.34,
-     "data": "2026-11-09",
-     "sinal": "CAI|2026-11-09",
-     "stop": 20.557315990135624,
-     "objetivo": null,
-     "entrada_sinal": 25.094999313354492,
-     "acompanhar": true
-    },
     "KFRC": {
      "qtd": 1.6563,
      "preco": 54.27,
@@ -1898,6 +1907,16 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
+     "acompanhar": true
+    },
+    "DCTH": {
+     "qtd": 4.4423,
+     "preco": 20.1,
+     "data": "2026-11-11",
+     "sinal": "DCTH|2026-11-10",
+     "stop": 18.357074985809856,
+     "objetivo": null,
+     "entrada_sinal": 20.200000762939453,
      "acompanhar": true
     }
    },
@@ -2701,6 +2720,24 @@
      "preco": 35.37,
      "data": "2026-11-11",
      "sinal": "TRMD|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "CAI",
+     "qtd": 3.5597,
+     "preco": 25.18,
+     "data": "2026-11-11",
+     "preco_compra": 25.34,
+     "lucro": -0.5695520000000016,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DCTH",
+     "qtd": 4.4423,
+     "preco": 20.1,
+     "data": "2026-11-11",
+     "sinal": "DCTH|2026-11-10"
     }
    ],
    "decisoes": {
@@ -2752,7 +2789,8 @@
     "ORKA|2026-11-10": "comprei",
     "SMWB|2026-11-10": "comprei",
     "ROIV|2026-11-10": "comprei",
-    "BXC|2026-11-09": "comprei"
+    "BXC|2026-11-09": "comprei",
+    "DCTH|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
