@@ -279,3 +279,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-10,SMWB,caiu_10,compra,7.860000133514404,,7.010719338547829,2.0,5,41.7,aberto,,,,sma5,rejeitar,7.0,neutro,0.1,,,1.0,0.026831144701599807,ok,ok,False,,1.0,3.0,0.0,,0.00638
 2026-11-10,ORKA,semana_forte,compra,110.34500122070312,,99.34365215881259,10.0,10,70.4,aberto,,,,fecho_10,duvidoso,4.0,apoia,0.3,,,1.0,0.06886760593757896,ok,ok,False,,0.8571428571428571,7.0,0.0,7.264286,0.00317
 2026-11-11,EC,lider_recuo,compra,15.260000228881836,,14.05330526661983,10.0,10,39.2,aberto,,,,fecho_10,duvidoso,4.0,neutro,0.1,,,1.0,0.02241730611344972,ok,ok,True,,0.75,8.0,0.0,,
+2026-11-11,MTS.MC,rompimento,compra,59.52000045776367,,54.944663277430024,10.0,10,61.6,aberto,,,,fecho_10,duvidoso,4.0,neutro,0.3,,,,0.010725752135110041,ok,ok,False,,0.6875,16.0,,,
