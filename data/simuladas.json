@@ -901,19 +901,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 12.153623671390108,
+   "caixa": 9.67273767139011,
    "desde": "2026-10-30",
    "posicoes": {
-    "TRMD": {
-     "qtd": 3.1601,
-     "preco": 35.62,
-     "data": "2026-11-09",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
     "KFRC": {
      "qtd": 2.03,
      "preco": 54.27,
@@ -982,6 +972,16 @@
      "stop": 54.92444245853564,
      "objetivo": null,
      "entrada_sinal": 65.16999816894531,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 3.2222,
+     "preco": 35.37,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -1661,6 +1661,24 @@
      "preco": 63.42,
      "data": "2026-11-11",
      "sinal": "BXC|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 3.1601,
+     "preco": 35.28,
+     "data": "2026-11-11",
+     "preco_compra": 35.62,
+     "lucro": -1.0744339999999966,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 3.2222,
+     "preco": 35.37,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1724,7 +1742,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 15.992761545753154,
+   "caixa": 13.955557545753166,
    "desde": "2026-10-30",
    "posicoes": {
     "CAI": {
@@ -1735,16 +1753,6 @@
      "stop": 20.557315990135624,
      "objetivo": null,
      "entrada_sinal": 25.094999313354492,
-     "acompanhar": true
-    },
-    "TRMD": {
-     "qtd": 2.4747,
-     "preco": 35.62,
-     "data": "2026-11-09",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     },
     "KFRC": {
@@ -1825,6 +1833,16 @@
      "stop": 54.92444245853564,
      "objetivo": null,
      "entrada_sinal": 65.16999816894531,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 2.526,
+     "preco": 35.37,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -2610,6 +2628,24 @@
      "preco": 63.42,
      "data": "2026-11-11",
      "sinal": "BXC|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 2.4747,
+     "preco": 35.28,
+     "data": "2026-11-11",
+     "preco_compra": 35.62,
+     "lucro": -0.8413979999999839,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 2.526,
+     "preco": 35.37,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
