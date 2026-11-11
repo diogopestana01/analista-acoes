@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 8.217337890164629,
+   "caixa": 0.33119389016457035,
    "desde": "2026-10-30",
    "posicoes": {
-    "TRMD": {
-     "qtd": 7.8494,
-     "preco": 35.55,
-     "data": "2026-11-09",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
     "KFRC": {
      "qtd": 5.2113,
      "preco": 54.27,
@@ -46,6 +36,16 @@
      "stop": 17.809772262660328,
      "objetivo": null,
      "entrada_sinal": 20.135000228881836,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 8.0484,
+     "preco": 35.29,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -361,6 +361,24 @@
      "preco": 20.15,
      "data": "2026-11-11",
      "sinal": "RLAY|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 7.8494,
+     "preco": 35.18,
+     "data": "2026-11-11",
+     "preco_compra": 35.55,
+     "lucro": -2.9042779999999766,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 8.0484,
+     "preco": 35.29,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -401,19 +419,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 8.209045578095242,
+   "caixa": 8.661569578095225,
    "desde": "2026-10-30",
    "posicoes": {
-    "TRMD": {
-     "qtd": 4.9653,
-     "preco": 35.55,
-     "data": "2026-11-09",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
     "KFRC": {
      "qtd": 3.2794,
      "preco": 54.27,
@@ -452,6 +460,16 @@
      "stop": 7.010719338547829,
      "objetivo": null,
      "entrada_sinal": 7.860000133514404,
+     "acompanhar": true
+    },
+    "TRMD": {
+     "qtd": 4.937,
+     "preco": 35.29,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09",
+     "stop": 31.92289403817532,
+     "objetivo": null,
+     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -855,6 +873,24 @@
      "preco": 7.76,
      "data": "2026-11-11",
      "sinal": "SMWB|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 4.9653,
+     "preco": 35.18,
+     "data": "2026-11-11",
+     "preco_compra": 35.55,
+     "lucro": -1.837161000000009,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TRMD",
+     "qtd": 4.937,
+     "preco": 35.29,
+     "data": "2026-11-11",
+     "sinal": "TRMD|2026-11-09"
     }
    ],
    "decisoes": {
@@ -901,19 +937,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 9.67273767139011,
+   "caixa": 7.406637671390101,
    "desde": "2026-10-30",
    "posicoes": {
-    "KFRC": {
-     "qtd": 2.03,
-     "preco": 54.27,
-     "data": "2026-11-10",
-     "sinal": "KFRC|2026-11-06",
-     "stop": 50.44555971507465,
-     "objetivo": null,
-     "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
     "RLAY": {
      "qtd": 5.6018,
      "preco": 20.1,
@@ -982,6 +1008,16 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
+     "acompanhar": true
+    },
+    "ORKA": {
+     "qtd": 1.038,
+     "preco": 110.0,
+     "data": "2026-11-11",
+     "sinal": "ORKA|2026-11-10",
+     "stop": 99.34365215881259,
+     "objetivo": null,
+     "entrada_sinal": 110.34500122070312,
      "acompanhar": true
     }
    },
@@ -1679,6 +1715,24 @@
      "preco": 35.37,
      "data": "2026-11-11",
      "sinal": "TRMD|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "KFRC",
+     "qtd": 2.03,
+     "preco": 55.13,
+     "data": "2026-11-11",
+     "preco_compra": 54.27,
+     "lucro": 1.7458000000000027,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ORKA",
+     "qtd": 1.038,
+     "preco": 110.0,
+     "data": "2026-11-11",
+     "sinal": "ORKA|2026-11-10"
     }
    ],
    "decisoes": {
@@ -1723,7 +1777,8 @@
     "GRAL|2026-11-10": "comprei",
     "SMWB|2026-11-10": "comprei",
     "ROIV|2026-11-10": "comprei",
-    "BXC|2026-11-09": "comprei"
+    "BXC|2026-11-09": "comprei",
+    "ORKA|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
