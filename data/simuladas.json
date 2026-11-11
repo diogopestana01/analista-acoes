@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.33119389016457035,
+   "caixa": 284.9226228025181,
    "desde": "2026-10-30",
    "posicoes": {
     "KFRC": {
@@ -36,16 +36,6 @@
      "stop": 17.809772262660328,
      "objetivo": null,
      "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
-    "TRMD": {
-     "qtd": 8.0484,
-     "preco": 35.29,
-     "data": "2026-11-11",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -379,6 +369,16 @@
      "preco": 35.29,
      "data": "2026-11-11",
      "sinal": "TRMD|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 8.0484,
+     "preco": 35.36000061035156,
+     "data": "2026-11-11",
+     "preco_compra": 35.29,
+     "lucro": 0.5633929123534926,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -419,7 +419,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 8.661569578095225,
+   "caixa": 363.98104252822,
    "desde": "2026-10-30",
    "posicoes": {
     "KFRC": {
@@ -442,16 +442,6 @@
      "entrada_sinal": 20.135000228881836,
      "acompanhar": true
     },
-    "NAT": {
-     "qtd": 26.8769,
-     "preco": 6.45,
-     "data": "2026-11-10",
-     "sinal": "NAT|2026-11-09",
-     "stop": 5.828988321060514,
-     "objetivo": null,
-     "entrada_sinal": 6.554999828338623,
-     "acompanhar": true
-    },
     "SMWB": {
      "qtd": 22.4993,
      "preco": 7.76,
@@ -460,16 +450,6 @@
      "stop": 7.010719338547829,
      "objetivo": null,
      "entrada_sinal": 7.860000133514404,
-     "acompanhar": true
-    },
-    "TRMD": {
-     "qtd": 4.937,
-     "preco": 35.29,
-     "data": "2026-11-11",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     }
    },
@@ -891,6 +871,26 @@
      "preco": 35.29,
      "data": "2026-11-11",
      "sinal": "TRMD|2026-11-09"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "NAT",
+     "qtd": 26.8769,
+     "preco": 6.724999904632568,
+     "data": "2026-11-11",
+     "preco_compra": 6.45,
+     "lucro": 7.3911449368190745,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 4.937,
+     "preco": 35.36000061035156,
+     "data": "2026-11-11",
+     "preco_compra": 35.29,
+     "lucro": 0.3455930133056597,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -937,7 +937,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 8.2061696713901,
+   "caixa": 234.93019109015233,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -948,16 +948,6 @@
      "stop": 17.809772262660328,
      "objetivo": null,
      "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
-    "GRAL": {
-     "qtd": 0.8977,
-     "preco": 125.06,
-     "data": "2026-11-10",
-     "sinal": "GRAL|2026-11-10",
-     "stop": 101.31713960043461,
-     "objetivo": null,
-     "entrada_sinal": 125.0,
      "acompanhar": true
     },
     "SMWB": {
@@ -988,16 +978,6 @@
      "stop": 54.92444245853564,
      "objetivo": null,
      "entrada_sinal": 65.16999816894531,
-     "acompanhar": true
-    },
-    "TRMD": {
-     "qtd": 3.2222,
-     "preco": 35.37,
-     "data": "2026-11-11",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     },
     "ORKA": {
@@ -1751,6 +1731,26 @@
      "preco": 20.1,
      "data": "2026-11-11",
      "sinal": "DCTH|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "GRAL",
+     "qtd": 0.8977,
+     "preco": 125.63999938964844,
+     "data": "2026-11-11",
+     "preco_compra": 125.06,
+     "lucro": 0.5206654520873997,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 3.2222,
+     "preco": 35.36000061035156,
+     "data": "2026-11-11",
+     "preco_compra": 35.37,
+     "lucro": -0.032220033325188524,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1816,7 +1816,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 14.298573545753158,
+   "caixa": 271.28977303062595,
    "desde": "2026-10-30",
    "posicoes": {
     "KFRC": {
@@ -1837,26 +1837,6 @@
      "stop": 17.809772262660328,
      "objetivo": null,
      "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
-    "NAT": {
-     "qtd": 11.8399,
-     "preco": 6.45,
-     "data": "2026-11-10",
-     "sinal": "NAT|2026-11-09",
-     "stop": 5.828988321060514,
-     "objetivo": null,
-     "entrada_sinal": 6.554999828338623,
-     "acompanhar": true
-    },
-    "GRAL": {
-     "qtd": 0.7008,
-     "preco": 126.55,
-     "data": "2026-11-10",
-     "sinal": "GRAL|2026-11-10",
-     "stop": 101.31713960043461,
-     "objetivo": null,
-     "entrada_sinal": 125.0,
      "acompanhar": true
     },
     "ORKA": {
@@ -1897,16 +1877,6 @@
      "stop": 54.92444245853564,
      "objetivo": null,
      "entrada_sinal": 65.16999816894531,
-     "acompanhar": true
-    },
-    "TRMD": {
-     "qtd": 2.526,
-     "preco": 35.37,
-     "data": "2026-11-11",
-     "sinal": "TRMD|2026-11-09",
-     "stop": 31.92289403817532,
-     "objetivo": null,
-     "entrada_sinal": 35.47999954223633,
      "acompanhar": true
     },
     "DCTH": {
@@ -2738,6 +2708,36 @@
      "preco": 20.1,
      "data": "2026-11-11",
      "sinal": "DCTH|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "NAT",
+     "qtd": 11.8399,
+     "preco": 6.724999904632568,
+     "data": "2026-11-11",
+     "preco_compra": 6.45,
+     "lucro": 3.255971370859143,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "GRAL",
+     "qtd": 0.7008,
+     "preco": 125.63999938964844,
+     "data": "2026-11-11",
+     "preco_compra": 126.55,
+     "lucro": -0.6377284277343733,
+     "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TRMD",
+     "qtd": 2.526,
+     "preco": 35.36000061035156,
+     "data": "2026-11-11",
+     "preco_compra": 35.37,
+     "lucro": -0.025258458251954607,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
