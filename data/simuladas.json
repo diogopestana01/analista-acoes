@@ -901,7 +901,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.951805671390105,
+   "caixa": 12.153623671390108,
    "desde": "2026-10-30",
    "posicoes": {
     "TRMD": {
@@ -912,16 +912,6 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
-    "PBYI": {
-     "qtd": 13.7559,
-     "preco": 8.13,
-     "data": "2026-11-09",
-     "sinal": "PBYI|2026-11-09",
-     "stop": 7.094741880164205,
-     "objetivo": null,
-     "entrada_sinal": 8.260000228881836,
      "acompanhar": true
     },
     "KFRC": {
@@ -982,6 +972,16 @@
      "stop": 37.40468678911593,
      "objetivo": null,
      "entrada_sinal": 40.599998474121094,
+     "acompanhar": true
+    },
+    "BXC": {
+     "qtd": 1.7991,
+     "preco": 63.42,
+     "data": "2026-11-11",
+     "sinal": "BXC|2026-11-09",
+     "stop": 54.92444245853564,
+     "objetivo": null,
+     "entrada_sinal": 65.16999816894531,
      "acompanhar": true
     }
    },
@@ -1643,6 +1643,24 @@
      "preco": 41.4,
      "data": "2026-11-11",
      "sinal": "ROIV|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PBYI",
+     "qtd": 13.7559,
+     "preco": 8.6,
+     "data": "2026-11-11",
+     "preco_compra": 8.13,
+     "lucro": 6.465272999999996,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "BXC",
+     "qtd": 1.7991,
+     "preco": 63.42,
+     "data": "2026-11-11",
+     "sinal": "BXC|2026-11-09"
     }
    ],
    "decisoes": {
@@ -1686,7 +1704,8 @@
     "NAT|2026-11-09": "comprei",
     "GRAL|2026-11-10": "comprei",
     "SMWB|2026-11-10": "comprei",
-    "ROIV|2026-11-10": "comprei"
+    "ROIV|2026-11-10": "comprei",
+    "BXC|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1705,7 +1724,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 14.16928354575316,
+   "caixa": 15.992761545753154,
    "desde": "2026-10-30",
    "posicoes": {
     "CAI": {
@@ -1726,16 +1745,6 @@
      "stop": 31.92289403817532,
      "objetivo": null,
      "entrada_sinal": 35.47999954223633,
-     "acompanhar": true
-    },
-    "PBYI": {
-     "qtd": 10.6107,
-     "preco": 8.37,
-     "data": "2026-11-09",
-     "sinal": "PBYI|2026-11-09",
-     "stop": 7.094741880164205,
-     "objetivo": null,
-     "entrada_sinal": 8.260000228881836,
      "acompanhar": true
     },
     "KFRC": {
@@ -1806,6 +1815,16 @@
      "stop": 37.40468678911593,
      "objetivo": null,
      "entrada_sinal": 40.599998474121094,
+     "acompanhar": true
+    },
+    "BXC": {
+     "qtd": 1.4101,
+     "preco": 63.42,
+     "data": "2026-11-11",
+     "sinal": "BXC|2026-11-09",
+     "stop": 54.92444245853564,
+     "objetivo": null,
+     "entrada_sinal": 65.16999816894531,
      "acompanhar": true
     }
    },
@@ -2573,6 +2592,24 @@
      "preco": 41.4,
      "data": "2026-11-11",
      "sinal": "ROIV|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PBYI",
+     "qtd": 10.6107,
+     "preco": 8.6,
+     "data": "2026-11-11",
+     "preco_compra": 8.37,
+     "lucro": 2.440460999999999,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "BXC",
+     "qtd": 1.4101,
+     "preco": 63.42,
+     "data": "2026-11-11",
+     "sinal": "BXC|2026-11-09"
     }
    ],
    "decisoes": {
@@ -2623,7 +2660,8 @@
     "GRAL|2026-11-10": "comprei",
     "ORKA|2026-11-10": "comprei",
     "SMWB|2026-11-10": "comprei",
-    "ROIV|2026-11-10": "comprei"
+    "ROIV|2026-11-10": "comprei",
+    "BXC|2026-11-09": "comprei"
    },
    "aguarda": null,
    "anterior": null
