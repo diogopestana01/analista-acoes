@@ -310,3 +310,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-12,ECPG,caiu_10,compra,112.0999984741211,,101.4362891716162,5.0,5,49.3,aberto,,,,sma5,manter,2.0,apoia,0.6,,,1.0,0.01191616766467066,ok,ok,False,,,0.0,0.0,4.257839,0.01489
 2026-11-12,HGTY,caiu_10,compra,16.030000686645508,,14.652438237623372,5.0,5,44.8,aberto,,,,sma5,rejeitar,8.0,apoia,0.4,,,0.3333333333333333,0.01191616766467066,ok,ok,False,,,0.0,0.0,,0.00623
 2026-11-12,WK,caiu_10,compra,69.19499969482422,,61.56229909271633,5.0,5,30.0,aberto,,,,sma5,manter,3.0,contraria,-0.4,,,0.6,0.01191616766467066,ok,ok,False,,,0.0,0.0,,0.01639
+2026-11-12,NX,lider_recuo,compra,19.68000030517578,,17.47978300186314,10.0,10,47.6,aberto,,,,fecho_10,manter,2.0,neutro,0.2,,,1.0,0.015700000000000002,ok,ok,False,,,0.0,0.0,,0.02702
