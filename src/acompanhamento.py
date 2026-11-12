@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from . import indicadores, saidas
@@ -181,6 +182,29 @@ def atualizar(hist: pd.DataFrame, precos: pd.DataFrame,
         fechos.append({**s.to_dict(), "resultado": resultado, "preco_atual": r["close"], "preco_saida": preco,
                        "variacao_pct": var})
     return hist, fechos
+
+
+def fechar_por_aviso(hist: pd.DataFrame, alertas: list[dict], precos: pd.DataFrame, hoje: str) -> pd.DataFrame:
+    """Aviso "vende já" do advogado do diabo (src/vigia.py: facto novo e concreto, citado e verificado):
+    o sinal fecha no registo ao último preço, com estado "aviso", em vez de ficar à espera do stop.
+    Pedido do Pestana (12/11). O stop e a saída originais ficam na linha para se medir depois se a regra
+    original teria dado mais ou menos."""
+    if not alertas or hist.empty:
+        return hist
+    hist = hist.copy()
+    hist["data_fecho"] = hist["data_fecho"].astype(object)
+    ultimo = precos.sort_values("data").groupby("ticker")["close"].last() if not precos.empty else pd.Series(dtype=float)
+    for a in alertas:
+        m = (hist["ticker"] == a["ticker"]) & (hist["estado"] == "aberto") \
+            & (hist["data_sinal"].astype(str) == str(a["data_sinal"]))
+        preco = ultimo.get(a["ticker"])
+        if not m.any() or preco is None or pd.isna(preco):
+            continue
+        for i in hist.index[m]:
+            dias = int(np.busday_count(str(hist.at[i, "data_sinal"])[:10], hoje))
+            hist.loc[i, ["estado", "data_fecho", "preco_fecho", "dias"]] = ["aviso", hoje, float(preco), dias]
+        log.info("%s: fechado no registo pelo aviso do advogado do diabo a %.2f", a["ticker"], preco)
+    return hist
 
 
 def resumo(hist: pd.DataFrame) -> str:

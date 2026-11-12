@@ -98,7 +98,8 @@ investigador:            # "advogado do diabo": um segundo Claude procura razõe
   bloquear: false        # false = só avisa no alerta e regista; true = retira os sinais com veredicto "rejeitar"
 
 vigia:                   # notícias de risco novas sobre posições abertas (src/vigia.py), uma vez por hora
-  ativo: true            # o alerta "vende já" vai só para o dono enquanto o bot não o encaminhar a cada pessoa
+  ativo: true            # o alerta "vende já" vai a cada pessoa que tem a ação (e ao dono)
+  fechar_no_registo: true  # com o alerta "vende já", o sinal fecha no registo ao preço de agora (estado "aviso") em vez de esperar pelo stop (pedido do Pestana, 12/11)
 
 tendencias:              # Reddit (ApeWisdom) e StockTwits no alerta, só como informação (src/tendencias.py)
   ativo: true
