@@ -928,3 +928,53 @@ def test_com_a_gestao_no_bot_os_sinais_nao_propoem_trocas(monkeypatch):
     monkeypatch.setattr(bot, "_gestao_no_bot", lambda: True)
     msgs = bot.mensagens_sinais(e, [nova], "cab", DONO, hist, HOJE)
     assert len(msgs) == 1 and "aviso-te à parte" in msgs[0][1] and "Proposta de troca" not in msgs[0][1]
+
+
+def _lido_sdgr():
+    from src import leitor_print
+    # números do print real da XTB (Schrodinger, 9/11): 1,2646 ações a 31,66 = 40,04 USD
+    return leitor_print.verificar({"nome": "Schrodinger", "ticker": "SDGR.US", "lado": "compra", "fechada": False,
+                                   "volume": 1.2646, "preco_abertura": 31.66, "valor_abertura": 40.04, "lucro": 1.05})
+
+
+def test_print_sdgr_numeros_conferidos():
+    lido = _lido_sdgr()
+    assert lido["ticker"] == "SDGR" and lido["volume"] == 1.2646 and lido["valor"] == 40.04
+    from src import leitor_print
+    # se o Claude trocar o valor de abertura pelo de mercado (41,09), o código recusa
+    assert leitor_print.verificar({"volume": 1.2646, "preco_abertura": 31.66, "valor_abertura": 41.09}) is None
+
+
+def test_comprei_diz_que_aceita_print():
+    e = _estado()
+    out = bot.processar(e, _txt(DONO, "🟢 Comprei"), HIST, HOJE, CFG)
+    assert "print" in _textos(out)[0]
+    out = bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    assert "manda aqui o print" in _textos(out)[-1]
+
+
+def test_print_preenche_o_talao_aberto_do_mesmo_ticker(monkeypatch):
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.abrir_talao(u, "compra", "SDGR", 31.5, 1.0, troca={"vende": "X"})
+    tid = u["talao"]["id"]
+    monkeypatch.setattr(bot, "LER_PRINT", lambda fid, tipo: _lido_sdgr())
+    monkeypatch.setattr(bot, "NOMES", {"SDGR": "Schrodinger, Inc."})
+    out = bot.processar(e, _foto(DONO), HIST, HOJE, CFG)
+    b = u["talao"]
+    assert b["id"] == tid and b["troca"] == {"vende": "X"} and b["qtd"] == 1.2646 and b["valor"] == 40.04
+    assert "⚠️" not in _textos(out)[0] and "manda aqui o print" not in _textos(out)[-1]
+
+
+def test_print_de_outra_acao_avisa(monkeypatch):
+    e = _estado()
+    u = e["utilizadores"][DONO]
+    bot.processar(e, _cb(DONO, f"c|GMAB|{HOJE}"), HIST, HOJE, CFG)
+    monkeypatch.setattr(bot, "LER_PRINT", lambda fid, tipo: _lido_sdgr())
+    monkeypatch.setattr(bot, "NOMES", {"SDGR": "Schrodinger, Inc.", "GMAB": "Genmab"})
+    out = bot.processar(e, _foto(DONO), HIST, HOJE, CFG)
+    txt = _textos(out)[0]
+    assert "talão de GMAB" in txt and "<b>SDGR</b>" in txt and "não é um sinal em aberto" in txt
+    assert u["talao"]["ticker"] == "SDGR"
+    bot.processar(e, _cb(DONO, "b|ok"), HIST, HOJE, CFG)
+    assert u["posicoes"]["SDGR"]["qtd"] == pytest.approx(1.2646) and u["posicoes"]["SDGR"]["preco"] == 31.66

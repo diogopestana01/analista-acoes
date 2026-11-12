@@ -102,7 +102,7 @@ Chega assim:
 🛑 Vender para travar a perda a 226,00 (−1,7%)
 ⏳ Prazo: até 5 dias úteis
 
-Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde escreves o preço e o valor pago que a XTB te mostra. Se não, ❌ <b>Ignorar</b>.""",
+Se compraste, carrega ✅ <b>Comprei</b>: abre um talão onde escreves o preço e o valor pago que a XTB te mostra, ou mandas o print da posição na XTB 📸 e o bot preenche sozinho. Se não, ❌ <b>Ignorar</b>.""",
     """💼 <b>Depois de comprar</b> (3 de 3)
 Quando chegar ao objetivo, ao stop ou ao fim do prazo, o bot avisa-te para vender, com o botão ✅ <b>Vendi</b>.
 
@@ -563,14 +563,16 @@ def _menu(chat: str, u: dict, botao: str, hist, hoje: str) -> tuple[str, dict]:
             sinais_ja = []
         if not sinais_ja:
             u["aguarda"] = {"tipo": "ticker"}
-            return _msg(chat, "🟢 Que ação compraste? Escreve o ticker (ex. <code>NVDA</code>).")
+            return _msg(chat, "🟢 Que ação compraste? Escreve o ticker (ex. <code>NVDA</code>), "
+                              "ou manda o print da posição na XTB 📸 e eu preencho tudo.")
         botoes = [[(f"{MEDALHAS.get(k, f'{k}.')} {s['ticker']}" + (f" · {nome_empresa(s['ticker'], s)[:18]}"
                                                                   if nome_empresa(s['ticker'], s) else ""),
                     f"c|{s['ticker']}|{s['data_sinal']}")] for k, s in enumerate(sinais_ja, start=1)]
         botoes.append([("✍️ Outra ação (escrever o ticker)", "ct|")])
         u["aguarda"] = {"tipo": "ticker"}  # escrever o ticker também funciona
         return _msg(chat, "🟢 <b>Que ação compraste?</b> Estes são os sinais que dá para comprar agora, "
-                          "pela ordem do modelo. Se foi outra, escreve o ticker.", botoes)
+                          "pela ordem do modelo. Se foi outra, escreve o ticker.\n"
+                          "📸 Ou manda já o print da posição na XTB e eu preencho tudo.", botoes)
     if botao == "🔴 Vendi":
         if not u["posicoes"]:
             return _msg(chat, "Não tens posições abertas.", menu=True)
@@ -685,19 +687,24 @@ def _print(estado: dict, msg: dict, hist, hoje: str) -> list:
     if not lido:
         return [_msg(chat, "📸 Não consegui ler os números deste print. Manda o ecrã da posição na XTB (onde aparece "
                            "o volume, o preço de abertura e o valor), ou usa o talão.", menu=True)]
-    from . import leitor_print
-    # primeiro as ações que a pessoa tem, depois os sinais em aberto, por fim todas
-    abertos = set(hist.loc[hist["estado"] == "aberto", "ticker"]) if hist is not None and len(hist) else set()
-    t = None
-    for grupo in (set(u["posicoes"]), abertos, set(NOMES)):
-        t = leitor_print.achar_ticker(lido, {x: NOMES.get(x, "") for x in grupo})
-        if t:
-            break
+    t = _ticker_do_print(u, lido, hist)
     if not t:
         u["aguarda"] = {"tipo": "print", "lido": lido}
         return [_msg(chat, f"📸 Li o print ({html.escape(lido['nome'] or 'sem nome')}), mas não sei o ticker. "
                            f"Escreve-o (ex. <code>UNH</code>).")]
     return _do_print(chat, u, t, lido, hist)
+
+
+def _ticker_do_print(u: dict, lido: dict, hist) -> str | None:
+    """Ação do print: primeiro a do talão aberto, depois as que a pessoa tem, os sinais em aberto e por fim todas."""
+    from . import leitor_print
+    abertos = set(hist.loc[hist["estado"] == "aberto", "ticker"]) if hist is not None and len(hist) else set()
+    talao = {u["talao"]["ticker"]} if u.get("talao") else set()
+    for grupo in (talao, set(u["posicoes"]), abertos, set(NOMES)):
+        t = leitor_print.achar_ticker(lido, {x: NOMES.get(x, "") for x in grupo})
+        if t in grupo:
+            return t
+    return leitor_print.achar_ticker(lido, {x: NOMES.get(x, "") for x in set(NOMES)})
 
 
 def _resumo_print(lido: dict) -> str:
@@ -722,12 +729,23 @@ def _do_print(chat: str, u: dict, t: str, lido: dict, hist) -> list:
         return [_msg(chat, f"{_resumo_print(lido)}.\nNo bot tens {t}: {cart.fmt_qtd(p['qtd'])} a {cart.fmt(p['preco'])}. "
                            f"Corrijo para ficar igual à XTB?",
                      [[("✅ Corrigir", f"pc|{t}|sim"), ("❌ Deixar", f"pc|{t}|nao")]])]
-    sinal = _sinal(hist, t)
-    data = sinal["data"] if sinal and sinal["estado"] == "aberto" else None
-    abrir_talao(u, "compra", t, lido["preco"], lido["volume"], data)
-    b = u["talao"]
+    antes = u.get("talao")
+    aviso = ""
+    if antes and antes["tipo"] == "compra" and antes["ticker"] == t:
+        b = antes  # preenche o talão que já estava aberto (fica ligado ao sinal e à troca)
+        b["preco"] = round(lido["preco"], 4)
+        b["pp"], b["pq"], b["pv"] = _passos_preco(lido["preco"]), _passos_qtd(lido["volume"]), _passos_valor(lido["valor"])
+    else:
+        if antes:
+            aviso = f"\n⚠️ Tinhas aberto o talão de {antes['ticker']}, mas este print é de <b>{t}</b>. Se te enganaste no print, carrega em ❌ Cancelar."
+        sinal = _sinal(hist, t)
+        data = sinal["data"] if sinal and sinal["estado"] == "aberto" else None
+        if not data:
+            aviso += f"\nℹ️ {t} não é um sinal em aberto do modelo; fica registado como compra tua."
+        abrir_talao(u, "compra", t, lido["preco"], lido["volume"], data)
+        b = u["talao"]
     b["valor"], b["qtd"], b["fixa"] = lido["valor"], lido["volume"], True  # o volume da XTB é exato
-    return [_msg(chat, f"{_resumo_print(lido)}. Confere e carrega em ✅ Confirmar."), msg_talao(chat, u)]
+    return [_msg(chat, f"{_resumo_print(lido)}.{aviso}\nConfere e carrega em ✅ Confirmar."), msg_talao(chat, u)]
 
 
 def _corrigir_posicao(u: dict, t: str, qtd: float, preco: float) -> str:
@@ -1469,6 +1487,8 @@ def texto_talao(u: dict) -> str:
         linhas.append("\nDiz-me o lucro (ou prejuízo) que a XTB te deu: eu calculo o resto. Depois ✅ Confirmar.")
     else:
         linhas.append("\nAcerta o preço e o valor pago até ficarem iguais aos da XTB. Depois ✅ Confirmar.")
+    if not b.get("fixa"):
+        linhas.append("📸 Mais fácil: manda aqui o print da posição na XTB e eu preencho os números.")
     return "\n".join(linhas)
 
 
