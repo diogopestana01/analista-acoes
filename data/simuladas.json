@@ -1032,7 +1032,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 5.691960590152306,
+   "caixa": 2.60367659015229,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -1053,16 +1053,6 @@
      "stop": 7.010719338547829,
      "objetivo": null,
      "entrada_sinal": 7.860000133514404,
-     "acompanhar": true
-    },
-    "ROIV": {
-     "qtd": 2.7366,
-     "preco": 41.4,
-     "data": "2026-11-11",
-     "sinal": "ROIV|2026-11-10",
-     "stop": 37.40468678911593,
-     "objetivo": null,
-     "entrada_sinal": 40.599998474121094,
      "acompanhar": true
     },
     "BXC": {
@@ -1113,6 +1103,16 @@
      "stop": 33.014499711238635,
      "objetivo": null,
      "entrada_sinal": 37.959999084472656,
+     "acompanhar": true
+    },
+    "NUTX": {
+     "qtd": 0.654,
+     "preco": 174.86,
+     "data": "2026-11-12",
+     "sinal": "NUTX|2026-11-12",
+     "stop": 144.68464947236498,
+     "objetivo": null,
+     "entrada_sinal": 172.4980010986328,
      "acompanhar": true
     }
    },
@@ -1882,6 +1882,24 @@
      "preco": 38.2,
      "data": "2026-11-12",
      "sinal": "AMN|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ROIV",
+     "qtd": 2.7366,
+     "preco": 40.66,
+     "data": "2026-11-12",
+     "preco_compra": 41.4,
+     "lucro": -2.0250840000000068,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "NUTX",
+     "qtd": 0.654,
+     "preco": 174.86,
+     "data": "2026-11-12",
+     "sinal": "NUTX|2026-11-12"
     }
    ],
    "decisoes": {
@@ -1930,7 +1948,8 @@
     "ORKA|2026-11-10": "comprei",
     "DCTH|2026-11-10": "comprei",
     "WOR|2026-11-11": "comprei",
-    "AMN|2026-11-11": "comprei"
+    "AMN|2026-11-11": "comprei",
+    "NUTX|2026-11-12": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1949,19 +1968,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.642568530625965,
+   "caixa": 3.84082453062598,
    "desde": "2026-10-30",
    "posicoes": {
-    "KFRC": {
-     "qtd": 1.6563,
-     "preco": 54.27,
-     "data": "2026-11-10",
-     "sinal": "KFRC|2026-11-06",
-     "stop": 50.44555971507465,
-     "objetivo": null,
-     "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
     "RLAY": {
      "qtd": 4.4091,
      "preco": 20.1,
@@ -2050,6 +2059,16 @@
      "stop": 33.043478189624224,
      "objetivo": null,
      "entrada_sinal": 36.900001525878906,
+     "acompanhar": true
+    },
+    "NUTX": {
+     "qtd": 0.5126,
+     "preco": 174.86,
+     "data": "2026-11-12",
+     "sinal": "NUTX|2026-11-12",
+     "stop": 144.68464947236498,
+     "objetivo": null,
+     "entrada_sinal": 172.4980010986328,
      "acompanhar": true
     }
    },
@@ -2925,6 +2944,24 @@
      "preco": 36.8,
      "data": "2026-11-12",
      "sinal": "PNTG|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "KFRC",
+     "qtd": 1.6563,
+     "preco": 54.84,
+     "data": "2026-11-12",
+     "preco_compra": 54.27,
+     "lucro": 0.9440910000000002,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "NUTX",
+     "qtd": 0.5126,
+     "preco": 174.86,
+     "data": "2026-11-12",
+     "sinal": "NUTX|2026-11-12"
     }
    ],
    "decisoes": {
@@ -2980,7 +3017,8 @@
     "DCTH|2026-11-10": "comprei",
     "WOR|2026-11-11": "comprei",
     "AMN|2026-11-11": "comprei",
-    "PNTG|2026-11-11": "comprei"
+    "PNTG|2026-11-11": "comprei",
+    "NUTX|2026-11-12": "comprei"
    },
    "aguarda": null,
    "anterior": null
