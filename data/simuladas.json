@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.7069093025181132,
+   "caixa": 2.860916302518092,
    "desde": "2026-10-30",
    "posicoes": {
-    "KFRC": {
-     "qtd": 5.2113,
-     "preco": 54.27,
-     "data": "2026-11-10",
-     "sinal": "KFRC|2026-11-06",
-     "stop": 50.44555971507465,
-     "objetivo": null,
-     "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
     "RLAY": {
      "qtd": 14.1437,
      "preco": 20.15,
@@ -46,6 +36,16 @@
      "stop": 54.19153959016198,
      "objetivo": null,
      "entrada_sinal": 58.380001068115234,
+     "acompanhar": true
+    },
+    "ORKA": {
+     "qtd": 2.7335,
+     "preco": 104.62,
+     "data": "2026-11-12",
+     "sinal": "ORKA|2026-11-10",
+     "stop": 99.34365215881259,
+     "objetivo": null,
+     "entrada_sinal": 110.34500122070312,
      "acompanhar": true
     }
    },
@@ -397,6 +397,24 @@
      "preco": 58.085,
      "data": "2026-11-12",
      "sinal": "WOR|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "KFRC",
+     "qtd": 5.2113,
+     "preco": 55.29,
+     "data": "2026-11-12",
+     "preco_compra": 54.27,
+     "lucro": 5.315525999999977,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ORKA",
+     "qtd": 2.7335,
+     "preco": 104.62,
+     "data": "2026-11-12",
+     "sinal": "ORKA|2026-11-10"
     }
    ],
    "decisoes": {
@@ -419,7 +437,8 @@
     "KFRC|2026-11-06": "comprei",
     "REPX|2026-11-09": "comprei",
     "RLAY|2026-11-09": "comprei",
-    "WOR|2026-11-11": "comprei"
+    "WOR|2026-11-11": "comprei",
+    "ORKA|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -438,19 +457,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 12.43654402821997,
+   "caixa": 17.31294002821994,
    "desde": "2026-10-30",
    "posicoes": {
-    "KFRC": {
-     "qtd": 3.2794,
-     "preco": 54.27,
-     "data": "2026-11-10",
-     "sinal": "KFRC|2026-11-06",
-     "stop": 50.44555971507465,
-     "objetivo": null,
-     "entrada_sinal": 54.97999954223633,
-     "acompanhar": true
-    },
     "RLAY": {
      "qtd": 8.0759,
      "preco": 20.1,
@@ -489,6 +498,16 @@
      "stop": 33.014499711238635,
      "objetivo": null,
      "entrada_sinal": 37.959999084472656,
+     "acompanhar": true
+    },
+    "ORKA": {
+     "qtd": 1.6865,
+     "preco": 104.62,
+     "data": "2026-11-12",
+     "sinal": "ORKA|2026-11-10",
+     "stop": 99.34365215881259,
+     "objetivo": null,
+     "entrada_sinal": 110.34500122070312,
      "acompanhar": true
     }
    },
@@ -946,6 +965,24 @@
      "preco": 38.2,
      "data": "2026-11-12",
      "sinal": "AMN|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "KFRC",
+     "qtd": 3.2794,
+     "preco": 55.29,
+     "data": "2026-11-12",
+     "preco_compra": 54.27,
+     "lucro": 3.3449880000000007,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ORKA",
+     "qtd": 1.6865,
+     "preco": 104.62,
+     "data": "2026-11-12",
+     "sinal": "ORKA|2026-11-10"
     }
    ],
    "decisoes": {
@@ -975,7 +1012,8 @@
     "NAT|2026-11-09": "comprei",
     "SMWB|2026-11-10": "comprei",
     "WOR|2026-11-11": "comprei",
-    "AMN|2026-11-11": "comprei"
+    "AMN|2026-11-11": "comprei",
+    "ORKA|2026-11-10": "comprei"
    },
    "aguarda": null,
    "anterior": null
