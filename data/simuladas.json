@@ -457,7 +457,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 17.31294002821994,
+   "caixa": 189.4973196028049,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -488,16 +488,6 @@
      "stop": 54.19153959016198,
      "objetivo": null,
      "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
-    "AMN": {
-     "qtd": 4.6014,
-     "preco": 38.2,
-     "data": "2026-11-12",
-     "sinal": "AMN|2026-11-11",
-     "stop": 33.014499711238635,
-     "objetivo": null,
-     "entrada_sinal": 37.959999084472656,
      "acompanhar": true
     },
     "ORKA": {
@@ -983,6 +973,16 @@
      "preco": 104.62,
      "data": "2026-11-12",
      "sinal": "ORKA|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AMN",
+     "qtd": 4.6014,
+     "preco": 37.41999816894531,
+     "data": "2026-11-12",
+     "preco_compra": 38.2,
+     "lucro": -3.5891004254150403,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1032,7 +1032,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.60367659015229,
+   "caixa": 114.8823810960727,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -1093,16 +1093,6 @@
      "stop": 54.19153959016198,
      "objetivo": null,
      "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
-    "AMN": {
-     "qtd": 3.0005,
-     "preco": 38.2,
-     "data": "2026-11-12",
-     "sinal": "AMN|2026-11-11",
-     "stop": 33.014499711238635,
-     "objetivo": null,
-     "entrada_sinal": 37.959999084472656,
      "acompanhar": true
     },
     "NUTX": {
@@ -1900,6 +1890,16 @@
      "preco": 174.86,
      "data": "2026-11-12",
      "sinal": "NUTX|2026-11-12"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AMN",
+     "qtd": 3.0005,
+     "preco": 37.41999816894531,
+     "data": "2026-11-12",
+     "preco_compra": 38.2,
+     "lucro": -2.3403954940796012,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1968,7 +1968,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.84082453062598,
+   "caixa": 91.56078423826757,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -2039,16 +2039,6 @@
      "stop": 54.19153959016198,
      "objetivo": null,
      "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
-    "AMN": {
-     "qtd": 2.3442,
-     "preco": 38.2,
-     "data": "2026-11-12",
-     "sinal": "AMN|2026-11-11",
-     "stop": 33.014499711238635,
-     "objetivo": null,
-     "entrada_sinal": 37.959999084472656,
      "acompanhar": true
     },
     "PNTG": {
@@ -2962,6 +2952,16 @@
      "preco": 174.86,
      "data": "2026-11-12",
      "sinal": "NUTX|2026-11-12"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AMN",
+     "qtd": 2.3442,
+     "preco": 37.41999816894531,
+     "data": "2026-11-12",
+     "preco_compra": 38.2,
+     "lucro": -1.8284802923584067,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
