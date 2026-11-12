@@ -313,3 +313,5 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-12,NX,lider_recuo,compra,19.68000030517578,,17.47978300186314,10.0,10,47.6,aberto,,,,fecho_10,manter,2.0,neutro,0.2,,,1.0,0.015700000000000002,ok,ok,False,,,0.0,0.0,,0.02702
 2026-11-12,QLYS,contra_setor,compra,175.05999755859375,,148.53820119430395,5.0,5,30.9,aberto,,,,sma5,manter,3.0,contraria,-0.3,,,0.5,0.010592105263157896,ok,ok,False,,,0.0,0.0,3.646792,0.0161
 2026-11-12,FIVN,contra_setor,compra,27.510000228881836,,23.022189267571722,5.0,5,30.0,aberto,,,,sma5,rejeitar,7.0,contraria,-0.4,,,0.7,0.010592105263157896,ok,ok,False,,,0.0,0.0,6.926215,0.00472
+2026-11-12,PVLA,pullback,compra,154.039306640625,,134.35909265007552,10.0,10,67.4,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,1.0,0.016169083273171337,ok,ok,False,,0.75,12.0,0.0,11.46187,0.0102
+2026-11-12,PTRN,semana_forte,compra,22.1299991607666,,20.105234688871782,10.0,10,58.3,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,1.0,0.011874999999999998,ok,ok,False,,,0.0,0.0,6.92764,0.00545
