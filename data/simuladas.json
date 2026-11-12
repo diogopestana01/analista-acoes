@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 284.9226228025181,
+   "caixa": 0.7069093025181132,
    "desde": "2026-10-30",
    "posicoes": {
     "KFRC": {
@@ -36,6 +36,16 @@
      "stop": 17.809772262660328,
      "objetivo": null,
      "entrada_sinal": 20.135000228881836,
+     "acompanhar": true
+    },
+    "WOR": {
+     "qtd": 4.8931,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11",
+     "stop": 54.19153959016198,
+     "objetivo": null,
+     "entrada_sinal": 58.380001068115234,
      "acompanhar": true
     }
    },
@@ -379,6 +389,14 @@
      "preco_compra": 35.29,
      "lucro": 0.5633929123534926,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "WOR",
+     "qtd": 4.8931,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11"
     }
    ],
    "decisoes": {
@@ -400,7 +418,8 @@
     "TRMD|2026-11-09": "comprei",
     "KFRC|2026-11-06": "comprei",
     "REPX|2026-11-09": "comprei",
-    "RLAY|2026-11-09": "comprei"
+    "RLAY|2026-11-09": "comprei",
+    "WOR|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -419,7 +438,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 363.98104252822,
+   "caixa": 12.43654402821997,
    "desde": "2026-10-30",
    "posicoes": {
     "KFRC": {
@@ -450,6 +469,26 @@
      "stop": 7.010719338547829,
      "objetivo": null,
      "entrada_sinal": 7.860000133514404,
+     "acompanhar": true
+    },
+    "WOR": {
+     "qtd": 3.0261,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11",
+     "stop": 54.19153959016198,
+     "objetivo": null,
+     "entrada_sinal": 58.380001068115234,
+     "acompanhar": true
+    },
+    "AMN": {
+     "qtd": 4.6014,
+     "preco": 38.2,
+     "data": "2026-11-12",
+     "sinal": "AMN|2026-11-11",
+     "stop": 33.014499711238635,
+     "objetivo": null,
+     "entrada_sinal": 37.959999084472656,
      "acompanhar": true
     }
    },
@@ -891,6 +930,22 @@
      "preco_compra": 35.29,
      "lucro": 0.3455930133056597,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "WOR",
+     "qtd": 3.0261,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AMN",
+     "qtd": 4.6014,
+     "preco": 38.2,
+     "data": "2026-11-12",
+     "sinal": "AMN|2026-11-11"
     }
    ],
    "decisoes": {
@@ -918,7 +973,9 @@
     "REPX|2026-11-09": "comprei",
     "RLAY|2026-11-09": "comprei",
     "NAT|2026-11-09": "comprei",
-    "SMWB|2026-11-10": "comprei"
+    "SMWB|2026-11-10": "comprei",
+    "WOR|2026-11-11": "comprei",
+    "AMN|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -937,7 +994,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 234.93019109015233,
+   "caixa": 5.691960590152306,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -998,6 +1055,26 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
+     "acompanhar": true
+    },
+    "WOR": {
+     "qtd": 1.9733,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11",
+     "stop": 54.19153959016198,
+     "objetivo": null,
+     "entrada_sinal": 58.380001068115234,
+     "acompanhar": true
+    },
+    "AMN": {
+     "qtd": 3.0005,
+     "preco": 38.2,
+     "data": "2026-11-12",
+     "sinal": "AMN|2026-11-11",
+     "stop": 33.014499711238635,
+     "objetivo": null,
+     "entrada_sinal": 37.959999084472656,
      "acompanhar": true
     }
    },
@@ -1751,6 +1828,22 @@
      "preco_compra": 35.37,
      "lucro": -0.032220033325188524,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "WOR",
+     "qtd": 1.9733,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AMN",
+     "qtd": 3.0005,
+     "preco": 38.2,
+     "data": "2026-11-12",
+     "sinal": "AMN|2026-11-11"
     }
    ],
    "decisoes": {
@@ -1797,7 +1890,9 @@
     "ROIV|2026-11-10": "comprei",
     "BXC|2026-11-09": "comprei",
     "ORKA|2026-11-10": "comprei",
-    "DCTH|2026-11-10": "comprei"
+    "DCTH|2026-11-10": "comprei",
+    "WOR|2026-11-11": "comprei",
+    "AMN|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1816,7 +1911,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 271.28977303062595,
+   "caixa": 2.642568530625965,
    "desde": "2026-10-30",
    "posicoes": {
     "KFRC": {
@@ -1887,6 +1982,36 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
+     "acompanhar": true
+    },
+    "WOR": {
+     "qtd": 1.5417,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11",
+     "stop": 54.19153959016198,
+     "objetivo": null,
+     "entrada_sinal": 58.380001068115234,
+     "acompanhar": true
+    },
+    "AMN": {
+     "qtd": 2.3442,
+     "preco": 38.2,
+     "data": "2026-11-12",
+     "sinal": "AMN|2026-11-11",
+     "stop": 33.014499711238635,
+     "objetivo": null,
+     "entrada_sinal": 37.959999084472656,
+     "acompanhar": true
+    },
+    "PNTG": {
+     "qtd": 2.4334,
+     "preco": 36.8,
+     "data": "2026-11-12",
+     "sinal": "PNTG|2026-11-11",
+     "stop": 33.043478189624224,
+     "objetivo": null,
+     "entrada_sinal": 36.900001525878906,
      "acompanhar": true
     }
    },
@@ -2738,6 +2863,30 @@
      "preco_compra": 35.37,
      "lucro": -0.025258458251954607,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "WOR",
+     "qtd": 1.5417,
+     "preco": 58.085,
+     "data": "2026-11-12",
+     "sinal": "WOR|2026-11-11"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AMN",
+     "qtd": 2.3442,
+     "preco": 38.2,
+     "data": "2026-11-12",
+     "sinal": "AMN|2026-11-11"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PNTG",
+     "qtd": 2.4334,
+     "preco": 36.8,
+     "data": "2026-11-12",
+     "sinal": "PNTG|2026-11-11"
     }
    ],
    "decisoes": {
@@ -2790,7 +2939,10 @@
     "SMWB|2026-11-10": "comprei",
     "ROIV|2026-11-10": "comprei",
     "BXC|2026-11-09": "comprei",
-    "DCTH|2026-11-10": "comprei"
+    "DCTH|2026-11-10": "comprei",
+    "WOR|2026-11-11": "comprei",
+    "AMN|2026-11-11": "comprei",
+    "PNTG|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
