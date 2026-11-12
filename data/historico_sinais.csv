@@ -301,3 +301,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-12,AXGN,semana_forte,compra,58.650001525878906,,52.92397064204985,10.0,10,67.6,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,1.0,0.03767036457825869,ok,ok,True,,0.75,4.0,0.0,3.282348,
 2026-11-12,DNA,caiu_10,compra,10.265000343322754,,7.2444613760557415,2.0,5,34.1,aberto,,,,sma5,manter,2.0,contraria,-0.3,,,0.5,0.020400742843212222,ok,ok,True,,0.5882352941176471,17.0,0.0,,
 2026-11-12,AMLX,rompimento,compra,31.799999237060547,,28.60087646630028,10.0,10,53.6,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,1.0,0.022129529432766346,ok,ok,True,,0.4666666666666667,15.0,0.0,10.47,
+2026-11-12,PST.MI,rompimento,compra,25.739999771118164,,24.742886115647767,10.0,10,74.3,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,,0.026959047562299797,ok,ok,False,,1.0,10.0,,,
