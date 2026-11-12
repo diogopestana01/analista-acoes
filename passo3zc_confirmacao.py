@@ -23,6 +23,14 @@ retorno médio por trade dos ressaltos for maior nas DUAS metades.
 Parte 2 (ao vivo): os ressaltos do registo em papel desde 29/10 (data/historico_sinais.csv) com os preços
 guardados (data/precos.parquet): quanto caíram ainda depois do sinal e o que cada variante teria feito.
 Só mede; nada muda no modelo.
+
+Resultado 12/11 (10 anos, 1500 ações; metades a partir de 2022-04-12): NADA passa. Ressaltos juntos por trade:
+base +0,56|+0,68; espera1 +0,32|+0,52; verde -0,02|+0,19; fecho_max -0,08|-0,24; rompe_max +0,17|+0,10;
+vela_hoje +0,74|+0,53; sem_faca +0,76|+0,75 (melhor por trade mas a carteira cai: +178|+173% contra +306|+181%).
+Carteira 5 lugares: base +306%|+181% (desc -16|-23%); todas as variantes pior em pelo menos uma metade.
+Esperar pela confirmação compra mais caro e perde a parte boa do ressalto. Os 10% que caem 3 dias seguidos
+depois do sinal dão -4,95%, mas não se distinguem antes. Ao vivo (134 ressaltos desde 29/10): todas negativas,
+base -1,16%, fecho_max -0,67% (só 56 compras), sem_faca -2,40%; amostra pequena e mercado a cair.
 Uso: ANOS=10 ACOES=1500 python passo3zc_confirmacao.py
 """
 from __future__ import annotations
