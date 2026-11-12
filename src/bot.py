@@ -1189,7 +1189,8 @@ VEREDICTO_ORDEM = {"vender": 0, "trocar": 1, "pouco": 2, "manter": 3}
 def avaliar_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str, saidas_: dict | None = None,
                      troca: tuple | None = None) -> dict[str, dict]:
     """Veredicto de cada posição aberta, só com regras do modelo:
-    vender   tocou no stop/objetivo, último dia do prazo, ou resultados até ao próximo dia útil
+    vender   tocou no stop/objetivo, último dia do prazo, resultados até ao próximo dia útil, ou o sinal
+             fechou por aviso do advogado do diabo (notícia concreta, estado "aviso" no registo)
     trocar   com a carteira cheia, o melhor sinal que dá para comprar rende mais do que ela ainda dá
              (src/trocas.py, já com o spread e a margem; estudo passo3e_trocas.py)
     pouco    o que costuma render daqui à saída é ~0 ou negativo, sem troca que compense
@@ -1201,8 +1202,12 @@ def avaliar_posicoes(u: dict, hist: pd.DataFrame | None, hoje: str, saidas_: dic
         t, p = f["ticker"], u["posicoes"][f["ticker"]]
         prazo = _conf_prazo(t, p, hist)[1]
         sx, a = saidas_.get(t), agenda.get(t)
+        sinal = _linha_sinal(t, p, hist)
         if sx:
             v = ("vender", "")  # a carteira já mostra "tocou no stop/chegou ao objetivo: vende"
+        elif sinal and sinal.get("estado") == "aviso":
+            v = ("vender", "🕵️ <b>Vender</b>: o advogado do diabo encontrou uma notícia concreta contra a ação "
+                           "e o modelo fechou o sinal sem esperar pelo stop")
         elif a:
             quando = "hoje" if a["data"] == hoje else f"a {cart._dm(a['data'])}"
             v = ("vender", f"📅 <b>Vender antes dos resultados</b> ({quando}): o preço pode saltar muito e passar o stop")

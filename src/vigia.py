@@ -54,4 +54,5 @@ def formatar(a: dict) -> str:
     d = str(a["data_sinal"])
     return (f"🕵️ <b>Notícia nova sobre {html.escape(a['ticker'])}</b> (sinal de {d[8:10]}/{d[5:7]}, em aberto)\n"
             f"{html.escape(a['motivo'])}\n"
-            "O advogado do diabo sugere vender já, sem esperar pelo stop. Confirma a notícia antes de decidir.")
+            "O advogado do diabo sugere vender já, sem esperar pelo stop: o modelo fechou o sinal. "
+            "Confirma a notícia antes de decidir.")

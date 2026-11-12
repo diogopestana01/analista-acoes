@@ -19,7 +19,7 @@ from . import carteira as cart
 MOTIVOS = {"obj": "🎯 Objetivo", "stop": "🛑 Stop", "prazo": "⏱ Prazo/regra", "troca": "🔁 Troca",
            "medo": "😟 Medo/notícia", "dinheiro": "💵 Precisei do dinheiro", "outro": "✍️ Outro"}
 PERGUNTA = ["obj", "stop", "prazo", "medo", "dinheiro", "outro"]  # a troca regista-se sozinha
-FECHADO = ("stop", "objetivo", "expirou", "regra")
+FECHADO = ("stop", "objetivo", "expirou", "regra", "aviso")
 
 
 def _num(x) -> float | None:

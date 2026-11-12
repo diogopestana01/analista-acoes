@@ -53,10 +53,11 @@ def ler_carteira_recente(atual: dict | None) -> dict | None:
         return atual
 
 
-def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dict) -> None:
-    """Notícias de risco novas sobre posições abertas, para quem as tem (e para o dono)."""
+def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dict) -> list[dict]:
+    """Notícias de risco novas sobre posições abertas, para quem as tem (e para o dono). Devolve os
+    alertas "vende já" para o registo fechar esses sinais (acompanhamento.fechar_por_aviso)."""
     if not config.get("vigia", {}).get("ativo", False):
-        return
+        return []
     import json
     caminho = DADOS / "avaliacoes_cache.json"
     try:
@@ -64,17 +65,18 @@ def vigiar_posicoes(hist: pd.DataFrame, data: str, dono: str | None, config: dic
         # Uma vez por hora (a primeira corrida de cada hora) para não abusar do Google Notícias.
         hora = f"vigia_hora|{pd.Timestamp.now(tz='UTC'):%H}|{data}"
         if hora in cache:
-            return
+            return []
         cache[hora] = True
         nomes = pd.read_csv(DADOS / "universo_filtrado.csv").set_index("ticker")["nome"].fillna("").to_dict()
         alertas = vigia.vigiar(hist[hist["estado"] == "aberto"], nomes, cache, data)
         caminho.write_text(json.dumps(cache))
     except Exception as e:  # noqa: BLE001 — a vigia nunca pode parar os sinais
         logging.warning("Vigia das posições falhou: %s", e)
-        return
+        return []
     # Cada pessoa que tem a ação recebe o alerta com botões de venda; o dono recebe sempre.
     for chat, texto, botoes in bot.mensagens_vigia(ler_carteira(), alertas, dono, vigia.formatar):
         telegram.enviar(texto, chat, botoes)
+    return alertas
 
 
 def guardar_cotacoes(precos: pd.DataFrame, hist: pd.DataFrame, estado: dict | None) -> dict:
@@ -446,7 +448,10 @@ def main() -> None:
             telegram.enviar(texto, chat, botoes)
     _guardar_trocas(trocas_avisadas)
 
-    vigiar_posicoes(hist, data, dono, config)
+    # Aviso "vende já" do advogado do diabo: o sinal fecha no registo (não fica à espera do stop).
+    alertas = vigiar_posicoes(hist, data, dono, config)
+    if config.get("vigia", {}).get("fechar_no_registo", True):
+        hist = acompanhamento.fechar_por_aviso(hist, alertas, precos, data)
     sinais_em_teste(precos, config, agora, reg, hist)
     hist = acompanhamento.registar(hist, novos, data, config["sinais"]["max_dias"], agora)
     # Depois de registar: os sinais da noite guardados nesta corrida já estão no registo (antes, eram
