@@ -333,3 +333,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-13,GEF-B,lider_recuo,compra,100.02999877929688,,93.02484450074671,10.0,10,44.6,aberto,,,,fecho_10,duvidoso,4.0,contraria,-0.2,,,0.75,0.0179089550278544,ok,ok,True,,0.8571428571428571,7.0,0.0,,
 2026-11-13,HTFL,semana_forte,compra,59.91999816894531,,53.25607885894183,10.0,10,69.9,aberto,,,,fecho_10,duvidoso,4.0,apoia,0.6,,,1.0,0.026612815729756427,ok,numeros_cortados,True,,0.6666666666666666,3.0,0.0,3.507193,
 2026-11-13,BLTE,semana_forte,compra,169.9600067138672,,154.20569327779344,10.0,10,77.5,aberto,,,,fecho_10,manter,3.0,apoia,0.4,,,1.0,0.01893392846214915,ok,ok,True,,0.7142857142857143,7.0,0.0,9.955403,
+2026-11-13,NOS.LS,rompimento,compra,5.635000228881836,,5.391153981981653,10.0,10,64.0,aberto,,,,fecho_10,manter,2.0,apoia,0.3,,,,0.019604921495132217,ok,ok,False,,0.8,10.0,,,
