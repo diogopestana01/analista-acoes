@@ -457,19 +457,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 13.780694602804914,
+   "caixa": 0.000370602804906639,
    "desde": "2026-10-30",
    "posicoes": {
-    "RLAY": {
-     "qtd": 8.0759,
-     "preco": 20.1,
-     "data": "2026-11-10",
-     "sinal": "RLAY|2026-11-09",
-     "stop": 17.809772262660328,
-     "objetivo": null,
-     "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
     "SMWB": {
      "qtd": 22.4993,
      "preco": 7.76,
@@ -508,6 +498,16 @@
      "stop": 144.68464947236498,
      "objetivo": null,
      "entrada_sinal": 172.4980010986328,
+     "acompanhar": true
+    },
+    "ARCT": {
+     "qtd": 19.3105,
+     "preco": 8.3,
+     "data": "2026-11-13",
+     "sinal": "ARCT|2026-11-11",
+     "stop": 7.347999208056085,
+     "objetivo": null,
+     "entrada_sinal": 9.550000190734863,
      "acompanhar": true
     }
    },
@@ -1001,6 +1001,24 @@
      "preco": 171.85,
      "data": "2026-11-13",
      "sinal": "NUTX|2026-11-12"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RLAY",
+     "qtd": 8.0759,
+     "preco": 18.14,
+     "data": "2026-11-13",
+     "preco_compra": 20.1,
+     "lucro": -15.828764000000007,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ARCT",
+     "qtd": 19.3105,
+     "preco": 8.3,
+     "data": "2026-11-13",
+     "sinal": "ARCT|2026-11-11"
     }
    ],
    "decisoes": {
@@ -1032,7 +1050,8 @@
     "WOR|2026-11-11": "comprei",
     "AMN|2026-11-11": "comprei",
     "ORKA|2026-11-10": "comprei",
-    "NUTX|2026-11-12": "comprei"
+    "NUTX|2026-11-12": "comprei",
+    "ARCT|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
