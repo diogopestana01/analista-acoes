@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.860916302518092,
+   "caixa": 2.83398830251798,
    "desde": "2026-10-30",
    "posicoes": {
     "RLAY": {
@@ -28,16 +28,6 @@
      "entrada_sinal": 20.135000228881836,
      "acompanhar": true
     },
-    "WOR": {
-     "qtd": 4.8931,
-     "preco": 58.085,
-     "data": "2026-11-12",
-     "sinal": "WOR|2026-11-11",
-     "stop": 54.19153959016198,
-     "objetivo": null,
-     "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
     "ORKA": {
      "qtd": 2.7335,
      "preco": 104.62,
@@ -46,6 +36,16 @@
      "stop": 99.34365215881259,
      "objetivo": null,
      "entrada_sinal": 110.34500122070312,
+     "acompanhar": true
+    },
+    "ARCT": {
+     "qtd": 34.5615,
+     "preco": 8.3,
+     "data": "2026-11-13",
+     "sinal": "ARCT|2026-11-11",
+     "stop": 7.347999208056085,
+     "objetivo": null,
+     "entrada_sinal": 9.550000190734863,
      "acompanhar": true
     }
    },
@@ -415,6 +415,24 @@
      "preco": 104.62,
      "data": "2026-11-12",
      "sinal": "ORKA|2026-11-10"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "WOR",
+     "qtd": 4.8931,
+     "preco": 58.62,
+     "data": "2026-11-13",
+     "preco_compra": 58.085,
+     "lucro": 2.617808499999967,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ARCT",
+     "qtd": 34.5615,
+     "preco": 8.3,
+     "data": "2026-11-13",
+     "sinal": "ARCT|2026-11-11"
     }
    ],
    "decisoes": {
@@ -438,7 +456,8 @@
     "REPX|2026-11-09": "comprei",
     "RLAY|2026-11-09": "comprei",
     "WOR|2026-11-11": "comprei",
-    "ORKA|2026-11-10": "comprei"
+    "ORKA|2026-11-10": "comprei",
+    "ARCT|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1070,19 +1089,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.8096710960726909,
+   "caixa": 0.0024934760726864624,
    "desde": "2026-10-30",
    "posicoes": {
-    "RLAY": {
-     "qtd": 5.6018,
-     "preco": 20.1,
-     "data": "2026-11-10",
-     "sinal": "RLAY|2026-11-09",
-     "stop": 17.809772262660328,
-     "objetivo": null,
-     "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
     "SMWB": {
      "qtd": 14.5999,
      "preco": 7.76,
@@ -1151,6 +1160,16 @@
      "stop": 7.347999208056085,
      "objetivo": null,
      "entrada_sinal": 9.550000190734863,
+     "acompanhar": true
+    },
+    "PNTG": {
+     "qtd": 2.8266,
+     "preco": 36.2357,
+     "data": "2026-11-13",
+     "sinal": "PNTG|2026-11-11",
+     "stop": 33.043478189624224,
+     "objetivo": null,
+     "entrada_sinal": 36.900001525878906,
      "acompanhar": true
     }
    },
@@ -1956,6 +1975,24 @@
      "preco": 8.3,
      "data": "2026-11-13",
      "sinal": "ARCT|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RLAY",
+     "qtd": 5.6018,
+     "preco": 18.14,
+     "data": "2026-11-13",
+     "preco_compra": 20.1,
+     "lucro": -10.979528000000002,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PNTG",
+     "qtd": 2.8266,
+     "preco": 36.2357,
+     "data": "2026-11-13",
+     "sinal": "PNTG|2026-11-11"
     }
    ],
    "decisoes": {
@@ -2006,7 +2043,8 @@
     "WOR|2026-11-11": "comprei",
     "AMN|2026-11-11": "comprei",
     "NUTX|2026-11-12": "comprei",
-    "ARCT|2026-11-11": "comprei"
+    "ARCT|2026-11-11": "comprei",
+    "PNTG|2026-11-11": "comprei"
    },
    "aguarda": null,
    "anterior": null
