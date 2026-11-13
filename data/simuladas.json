@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.83398830251798,
+   "caixa": 0.006553253906872669,
    "desde": "2026-10-30",
    "posicoes": {
-    "RLAY": {
-     "qtd": 14.1437,
-     "preco": 20.15,
-     "data": "2026-11-11",
-     "sinal": "RLAY|2026-11-09",
-     "stop": 17.809772262660328,
-     "objetivo": null,
-     "entrada_sinal": 20.135000228881836,
-     "acompanhar": true
-    },
     "ORKA": {
      "qtd": 2.7335,
      "preco": 104.62,
@@ -46,6 +36,16 @@
      "stop": 7.347999208056085,
      "objetivo": null,
      "entrada_sinal": 9.550000190734863,
+     "acompanhar": true
+    },
+    "TWST": {
+     "qtd": 2.3163,
+     "preco": 109.97,
+     "data": "2026-11-13",
+     "sinal": "TWST|2026-11-13",
+     "stop": 73.31931623087596,
+     "objetivo": null,
+     "entrada_sinal": 107.0,
      "acompanhar": true
     }
    },
@@ -433,6 +433,24 @@
      "preco": 8.3,
      "data": "2026-11-13",
      "sinal": "ARCT|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "RLAY",
+     "qtd": 14.1437,
+     "preco": 17.809772262660328,
+     "data": "2026-11-13",
+     "preco_compra": 20.15,
+     "lucro": -33.09947904861113,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "TWST",
+     "qtd": 2.3163,
+     "preco": 109.97,
+     "data": "2026-11-13",
+     "sinal": "TWST|2026-11-13"
     }
    ],
    "decisoes": {
@@ -457,7 +475,8 @@
     "RLAY|2026-11-09": "comprei",
     "WOR|2026-11-11": "comprei",
     "ORKA|2026-11-10": "comprei",
-    "ARCT|2026-11-11": "comprei"
+    "ARCT|2026-11-11": "comprei",
+    "TWST|2026-11-13": "comprei"
    },
    "aguarda": null,
    "anterior": null
