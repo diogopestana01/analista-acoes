@@ -1108,7 +1108,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0024934760726864624,
+   "caixa": 113.56168355442657,
    "desde": "2026-10-30",
    "posicoes": {
     "SMWB": {
@@ -1119,16 +1119,6 @@
      "stop": 7.010719338547829,
      "objetivo": null,
      "entrada_sinal": 7.860000133514404,
-     "acompanhar": true
-    },
-    "BXC": {
-     "qtd": 1.7991,
-     "preco": 63.42,
-     "data": "2026-11-11",
-     "sinal": "BXC|2026-11-09",
-     "stop": 54.92444245853564,
-     "objetivo": null,
-     "entrada_sinal": 65.16999816894531,
      "acompanhar": true
     },
     "ORKA": {
@@ -2012,6 +2002,16 @@
      "preco": 36.2357,
      "data": "2026-11-13",
      "sinal": "PNTG|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "BXC",
+     "qtd": 1.7991,
+     "preco": 63.119998931884766,
+     "data": "2026-11-13",
+     "preco_compra": 63.42,
+     "lucro": -0.5397319216461227,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -2082,7 +2082,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.002326238267556846,
+   "caixa": 89.00783673211826,
    "desde": "2026-10-30",
    "posicoes": {
     "ORKA": {
@@ -2113,16 +2113,6 @@
      "stop": 37.40468678911593,
      "objetivo": null,
      "entrada_sinal": 40.599998474121094,
-     "acompanhar": true
-    },
-    "BXC": {
-     "qtd": 1.4101,
-     "preco": 63.42,
-     "data": "2026-11-11",
-     "sinal": "BXC|2026-11-09",
-     "stop": 54.92444245853564,
-     "objetivo": null,
-     "entrada_sinal": 65.16999816894531,
      "acompanhar": true
     },
     "DCTH": {
@@ -3112,6 +3102,16 @@
      "preco": 41.86,
      "data": "2026-11-13",
      "sinal": "SEPN|2026-11-12"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "BXC",
+     "qtd": 1.4101,
+     "preco": 63.119998931884766,
+     "data": "2026-11-13",
+     "preco_compra": 63.42,
+     "lucro": -0.423031506149286,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
