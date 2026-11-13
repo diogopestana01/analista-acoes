@@ -331,3 +331,5 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-12,LOCO,caiu_10,compra,14.789999961853027,,13.503703951871852,2.0,5,41.9,aberto,,,,sma5,manter,2.0,apoia,0.5,,,1.0,0.016831751660899546,ok,ok,False,,1.0,3.0,0.0,6.455917,0.00405
 2026-11-12,EVER,contra_setor,compra,28.0,,25.091899135822825,2.5,5,58.6,aberto,,,,sma5,manter,2.0,apoia,0.6,10.0,3.33,1.0,0.022854163989191188,ok,ok,False,,1.0,2.0,0.0,12.590361,0.00143
 2026-11-13,GEF-B,lider_recuo,compra,100.02999877929688,,93.02484450074671,10.0,10,44.6,aberto,,,,fecho_10,duvidoso,4.0,contraria,-0.2,,,0.75,0.0179089550278544,ok,ok,True,,0.8571428571428571,7.0,0.0,,
+2026-11-13,HTFL,semana_forte,compra,59.91999816894531,,53.25607885894183,10.0,10,69.9,aberto,,,,fecho_10,duvidoso,4.0,apoia,0.6,,,1.0,0.026612815729756427,ok,numeros_cortados,True,,0.6666666666666666,3.0,0.0,3.507193,
+2026-11-13,BLTE,semana_forte,compra,169.9600067138672,,154.20569327779344,10.0,10,77.5,aberto,,,,fecho_10,manter,3.0,apoia,0.4,,,1.0,0.01893392846214915,ok,ok,True,,0.7142857142857143,7.0,0.0,9.955403,
