@@ -353,3 +353,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-13,RCEL,pullback,compra,15.4399995803833,,13.174587655323352,10.0,10,62.2,aberto,,,,fecho_10,manter,2.0,apoia,0.7,,,1.0,0.0657286014987924,ok,ok,False,,1.0,3.0,0.0,6.120178,0.00967
 2026-11-13,ELVN,pullback,compra,46.970001220703125,,42.57253305430676,10.0,10,53.5,aberto,,,,fecho_10,manter,2.0,apoia,0.5,,,1.0,0.030579042747824945,ok,ok,False,,0.5833333333333334,12.0,0.0,5.691132,0.00276
 2026-11-13,PTGX,lider_recuo,compra,132.08999633789062,,120.40451356570361,10.0,10,56.3,aberto,,,,fecho_10,manter,2.0,apoia,0.6,,,1.0,0.0349060842052021,ok,ok,False,,0.7894736842105263,19.0,0.0,16.894275,0.00113
+2026-11-13,AVBC,lider_recuo,compra,22.40999984741211,,21.400916107566466,10.0,10,42.0,aberto,,,,fecho_10,manter,2.0,neutro,0.2,,,,0.015000000000000003,ok,numeros_cortados,False,,,0.0,4.0,,0.00134
