@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.006553253906872669,
+   "caixa": 0.5413944300210574,
    "desde": "2026-10-30",
    "posicoes": {
-    "ORKA": {
-     "qtd": 2.7335,
-     "preco": 104.62,
-     "data": "2026-11-12",
-     "sinal": "ORKA|2026-11-10",
-     "stop": 99.34365215881259,
-     "objetivo": null,
-     "entrada_sinal": 110.34500122070312,
-     "acompanhar": true
-    },
     "ARCT": {
      "qtd": 34.5615,
      "preco": 8.3,
@@ -46,6 +36,16 @@
      "stop": 73.31931623087596,
      "objetivo": null,
      "entrada_sinal": 107.0,
+     "acompanhar": true
+    },
+    "DRTS": {
+     "qtd": 22.2696,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16",
+     "stop": 10.958216845414752,
+     "objetivo": null,
+     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     }
    },
@@ -451,6 +451,24 @@
      "preco": 109.97,
      "data": "2026-11-13",
      "sinal": "TWST|2026-11-13"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ORKA",
+     "qtd": 2.7335,
+     "preco": 99.34365215881259,
+     "data": "2026-11-16",
+     "preco_compra": 104.62,
+     "lucro": -14.422896823885822,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DRTS",
+     "qtd": 22.2696,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16"
     }
    ],
    "decisoes": {
@@ -476,7 +494,8 @@
     "WOR|2026-11-11": "comprei",
     "ORKA|2026-11-10": "comprei",
     "ARCT|2026-11-11": "comprei",
-    "TWST|2026-11-13": "comprei"
+    "TWST|2026-11-13": "comprei",
+    "DRTS|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -495,7 +514,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 4.7349206028049196,
+   "caixa": 0.8233789686423734,
    "desde": "2026-10-30",
    "posicoes": {
     "WOR": {
@@ -506,16 +525,6 @@
      "stop": 54.19153959016198,
      "objetivo": null,
      "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
-    "ORKA": {
-     "qtd": 1.6865,
-     "preco": 104.62,
-     "data": "2026-11-12",
-     "sinal": "ORKA|2026-11-10",
-     "stop": 99.34365215881259,
-     "objetivo": null,
-     "entrada_sinal": 110.34500122070312,
      "acompanhar": true
     },
     "NUTX": {
@@ -546,6 +555,16 @@
      "stop": 48.4602570212907,
      "objetivo": null,
      "entrada_sinal": 58.45000076293945,
+     "acompanhar": true
+    },
+    "DRTS": {
+     "qtd": 14.0883,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16",
+     "stop": 10.958216845414752,
+     "objetivo": null,
+     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     }
    },
@@ -1075,6 +1094,24 @@
      "preco": 57.67,
      "data": "2026-11-16",
      "sinal": "COOK|2026-11-13"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ORKA",
+     "qtd": 1.6865,
+     "preco": 99.34365215881259,
+     "data": "2026-11-16",
+     "preco_compra": 104.62,
+     "lucro": -8.898560634162578,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DRTS",
+     "qtd": 14.0883,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16"
     }
    ],
    "decisoes": {
@@ -1108,7 +1145,8 @@
     "ORKA|2026-11-10": "comprei",
     "NUTX|2026-11-12": "comprei",
     "ARCT|2026-11-11": "comprei",
-    "COOK|2026-11-13": "comprei"
+    "COOK|2026-11-13": "comprei",
+    "DRTS|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1127,19 +1165,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 3.2357415544265535,
+   "caixa": 0.0008224952740079061,
    "desde": "2026-10-30",
    "posicoes": {
-    "ORKA": {
-     "qtd": 1.038,
-     "preco": 110.0,
-     "data": "2026-11-11",
-     "sinal": "ORKA|2026-11-10",
-     "stop": 99.34365215881259,
-     "objetivo": null,
-     "entrada_sinal": 110.34500122070312,
-     "acompanhar": true
-    },
     "DCTH": {
      "qtd": 5.6994,
      "preco": 20.1,
@@ -1208,6 +1236,16 @@
      "stop": 36.435456163021335,
      "objetivo": null,
      "entrada_sinal": 43.20000076293945,
+     "acompanhar": true
+    },
+    "DRTS": {
+     "qtd": 8.739,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16",
+     "stop": 10.958216845414752,
+     "objetivo": null,
+     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     }
    },
@@ -2067,6 +2105,24 @@
      "preco": 43.45,
      "data": "2026-11-16",
      "sinal": "SEPN|2026-11-12"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ORKA",
+     "qtd": 1.038,
+     "preco": 99.34365215881259,
+     "data": "2026-11-16",
+     "preco_compra": 110.0,
+     "lucro": -11.061289059152543,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DRTS",
+     "qtd": 8.739,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16"
     }
    ],
    "decisoes": {
@@ -2120,7 +2176,8 @@
     "ARCT|2026-11-11": "comprei",
     "PNTG|2026-11-11": "comprei",
     "COOK|2026-11-13": "comprei",
-    "SEPN|2026-11-12": "comprei"
+    "SEPN|2026-11-12": "comprei",
+    "DRTS|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2139,19 +2196,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.454706732118268,
+   "caixa": 0.0008131373023729793,
    "desde": "2026-10-30",
    "posicoes": {
-    "ORKA": {
-     "qtd": 0.8084,
-     "preco": 109.61,
-     "data": "2026-11-10",
-     "sinal": "ORKA|2026-11-10",
-     "stop": 99.34365215881259,
-     "objetivo": null,
-     "entrada_sinal": 110.34500122070312,
-     "acompanhar": true
-    },
     "ROIV": {
      "qtd": 2.1542,
      "preco": 41.4,
@@ -2240,6 +2287,16 @@
      "stop": 27.778996732747373,
      "objetivo": null,
      "entrada_sinal": 31.810100555419922,
+     "acompanhar": true
+    },
+    "DRTS": {
+     "qtd": 6.8006,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16",
+     "stop": 10.958216845414752,
+     "objetivo": null,
+     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     }
    },
@@ -3205,6 +3262,24 @@
      "preco": 32.08,
      "data": "2026-11-16",
      "sinal": "DFTX|2026-11-13"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ORKA",
+     "qtd": 0.8084,
+     "preco": 99.34365215881259,
+     "data": "2026-11-16",
+     "preco_compra": 109.61,
+     "lucro": -8.299315594815894,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DRTS",
+     "qtd": 6.8006,
+     "preco": 12.17,
+     "data": "2026-11-16",
+     "sinal": "DRTS|2026-11-16"
     }
    ],
    "decisoes": {
@@ -3265,7 +3340,8 @@
     "ARCT|2026-11-11": "comprei",
     "SEPN|2026-11-12": "comprei",
     "COOK|2026-11-13": "comprei",
-    "DFTX|2026-11-13": "comprei"
+    "DFTX|2026-11-13": "comprei",
+    "DRTS|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
