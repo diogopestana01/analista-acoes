@@ -1165,7 +1165,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0008224952740079061,
+   "caixa": 104.66981704483456,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -1206,16 +1206,6 @@
      "stop": 7.347999208056085,
      "objetivo": null,
      "entrada_sinal": 9.550000190734863,
-     "acompanhar": true
-    },
-    "PNTG": {
-     "qtd": 2.8266,
-     "preco": 36.2357,
-     "data": "2026-11-13",
-     "sinal": "PNTG|2026-11-11",
-     "stop": 33.043478189624224,
-     "objetivo": null,
-     "entrada_sinal": 36.900001525878906,
      "acompanhar": true
     },
     "COOK": {
@@ -2123,6 +2113,16 @@
      "preco": 12.17,
      "data": "2026-11-16",
      "sinal": "DRTS|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PNTG",
+     "qtd": 2.8266,
+     "preco": 37.029998779296875,
+     "data": "2026-11-16",
+     "preco_compra": 36.2357,
+     "lucro": 2.245164929560545,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -2196,7 +2196,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0008131373023729793,
+   "caixa": 90.10961216684338,
    "desde": "2026-10-30",
    "posicoes": {
     "ROIV": {
@@ -2227,16 +2227,6 @@
      "stop": 54.19153959016198,
      "objetivo": null,
      "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
-    "PNTG": {
-     "qtd": 2.4334,
-     "preco": 36.8,
-     "data": "2026-11-12",
-     "sinal": "PNTG|2026-11-11",
-     "stop": 33.043478189624224,
-     "objetivo": null,
-     "entrada_sinal": 36.900001525878906,
      "acompanhar": true
     },
     "NUTX": {
@@ -3280,6 +3270,16 @@
      "preco": 12.17,
      "data": "2026-11-16",
      "sinal": "DRTS|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "PNTG",
+     "qtd": 2.4334,
+     "preco": 37.029998779296875,
+     "data": "2026-11-16",
+     "preco_compra": 36.8,
+     "lucro": 0.5596790295410159,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
