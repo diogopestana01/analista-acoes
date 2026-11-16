@@ -25,6 +25,14 @@ Critério: passa se a carteira de 5 lugares render mais nas DUAS metades e o ret
 ressaltos for maior nas DUAS metades.
 
 Parte 2 (ao vivo): ressaltos do registo em papel desde 29/10 com as mesmas marcas.
+Resultado 16/11 (10 anos, 1500 ações, 258 mil compras na queda; metades a partir de 2022-04-11): NADA passa.
+Por trade: caiu_10 depois de resultados -0,08% (+0,00|-0,13) contra +0,83% (+0,83|+0,83) sem resultados;
+contra_setor +0,01% contra +0,84%. Nos outros ressaltos os resultados não pioram (reversao_queda e medo_vix até
+melhoram). Setor a cair e "caiu sozinha" são MELHORES, não piores. Mas na carteira de 5 lugares tirar estes
+sinais piora: base +294%|+126%, sem_resultados +257|+140, res_caiu_contra +270|+110, sem_choque +301|+92.
+(Na 1.ª corrida a mesma base deu +293|+167: só a diferença dos preços descarregados muda a 2.ª metade em 40
+pontos, por isso diferenças pequenas na carteira são ruído.) Ao vivo desde 29/10: caiu_10+contra_setor depois
+de resultados -2,37% (36) contra +0,55% (20); amostra pequena.
 Uso: ANOS=10 ACOES=1500 python passo3zd_faca_motivo.py
 """
 from __future__ import annotations
