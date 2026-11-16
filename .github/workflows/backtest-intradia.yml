@@ -26,6 +26,7 @@ name: Backtest intradiário
 #   gestao       saída e prazo por setup, tamanho, lugares e reinvestimento, 10 anos (passo3y_gestao.py)
 #   melhorias    limite por setor, exposição pelo VIX e teste contra a sorte, 10 anos (passo3za_melhorias.py)
 #   confirmacao  ressaltos: esperar confirmação antes de comprar (faca a cair), 10 anos + ao vivo (passo3zc_confirmacao.py)
+#   faca_motivo  compras na queda: não comprar se a queda tem motivo (resultados, choque, setor), 10 anos + ao vivo (passo3zd_faca_motivo.py)
 #   daytrade     day trading dentro do dia com velas de 5 min, 60 dias, 300 ações (passo3x_daytrade.py)
 on:
   workflow_dispatch:
@@ -33,7 +34,7 @@ on:
       estudo:
         description: "Que estudo correr"
         type: choice
-        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas, dados, biblioteca, biblioteca10, avancado, carteira_avancada, daytrade, gestao, melhorias, confirmacao]
+        options: [rompimentos, intradia, confianca, trocas, forca, reavaliar, abertura, risco, ordem, saidas_risco, spread, europa, recalcular, regime, skills, vendas, restritas, dados, biblioteca, biblioteca10, avancado, carteira_avancada, daytrade, gestao, melhorias, confirmacao, faca_motivo]
         default: rompimentos
 
 permissions:
@@ -120,9 +121,13 @@ jobs:
       - run: python passo3zc_confirmacao.py
         if: inputs.estudo == 'confirmacao'
         env: {ANOS: "10", ACOES: "1500"}
+      - run: python passo3zd_faca_motivo.py
+        if: inputs.estudo == 'faca_motivo'
+        env: {ANOS: "10", ACOES: "1500"}
       - uses: actions/upload-artifact@v4
         with:
           name: backtest-intradia
           path: |
             data/backtest_intradia.csv
             data/estudo_rompimentos.csv
+            data/resultados_hist.csv
