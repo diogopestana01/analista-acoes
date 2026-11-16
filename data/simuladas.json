@@ -495,19 +495,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.000370602804906639,
+   "caixa": 4.7349206028049196,
    "desde": "2026-10-30",
    "posicoes": {
-    "SMWB": {
-     "qtd": 22.4993,
-     "preco": 7.76,
-     "data": "2026-11-11",
-     "sinal": "SMWB|2026-11-10",
-     "stop": 7.010719338547829,
-     "objetivo": null,
-     "entrada_sinal": 7.860000133514404,
-     "acompanhar": true
-    },
     "WOR": {
      "qtd": 3.0261,
      "preco": 58.085,
@@ -546,6 +536,16 @@
      "stop": 7.347999208056085,
      "objetivo": null,
      "entrada_sinal": 9.550000190734863,
+     "acompanhar": true
+    },
+    "COOK": {
+     "qtd": 3.0039,
+     "preco": 57.67,
+     "data": "2026-11-16",
+     "sinal": "COOK|2026-11-13",
+     "stop": 48.4602570212907,
+     "objetivo": null,
+     "entrada_sinal": 58.45000076293945,
      "acompanhar": true
     }
    },
@@ -1057,6 +1057,24 @@
      "preco": 8.3,
      "data": "2026-11-13",
      "sinal": "ARCT|2026-11-11"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SMWB",
+     "qtd": 22.4993,
+     "preco": 7.91,
+     "data": "2026-11-16",
+     "preco_compra": 7.76,
+     "lucro": 3.3748950000000093,
+     "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COOK",
+     "qtd": 3.0039,
+     "preco": 57.67,
+     "data": "2026-11-16",
+     "sinal": "COOK|2026-11-13"
     }
    ],
    "decisoes": {
@@ -1089,7 +1107,8 @@
     "AMN|2026-11-11": "comprei",
     "ORKA|2026-11-10": "comprei",
     "NUTX|2026-11-12": "comprei",
-    "ARCT|2026-11-11": "comprei"
+    "ARCT|2026-11-11": "comprei",
+    "COOK|2026-11-13": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1108,19 +1127,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 113.56168355442657,
+   "caixa": 3.2357415544265535,
    "desde": "2026-10-30",
    "posicoes": {
-    "SMWB": {
-     "qtd": 14.5999,
-     "preco": 7.76,
-     "data": "2026-11-11",
-     "sinal": "SMWB|2026-11-10",
-     "stop": 7.010719338547829,
-     "objetivo": null,
-     "entrada_sinal": 7.860000133514404,
-     "acompanhar": true
-    },
     "ORKA": {
      "qtd": 1.038,
      "preco": 110.0,
@@ -1179,6 +1188,26 @@
      "stop": 33.043478189624224,
      "objetivo": null,
      "entrada_sinal": 36.900001525878906,
+     "acompanhar": true
+    },
+    "COOK": {
+     "qtd": 1.9578,
+     "preco": 57.67,
+     "data": "2026-11-16",
+     "sinal": "COOK|2026-11-13",
+     "stop": 48.4602570212907,
+     "objetivo": null,
+     "entrada_sinal": 58.45000076293945,
+     "acompanhar": true
+    },
+    "SEPN": {
+     "qtd": 2.5985,
+     "preco": 43.45,
+     "data": "2026-11-16",
+     "sinal": "SEPN|2026-11-12",
+     "stop": 36.435456163021335,
+     "objetivo": null,
+     "entrada_sinal": 43.20000076293945,
      "acompanhar": true
     }
    },
@@ -2012,6 +2041,32 @@
      "preco_compra": 63.42,
      "lucro": -0.5397319216461227,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SMWB",
+     "qtd": 14.5999,
+     "preco": 7.91,
+     "data": "2026-11-16",
+     "preco_compra": 7.76,
+     "lucro": 2.189985000000007,
+     "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COOK",
+     "qtd": 1.9578,
+     "preco": 57.67,
+     "data": "2026-11-16",
+     "sinal": "COOK|2026-11-13"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SEPN",
+     "qtd": 2.5985,
+     "preco": 43.45,
+     "data": "2026-11-16",
+     "sinal": "SEPN|2026-11-12"
     }
    ],
    "decisoes": {
@@ -2063,7 +2118,9 @@
     "AMN|2026-11-11": "comprei",
     "NUTX|2026-11-12": "comprei",
     "ARCT|2026-11-11": "comprei",
-    "PNTG|2026-11-11": "comprei"
+    "PNTG|2026-11-11": "comprei",
+    "COOK|2026-11-13": "comprei",
+    "SEPN|2026-11-12": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2082,7 +2139,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 89.00783673211826,
+   "caixa": 2.454706732118268,
    "desde": "2026-10-30",
    "posicoes": {
     "ORKA": {
@@ -2093,16 +2150,6 @@
      "stop": 99.34365215881259,
      "objetivo": null,
      "entrada_sinal": 110.34500122070312,
-     "acompanhar": true
-    },
-    "SMWB": {
-     "qtd": 11.4932,
-     "preco": 7.76,
-     "data": "2026-11-11",
-     "sinal": "SMWB|2026-11-10",
-     "stop": 7.010719338547829,
-     "objetivo": null,
-     "entrada_sinal": 7.860000133514404,
      "acompanhar": true
     },
     "ROIV": {
@@ -2173,6 +2220,26 @@
      "stop": 36.435456163021335,
      "objetivo": null,
      "entrada_sinal": 43.20000076293945,
+     "acompanhar": true
+    },
+    "COOK": {
+     "qtd": 1.5386,
+     "preco": 57.67,
+     "data": "2026-11-16",
+     "sinal": "COOK|2026-11-13",
+     "stop": 48.4602570212907,
+     "objetivo": null,
+     "entrada_sinal": 58.45000076293945,
+     "acompanhar": true
+    },
+    "DFTX": {
+     "qtd": 2.766,
+     "preco": 32.08,
+     "data": "2026-11-16",
+     "sinal": "DFTX|2026-11-13",
+     "stop": 27.778996732747373,
+     "objetivo": null,
+     "entrada_sinal": 31.810100555419922,
      "acompanhar": true
     }
    },
@@ -3112,6 +3179,32 @@
      "preco_compra": 63.42,
      "lucro": -0.423031506149286,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "SMWB",
+     "qtd": 11.4932,
+     "preco": 7.91,
+     "data": "2026-11-16",
+     "preco_compra": 7.76,
+     "lucro": 1.7239800000000116,
+     "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "COOK",
+     "qtd": 1.5386,
+     "preco": 57.67,
+     "data": "2026-11-16",
+     "sinal": "COOK|2026-11-13"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "DFTX",
+     "qtd": 2.766,
+     "preco": 32.08,
+     "data": "2026-11-16",
+     "sinal": "DFTX|2026-11-13"
     }
    ],
    "decisoes": {
@@ -3170,7 +3263,9 @@
     "PNTG|2026-11-11": "comprei",
     "NUTX|2026-11-12": "comprei",
     "ARCT|2026-11-11": "comprei",
-    "SEPN|2026-11-12": "comprei"
+    "SEPN|2026-11-12": "comprei",
+    "COOK|2026-11-13": "comprei",
+    "DFTX|2026-11-13": "comprei"
    },
    "aguarda": null,
    "anterior": null
