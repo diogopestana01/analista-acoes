@@ -28,3 +28,4 @@ crise,outra thread 6/11,8,travão da carteira; CFD S&P; tamanhos menores; prazos
 melhorias,passo3za_melhorias.py,5,setor 1/2/3 por carteira; exposição pelo VIX; setor2+vix
 confirmacao,passo3zc_confirmacao.py,6,ressaltos: esperar 1 dia; fecho a subir; fecho acima do máximo; ordem no máximo; vela de viragem; sem queda >1 ATR
 faca_motivo,passo3zd_faca_motivo.py,4,ressaltos: sem resultados nos 6 dias; sem choque de baixa; setor a cair >5%; caiu sozinha >10 pts
+faca_motivo2,passo3zd_faca_motivo.py,1,sem resultados nos 6 dias só em caiu_10 e contra_setor (escolhido depois da 1.ª corrida)

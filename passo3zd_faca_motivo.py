@@ -17,6 +17,9 @@ rompimento e semana_forte ficam iguais:
   setor_cai       não compra se o setor inteiro caiu mais de 5% em 5 dias (média das ações do setor)
   sozinha         não compra se a ação caiu 10 pontos mais do que o setor em 5 dias (motivo próprio da
                   empresa); não se aplica a contra_setor, que é exatamente isso
+  res_caiu_contra (2.ª corrida, 16/11, depois de ver a 1.ª) sem_resultados só em caiu_10 e contra_setor:
+                  na 1.ª corrida foram os únicos em que ter resultados tirava quase toda a vantagem nas duas
+                  metades (caiu_10 -0,07% contra +0,83%; contra_setor +0,01% contra +0,84%)
 Saídas e custos como no modelo (passo3zc: fecho_10 ou sma5 com stop 2 ATR; líquido de 0,3%).
 Critério: passa se a carteira de 5 lugares render mais nas DUAS metades e o retorno médio por trade dos
 ressaltos for maior nas DUAS metades.
@@ -41,7 +44,9 @@ from src import contexto, regime, resultados, sinais
 
 CUSTO = p3zc.CUSTO
 RESSALTOS = p3zc.RESSALTOS
-FILTROS = {"sem_resultados": "resultados", "sem_choque": "choque", "setor_cai": "setor_cai", "sozinha": "sozinha"}
+FILTROS = {"sem_resultados": "resultados", "sem_choque": "choque", "setor_cai": "setor_cai", "sozinha": "sozinha",
+           "res_caiu_contra": "resultados"}
+SO_EM_SETUPS = {"res_caiu_contra": ["caiu_10", "contra_setor"]}
 VARIANTES = ["base", *FILTROS]
 log = logging.getLogger(__name__)
 
@@ -120,7 +125,7 @@ def recolher(precos: pd.DataFrame, cfg: dict, cal: pd.DataFrame) -> pd.DataFrame
 def com_variante(t: pd.DataFrame, var: str) -> pd.DataFrame:
     if var == "base":
         return t
-    m = t[FILTROS[var]] & t["setup"].isin(RESSALTOS)
+    m = t[FILTROS[var]] & t["setup"].isin(SO_EM_SETUPS.get(var, RESSALTOS))
     if var == "sozinha":
         m &= t["setup"] != "contra_setor"
     return t[~m]
@@ -152,7 +157,7 @@ def estudo_10_anos(cfg: dict) -> None:
         if g0.empty:
             continue
         print(f"  {s}")
-        for nome, col in FILTROS.items():
+        for col in dict.fromkeys(FILTROS.values()):
             for v in (True, False):
                 g = g0[g0[col] == v]
                 if g.empty:
@@ -213,10 +218,14 @@ def ao_vivo(cfg: dict) -> None:
         return
     v = pd.DataFrame(linhas)
     print(f"\n### Ao vivo: {len(v)} compras na queda desde 29/10 (abertos ao último preço guardado, sem custos)")
-    for col in FILTROS.values():
+    for col in dict.fromkeys(FILTROS.values()):
         for k, g in v.groupby(v[col]):
             print(f"  {col:11s} {'sim' if k else 'não'}  n={len(g):3d} média {g['real'].mean()*100:+.2f}% "
                   f"ganha {(g['real'] > 0).mean()*100:.0f}%")
+    q = v[v["setup"].isin(SO_EM_SETUPS["res_caiu_contra"])]
+    for k, g in q.groupby(q["resultados"]):
+        print(f"  caiu_10+contra_setor com resultados {'sim' if k else 'não'}  n={len(g):3d} "
+              f"média {g['real'].mean()*100:+.2f}% ganha {(g['real'] > 0).mean()*100:.0f}%")
     print("  Piores 15:")
     print(v.sort_values("real").head(15).to_string(index=False))
 
