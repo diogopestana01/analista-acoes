@@ -388,3 +388,4 @@ data_sinal,ticker,setup,direcao,entrada,objetivo,stop,dias_estimados,max_dias,po
 2026-11-17,FET,lider_recuo,compra,70.74500274658203,,62.002248398578594,10.0,10,46.1,aberto,,,,fecho_10,manter,2.0,neutro,0.1,,,1.0,0.06891463564451562,ok,ok,False,,0.8260869565217391,23.0,0.0,,0.01201
 2026-11-17,MRX,lider_recuo,compra,67.45500183105469,,60.69650393127508,10.0,10,51.7,aberto,,,,fecho_10,manter,2.0,apoia,0.4,,,1.0,0.0569363801950354,ok,ok,False,,0.9,10.0,0.0,3.450547,0.00354
 2026-11-17,IOVA,lider_recuo,compra,7.369999885559082,,5.66671183063274,10.0,10,34.6,aberto,,,,fecho_10,duvidoso,5.0,apoia,0.5,,,1.0,0.04304384421568702,ok,ok,False,,0.625,8.0,0.0,4.168163,0.00135
+2026-11-17,FLXS,lider_recuo,compra,72.03500366210938,,64.86971674140256,10.0,10,45.0,aberto,,,,fecho_10,duvidoso,4.0,contraria,-0.4,,,1.0,0.03952460590641018,ok,ok,False,,0.8888888888888888,9.0,0.0,2.870675,0.01066
