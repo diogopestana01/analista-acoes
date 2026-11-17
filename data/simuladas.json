@@ -514,19 +514,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.8233789686423734,
+   "caixa": 4.2794969686423485,
    "desde": "2026-10-30",
    "posicoes": {
-    "WOR": {
-     "qtd": 3.0261,
-     "preco": 58.085,
-     "data": "2026-11-12",
-     "sinal": "WOR|2026-11-11",
-     "stop": 54.19153959016198,
-     "objetivo": null,
-     "entrada_sinal": 58.380001068115234,
-     "acompanhar": true
-    },
     "NUTX": {
      "qtd": 1.0225,
      "preco": 171.85,
@@ -565,6 +555,16 @@
      "stop": 10.958216845414752,
      "objetivo": null,
      "entrada_sinal": 12.510000228881836,
+     "acompanhar": true
+    },
+    "AYA": {
+     "qtd": 7.8371,
+     "preco": 21.85,
+     "data": "2026-11-17",
+     "sinal": "AYA|2026-11-17",
+     "stop": 18.7363488050071,
+     "objetivo": null,
+     "entrada_sinal": 21.690000534057617,
      "acompanhar": true
     }
    },
@@ -1112,6 +1112,24 @@
      "preco": 12.17,
      "data": "2026-11-16",
      "sinal": "DRTS|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "WOR",
+     "qtd": 3.0261,
+     "preco": 57.73,
+     "data": "2026-11-17",
+     "preco_compra": 58.085,
+     "lucro": -1.0742654999999957,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AYA",
+     "qtd": 7.8371,
+     "preco": 21.85,
+     "data": "2026-11-17",
+     "sinal": "AYA|2026-11-17"
     }
    ],
    "decisoes": {
@@ -1146,7 +1164,8 @@
     "NUTX|2026-11-12": "comprei",
     "ARCT|2026-11-11": "comprei",
     "COOK|2026-11-13": "comprei",
-    "DRTS|2026-11-16": "comprei"
+    "DRTS|2026-11-16": "comprei",
+    "AYA|2026-11-17": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1165,7 +1184,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0007350448345562199,
+   "caixa": 2.2024790448345613,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -1176,16 +1195,6 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
-    "WOR": {
-     "qtd": 1.9733,
-     "preco": 58.085,
-     "data": "2026-11-12",
-     "sinal": "WOR|2026-11-11",
-     "stop": 54.19153959016198,
-     "objetivo": null,
-     "entrada_sinal": 58.380001068115234,
      "acompanhar": true
     },
     "NUTX": {
@@ -1246,6 +1255,16 @@
      "stop": 20.393555045279427,
      "objetivo": null,
      "entrada_sinal": 22.950000762939453,
+     "acompanhar": true
+    },
+    "AYA": {
+     "qtd": 5.1129,
+     "preco": 21.85,
+     "data": "2026-11-17",
+     "sinal": "AYA|2026-11-17",
+     "stop": 18.7363488050071,
+     "objetivo": null,
+     "entrada_sinal": 21.690000534057617,
      "acompanhar": true
     }
    },
@@ -2141,6 +2160,24 @@
      "preco": 22.86,
      "data": "2026-11-17",
      "sinal": "MTW|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "WOR",
+     "qtd": 1.9733,
+     "preco": 57.73,
+     "data": "2026-11-17",
+     "preco_compra": 58.085,
+     "lucro": -0.7005215000000078,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AYA",
+     "qtd": 5.1129,
+     "preco": 21.85,
+     "data": "2026-11-17",
+     "sinal": "AYA|2026-11-17"
     }
    ],
    "decisoes": {
@@ -2196,7 +2233,8 @@
     "COOK|2026-11-13": "comprei",
     "SEPN|2026-11-12": "comprei",
     "DRTS|2026-11-16": "comprei",
-    "MTW|2026-11-16": "comprei"
+    "MTW|2026-11-16": "comprei",
+    "AYA|2026-11-17": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2215,7 +2253,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.14890416684338,
+   "caixa": 3.2443251668433675,
    "desde": "2026-10-30",
    "posicoes": {
     "ROIV": {
@@ -2236,16 +2274,6 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
-    "WOR": {
-     "qtd": 1.5417,
-     "preco": 58.085,
-     "data": "2026-11-12",
-     "sinal": "WOR|2026-11-11",
-     "stop": 54.19153959016198,
-     "objetivo": null,
-     "entrada_sinal": 58.380001068115234,
      "acompanhar": true
     },
     "NUTX": {
@@ -2316,6 +2344,16 @@
      "stop": 20.393555045279427,
      "objetivo": null,
      "entrada_sinal": 22.950000762939453,
+     "acompanhar": true
+    },
+    "AYA": {
+     "qtd": 4.0232,
+     "preco": 21.85,
+     "data": "2026-11-17",
+     "sinal": "AYA|2026-11-17",
+     "stop": 18.7363488050071,
+     "objetivo": null,
+     "entrada_sinal": 21.690000534057617,
      "acompanhar": true
     }
    },
@@ -3317,6 +3355,24 @@
      "preco": 22.86,
      "data": "2026-11-17",
      "sinal": "MTW|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "WOR",
+     "qtd": 1.5417,
+     "preco": 57.73,
+     "data": "2026-11-17",
+     "preco_compra": 58.085,
+     "lucro": -0.5473034999999982,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "AYA",
+     "qtd": 4.0232,
+     "preco": 21.85,
+     "data": "2026-11-17",
+     "sinal": "AYA|2026-11-17"
     }
    ],
    "decisoes": {
@@ -3379,7 +3435,8 @@
     "COOK|2026-11-13": "comprei",
     "DFTX|2026-11-13": "comprei",
     "DRTS|2026-11-16": "comprei",
-    "MTW|2026-11-16": "comprei"
+    "MTW|2026-11-16": "comprei",
+    "AYA|2026-11-17": "comprei"
    },
    "aguarda": null,
    "anterior": null
