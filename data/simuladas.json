@@ -1165,7 +1165,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 104.66981704483456,
+   "caixa": 0.0007350448345562199,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -1236,6 +1236,16 @@
      "stop": 10.958216845414752,
      "objetivo": null,
      "entrada_sinal": 12.510000228881836,
+     "acompanhar": true
+    },
+    "MTW": {
+     "qtd": 4.5787,
+     "preco": 22.86,
+     "data": "2026-11-17",
+     "sinal": "MTW|2026-11-16",
+     "stop": 20.393555045279427,
+     "objetivo": null,
+     "entrada_sinal": 22.950000762939453,
      "acompanhar": true
     }
    },
@@ -2123,6 +2133,14 @@
      "preco_compra": 36.2357,
      "lucro": 2.245164929560545,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "MTW",
+     "qtd": 4.5787,
+     "preco": 22.86,
+     "data": "2026-11-17",
+     "sinal": "MTW|2026-11-16"
     }
    ],
    "decisoes": {
@@ -2177,7 +2195,8 @@
     "PNTG|2026-11-11": "comprei",
     "COOK|2026-11-13": "comprei",
     "SEPN|2026-11-12": "comprei",
-    "DRTS|2026-11-16": "comprei"
+    "DRTS|2026-11-16": "comprei",
+    "MTW|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2196,7 +2215,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 90.10961216684338,
+   "caixa": 2.14890416684338,
    "desde": "2026-10-30",
    "posicoes": {
     "ROIV": {
@@ -2287,6 +2306,16 @@
      "stop": 10.958216845414752,
      "objetivo": null,
      "entrada_sinal": 12.510000228881836,
+     "acompanhar": true
+    },
+    "MTW": {
+     "qtd": 3.8478,
+     "preco": 22.86,
+     "data": "2026-11-17",
+     "sinal": "MTW|2026-11-16",
+     "stop": 20.393555045279427,
+     "objetivo": null,
+     "entrada_sinal": 22.950000762939453,
      "acompanhar": true
     }
    },
@@ -3280,6 +3309,14 @@
      "preco_compra": 36.8,
      "lucro": 0.5596790295410159,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "MTW",
+     "qtd": 3.8478,
+     "preco": 22.86,
+     "data": "2026-11-17",
+     "sinal": "MTW|2026-11-16"
     }
    ],
    "decisoes": {
@@ -3341,7 +3378,8 @@
     "SEPN|2026-11-12": "comprei",
     "COOK|2026-11-13": "comprei",
     "DFTX|2026-11-13": "comprei",
-    "DRTS|2026-11-16": "comprei"
+    "DRTS|2026-11-16": "comprei",
+    "MTW|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
