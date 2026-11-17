@@ -2291,7 +2291,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0006011668433671957,
+   "caixa": 0.004305166843352026,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -2302,16 +2302,6 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
-    "NUTX": {
-     "qtd": 0.5126,
-     "preco": 174.86,
-     "data": "2026-11-12",
-     "sinal": "NUTX|2026-11-12",
-     "stop": 144.68464947236498,
-     "objetivo": null,
-     "entrada_sinal": 172.4980010986328,
      "acompanhar": true
     },
     "ARCT": {
@@ -2392,6 +2382,16 @@
      "stop": 5.892659680533905,
      "objetivo": null,
      "entrada_sinal": 6.880000114440918,
+     "acompanhar": true
+    },
+    "KOD": {
+     "qtd": 0.8937,
+     "preco": 96.74,
+     "data": "2026-11-17",
+     "sinal": "KOD|2026-11-17",
+     "stop": 83.24348078362182,
+     "objetivo": null,
+     "entrada_sinal": 97.1500015258789,
      "acompanhar": true
     }
    },
@@ -3429,6 +3429,24 @@
      "preco": 6.92,
      "data": "2026-11-17",
      "sinal": "TLS|2026-11-17"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "NUTX",
+     "qtd": 0.5126,
+     "preco": 168.67,
+     "data": "2026-11-17",
+     "preco_compra": 174.86,
+     "lucro": -3.172994000000017,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "KOD",
+     "qtd": 0.8937,
+     "preco": 96.74,
+     "data": "2026-11-17",
+     "sinal": "KOD|2026-11-17"
     }
    ],
    "decisoes": {
@@ -3493,7 +3511,8 @@
     "DRTS|2026-11-16": "comprei",
     "MTW|2026-11-16": "comprei",
     "AYA|2026-11-17": "comprei",
-    "TLS|2026-11-17": "comprei"
+    "TLS|2026-11-17": "comprei",
+    "KOD|2026-11-17": "comprei"
    },
    "aguarda": null,
    "anterior": null
