@@ -15,19 +15,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.5413944300210574,
+   "caixa": 275.9965421787298,
    "desde": "2026-10-30",
    "posicoes": {
-    "ARCT": {
-     "qtd": 34.5615,
-     "preco": 8.3,
-     "data": "2026-11-13",
-     "sinal": "ARCT|2026-11-11",
-     "stop": 7.347999208056085,
-     "objetivo": null,
-     "entrada_sinal": 9.550000190734863,
-     "acompanhar": true
-    },
     "TWST": {
      "qtd": 2.3163,
      "preco": 109.97,
@@ -469,6 +459,16 @@
      "preco": 12.17,
      "data": "2026-11-16",
      "sinal": "DRTS|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ARCT",
+     "qtd": 34.5615,
+     "preco": 7.96999979019165,
+     "data": "2026-11-17",
+     "preco_compra": 8.3,
+     "lucro": -11.405302251291346,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -514,19 +514,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.242776968642346,
+   "caixa": 161.1474579171382,
    "desde": "2026-10-30",
    "posicoes": {
-    "ARCT": {
-     "qtd": 19.3105,
-     "preco": 8.3,
-     "data": "2026-11-13",
-     "sinal": "ARCT|2026-11-11",
-     "stop": 7.347999208056085,
-     "objetivo": null,
-     "entrada_sinal": 9.550000190734863,
-     "acompanhar": true
-    },
     "COOK": {
      "qtd": 3.0039,
      "preco": 57.67,
@@ -1148,6 +1138,16 @@
      "preco": 6.92,
      "data": "2026-11-17",
      "sinal": "TLS|2026-11-17"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ARCT",
+     "qtd": 19.3105,
+     "preco": 7.96999979019165,
+     "data": "2026-11-17",
+     "preco_compra": 8.3,
+     "lucro": -6.372469051504169,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1203,7 +1203,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.0625150448345693,
+   "caixa": 111.59980116129155,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -1214,16 +1214,6 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
-    "ARCT": {
-     "qtd": 13.7437,
-     "preco": 8.3,
-     "data": "2026-11-13",
-     "sinal": "ARCT|2026-11-11",
-     "stop": 7.347999208056085,
-     "objetivo": null,
-     "entrada_sinal": 9.550000190734863,
      "acompanhar": true
     },
     "COOK": {
@@ -2215,6 +2205,16 @@
      "preco": 6.92,
      "data": "2026-11-17",
      "sinal": "TLS|2026-11-17"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ARCT",
+     "qtd": 13.7437,
+     "preco": 7.96999979019165,
+     "data": "2026-11-17",
+     "preco_compra": 8.3,
+     "lucro": -4.535423883543032,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -2291,7 +2291,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.004305166843352026,
+   "caixa": 85.90815090544503,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -2302,16 +2302,6 @@
      "stop": 18.357074985809856,
      "objetivo": null,
      "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
-    "ARCT": {
-     "qtd": 10.7784,
-     "preco": 8.3,
-     "data": "2026-11-13",
-     "sinal": "ARCT|2026-11-11",
-     "stop": 7.347999208056085,
-     "objetivo": null,
-     "entrada_sinal": 9.550000190734863,
      "acompanhar": true
     },
     "SEPN": {
@@ -3447,6 +3437,16 @@
      "preco": 96.74,
      "data": "2026-11-17",
      "sinal": "KOD|2026-11-17"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "ARCT",
+     "qtd": 10.7784,
+     "preco": 7.96999979019165,
+     "data": "2026-11-17",
+     "preco_compra": 8.3,
+     "lucro": -3.5568742613983346,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
