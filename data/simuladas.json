@@ -552,19 +552,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0012639171382033965,
+   "caixa": 7.1349969171381815,
    "desde": "2026-10-30",
    "posicoes": {
-    "COOK": {
-     "qtd": 3.0039,
-     "preco": 57.67,
-     "data": "2026-11-16",
-     "sinal": "COOK|2026-11-13",
-     "stop": 48.4602570212907,
-     "objetivo": null,
-     "entrada_sinal": 58.45000076293945,
-     "acompanhar": true
-    },
     "AYA": {
      "qtd": 7.8371,
      "preco": 21.85,
@@ -603,6 +593,16 @@
      "stop": 16.85352480990364,
      "objetivo": null,
      "entrada_sinal": 21.229999542236328,
+     "acompanhar": true
+    },
+    "MTW": {
+     "qtd": 7.6378,
+     "preco": 22.29,
+     "data": "2026-11-18",
+     "sinal": "MTW|2026-11-16",
+     "stop": 20.393555045279427,
+     "objetivo": null,
+     "entrada_sinal": 22.950000762939453,
      "acompanhar": true
     }
    },
@@ -1222,6 +1222,24 @@
      "preco": 21.06,
      "data": "2026-11-18",
      "sinal": "SEDG|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COOK",
+     "qtd": 3.0039,
+     "preco": 59.05,
+     "data": "2026-11-18",
+     "preco_compra": 57.67,
+     "lucro": 4.145381999999984,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "MTW",
+     "qtd": 7.6378,
+     "preco": 22.29,
+     "data": "2026-11-18",
+     "sinal": "MTW|2026-11-16"
     }
    ],
    "decisoes": {
@@ -1260,7 +1278,8 @@
     "AYA|2026-11-17": "comprei",
     "TLS|2026-11-17": "comprei",
     "SGMT|2026-11-18": "comprei",
-    "SEDG|2026-11-18": "comprei"
+    "SEDG|2026-11-18": "comprei",
+    "MTW|2026-11-16": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1279,19 +1298,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.823659161291559,
+   "caixa": 7.558539161291563,
    "desde": "2026-10-30",
    "posicoes": {
-    "COOK": {
-     "qtd": 1.9578,
-     "preco": 57.67,
-     "data": "2026-11-16",
-     "sinal": "COOK|2026-11-13",
-     "stop": 48.4602570212907,
-     "objetivo": null,
-     "entrada_sinal": 58.45000076293945,
-     "acompanhar": true
-    },
     "SEPN": {
      "qtd": 2.5985,
      "preco": 43.45,
@@ -1360,6 +1369,16 @@
      "stop": 4.158932853895831,
      "objetivo": null,
      "entrada_sinal": 5.170000076293945,
+     "acompanhar": true
+    },
+    "EWTX": {
+     "qtd": 2.671,
+     "preco": 41.51,
+     "data": "2026-11-18",
+     "sinal": "EWTX|2026-11-17",
+     "stop": 37.67700506827211,
+     "objetivo": null,
+     "entrada_sinal": 43.084999084472656,
      "acompanhar": true
     }
    },
@@ -2345,6 +2364,24 @@
      "preco": 5.14,
      "data": "2026-11-18",
      "sinal": "PHAT|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COOK",
+     "qtd": 1.9578,
+     "preco": 59.05,
+     "data": "2026-11-18",
+     "preco_compra": 57.67,
+     "lucro": 2.701763999999983,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "EWTX",
+     "qtd": 2.671,
+     "preco": 41.51,
+     "data": "2026-11-18",
+     "sinal": "EWTX|2026-11-17"
     }
    ],
    "decisoes": {
@@ -2405,7 +2442,8 @@
     "TLS|2026-11-17": "comprei",
     "SGMT|2026-11-18": "comprei",
     "SEDG|2026-11-18": "comprei",
-    "PHAT|2026-11-18": "comprei"
+    "PHAT|2026-11-18": "comprei",
+    "EWTX|2026-11-17": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2424,7 +2462,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 2.0682139054450346,
+   "caixa": 6.419854905445035,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -2435,16 +2473,6 @@
      "stop": 36.435456163021335,
      "objetivo": null,
      "entrada_sinal": 43.20000076293945,
-     "acompanhar": true
-    },
-    "COOK": {
-     "qtd": 1.5386,
-     "preco": 57.67,
-     "data": "2026-11-16",
-     "sinal": "COOK|2026-11-13",
-     "stop": 48.4602570212907,
-     "objetivo": null,
-     "entrada_sinal": 58.45000076293945,
      "acompanhar": true
     },
     "DFTX": {
@@ -2525,6 +2553,16 @@
      "stop": 4.158932853895831,
      "objetivo": null,
      "entrada_sinal": 5.170000076293945,
+     "acompanhar": true
+    },
+    "EWTX": {
+     "qtd": 2.0839,
+     "preco": 41.51,
+     "data": "2026-11-18",
+     "sinal": "EWTX|2026-11-17",
+     "stop": 37.67700506827211,
+     "objetivo": null,
+     "entrada_sinal": 43.084999084472656,
      "acompanhar": true
     }
    },
@@ -3634,6 +3672,24 @@
      "preco": 5.14,
      "data": "2026-11-18",
      "sinal": "PHAT|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "COOK",
+     "qtd": 1.5386,
+     "preco": 59.05,
+     "data": "2026-11-18",
+     "preco_compra": 57.67,
+     "lucro": 2.123267999999996,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "EWTX",
+     "qtd": 2.0839,
+     "preco": 41.51,
+     "data": "2026-11-18",
+     "sinal": "EWTX|2026-11-17"
     }
    ],
    "decisoes": {
@@ -3702,7 +3758,8 @@
     "KOD|2026-11-17": "comprei",
     "SGMT|2026-11-18": "comprei",
     "SEDG|2026-11-18": "comprei",
-    "PHAT|2026-11-18": "comprei"
+    "PHAT|2026-11-18": "comprei",
+    "EWTX|2026-11-17": "comprei"
    },
    "aguarda": null,
    "anterior": null
