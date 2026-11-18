@@ -552,7 +552,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.1349969171381815,
+   "caixa": 190.09530314959056,
    "desde": "2026-10-30",
    "posicoes": {
     "AYA": {
@@ -563,16 +563,6 @@
      "stop": 18.7363488050071,
      "objetivo": null,
      "entrada_sinal": 21.690000534057617,
-     "acompanhar": true
-    },
-    "TLS": {
-     "qtd": 24.691,
-     "preco": 6.92,
-     "data": "2026-11-17",
-     "sinal": "TLS|2026-11-17",
-     "stop": 5.892659680533905,
-     "objetivo": null,
-     "entrada_sinal": 6.880000114440918,
      "acompanhar": true
     },
     "SGMT": {
@@ -1240,6 +1230,16 @@
      "preco": 22.29,
      "data": "2026-11-18",
      "sinal": "MTW|2026-11-16"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TLS",
+     "qtd": 24.691,
+     "preco": 7.409999847412109,
+     "data": "2026-11-18",
+     "preco_compra": 6.92,
+     "lucro": 12.09858623245239,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -1298,7 +1298,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 7.558539161291563,
+   "caixa": 126.76098370665595,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -1329,16 +1329,6 @@
      "stop": 18.7363488050071,
      "objetivo": null,
      "entrada_sinal": 21.690000534057617,
-     "acompanhar": true
-    },
-    "TLS": {
-     "qtd": 16.0867,
-     "preco": 6.92,
-     "data": "2026-11-17",
-     "sinal": "TLS|2026-11-17",
-     "stop": 5.892659680533905,
-     "objetivo": null,
-     "entrada_sinal": 6.880000114440918,
      "acompanhar": true
     },
     "SGMT": {
@@ -2382,6 +2372,16 @@
      "preco": 41.51,
      "data": "2026-11-18",
      "sinal": "EWTX|2026-11-17"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TLS",
+     "qtd": 16.0867,
+     "preco": 7.409999847412109,
+     "data": "2026-11-18",
+     "preco_compra": 6.92,
+     "lucro": 7.882480545364388,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
@@ -2462,7 +2462,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 6.419854905445035,
+   "caixa": 96.71885404599374,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -2503,16 +2503,6 @@
      "stop": 18.7363488050071,
      "objetivo": null,
      "entrada_sinal": 21.690000534057617,
-     "acompanhar": true
-    },
-    "TLS": {
-     "qtd": 12.1861,
-     "preco": 6.92,
-     "data": "2026-11-17",
-     "sinal": "TLS|2026-11-17",
-     "stop": 5.892659680533905,
-     "objetivo": null,
-     "entrada_sinal": 6.880000114440918,
      "acompanhar": true
     },
     "KOD": {
@@ -3690,6 +3680,16 @@
      "preco": 41.51,
      "data": "2026-11-18",
      "sinal": "EWTX|2026-11-17"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "TLS",
+     "qtd": 12.1861,
+     "preco": 7.409999847412109,
+     "data": "2026-11-18",
+     "preco_compra": 6.92,
+     "lucro": 5.971187140548707,
+     "motivo": "prazo"
     }
    ],
    "decisoes": {
