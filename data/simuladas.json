@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 545.6813981787298,
+   "caixa": 12.133645178729807,
    "desde": "2026-10-30",
    "posicoes": {
     "TWST": {
@@ -26,6 +26,26 @@
      "stop": 73.31931623087596,
      "objetivo": null,
      "entrada_sinal": 107.0,
+     "acompanhar": true
+    },
+    "SGMT": {
+     "qtd": 26.8655,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18",
+     "stop": 8.616448528382334,
+     "objetivo": null,
+     "entrada_sinal": 9.899999618530273,
+     "acompanhar": true
+    },
+    "SEDG": {
+     "qtd": 12.6673,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18",
+     "stop": 16.85352480990364,
+     "objetivo": null,
+     "entrada_sinal": 21.229999542236328,
      "acompanhar": true
     }
    },
@@ -469,6 +489,22 @@
      "preco_compra": 12.17,
      "lucro": -1.3361760000000231,
      "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SGMT",
+     "qtd": 26.8655,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SEDG",
+     "qtd": 12.6673,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18"
     }
    ],
    "decisoes": {
@@ -495,7 +531,9 @@
     "ORKA|2026-11-10": "comprei",
     "ARCT|2026-11-11": "comprei",
     "TWST|2026-11-13": "comprei",
-    "DRTS|2026-11-16": "comprei"
+    "DRTS|2026-11-16": "comprei",
+    "SGMT|2026-11-18": "comprei",
+    "SEDG|2026-11-18": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -514,7 +552,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 331.75677091713817,
+   "caixa": 0.0012639171382033965,
    "desde": "2026-10-30",
    "posicoes": {
     "COOK": {
@@ -545,6 +583,26 @@
      "stop": 5.892659680533905,
      "objetivo": null,
      "entrada_sinal": 6.880000114440918,
+     "acompanhar": true
+    },
+    "SGMT": {
+     "qtd": 17.0613,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18",
+     "stop": 8.616448528382334,
+     "objetivo": null,
+     "entrada_sinal": 9.899999618530273,
+     "acompanhar": true
+    },
+    "SEDG": {
+     "qtd": 7.7083,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18",
+     "stop": 16.85352480990364,
+     "objetivo": null,
+     "entrada_sinal": 21.229999542236328,
      "acompanhar": true
     }
    },
@@ -1148,6 +1206,22 @@
      "preco_compra": 12.17,
      "lucro": -0.8452980000000139,
      "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SGMT",
+     "qtd": 17.0613,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SEDG",
+     "qtd": 7.7083,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18"
     }
    ],
    "decisoes": {
@@ -1184,7 +1258,9 @@
     "COOK|2026-11-13": "comprei",
     "DRTS|2026-11-16": "comprei",
     "AYA|2026-11-17": "comprei",
-    "TLS|2026-11-17": "comprei"
+    "TLS|2026-11-17": "comprei",
+    "SGMT|2026-11-18": "comprei",
+    "SEDG|2026-11-18": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1203,7 +1279,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 217.42909116129155,
+   "caixa": 0.0008631612915621645,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -1264,6 +1340,26 @@
      "stop": 5.892659680533905,
      "objetivo": null,
      "entrada_sinal": 6.880000114440918,
+     "acompanhar": true
+    },
+    "SGMT": {
+     "qtd": 11.1468,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18",
+     "stop": 8.616448528382334,
+     "objetivo": null,
+     "entrada_sinal": 9.899999618530273,
+     "acompanhar": true
+    },
+    "SEDG": {
+     "qtd": 5.0684,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18",
+     "stop": 16.85352480990364,
+     "objetivo": null,
+     "entrada_sinal": 21.229999542236328,
      "acompanhar": true
     }
    },
@@ -2215,6 +2311,22 @@
      "preco_compra": 12.17,
      "lucro": -0.5243400000000094,
      "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SGMT",
+     "qtd": 11.1468,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SEDG",
+     "qtd": 5.0684,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18"
     }
    ],
    "decisoes": {
@@ -2272,7 +2384,9 @@
     "DRTS|2026-11-16": "comprei",
     "MTW|2026-11-16": "comprei",
     "AYA|2026-11-17": "comprei",
-    "TLS|2026-11-17": "comprei"
+    "TLS|2026-11-17": "comprei",
+    "SGMT|2026-11-18": "comprei",
+    "SEDG|2026-11-18": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2291,7 +2405,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 168.263416905445,
+   "caixa": 0.001186905445024422,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -2372,6 +2486,26 @@
      "stop": 83.24348078362182,
      "objetivo": null,
      "entrada_sinal": 97.1500015258789,
+     "acompanhar": true
+    },
+    "SGMT": {
+     "qtd": 8.6992,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18",
+     "stop": 8.616448528382334,
+     "objetivo": null,
+     "entrada_sinal": 9.899999618530273,
+     "acompanhar": true
+    },
+    "SEDG": {
+     "qtd": 3.8879,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18",
+     "stop": 16.85352480990364,
+     "objetivo": null,
+     "entrada_sinal": 21.229999542236328,
      "acompanhar": true
     }
    },
@@ -3447,6 +3581,22 @@
      "preco_compra": 12.17,
      "lucro": -0.4080359999999956,
      "motivo": "resultados"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SGMT",
+     "qtd": 8.6992,
+     "preco": 9.93,
+     "data": "2026-11-18",
+     "sinal": "SGMT|2026-11-18"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "SEDG",
+     "qtd": 3.8879,
+     "preco": 21.06,
+     "data": "2026-11-18",
+     "sinal": "SEDG|2026-11-18"
     }
    ],
    "decisoes": {
@@ -3512,7 +3662,9 @@
     "MTW|2026-11-16": "comprei",
     "AYA|2026-11-17": "comprei",
     "TLS|2026-11-17": "comprei",
-    "KOD|2026-11-17": "comprei"
+    "KOD|2026-11-17": "comprei",
+    "SGMT|2026-11-18": "comprei",
+    "SEDG|2026-11-18": "comprei"
    },
    "aguarda": null,
    "anterior": null
