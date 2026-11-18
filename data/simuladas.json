@@ -1279,19 +1279,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.0008631612915621645,
+   "caixa": 2.823659161291559,
    "desde": "2026-10-30",
    "posicoes": {
-    "DCTH": {
-     "qtd": 5.6994,
-     "preco": 20.1,
-     "data": "2026-11-11",
-     "sinal": "DCTH|2026-11-10",
-     "stop": 18.357074985809856,
-     "objetivo": null,
-     "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
     "COOK": {
      "qtd": 1.9578,
      "preco": 57.67,
@@ -1360,6 +1350,16 @@
      "stop": 16.85352480990364,
      "objetivo": null,
      "entrada_sinal": 21.229999542236328,
+     "acompanhar": true
+    },
+    "PHAT": {
+     "qtd": 21.5055,
+     "preco": 5.14,
+     "data": "2026-11-18",
+     "sinal": "PHAT|2026-11-18",
+     "stop": 4.158932853895831,
+     "objetivo": null,
+     "entrada_sinal": 5.170000076293945,
      "acompanhar": true
     }
    },
@@ -2327,6 +2327,24 @@
      "preco": 21.06,
      "data": "2026-11-18",
      "sinal": "SEDG|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DCTH",
+     "qtd": 5.6994,
+     "preco": 19.89,
+     "data": "2026-11-18",
+     "preco_compra": 20.1,
+     "lucro": -1.1968740000000082,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PHAT",
+     "qtd": 21.5055,
+     "preco": 5.14,
+     "data": "2026-11-18",
+     "sinal": "PHAT|2026-11-18"
     }
    ],
    "decisoes": {
@@ -2386,7 +2404,8 @@
     "AYA|2026-11-17": "comprei",
     "TLS|2026-11-17": "comprei",
     "SGMT|2026-11-18": "comprei",
-    "SEDG|2026-11-18": "comprei"
+    "SEDG|2026-11-18": "comprei",
+    "PHAT|2026-11-18": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2405,19 +2424,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.001186905445024422,
+   "caixa": 2.0682139054450346,
    "desde": "2026-10-30",
    "posicoes": {
-    "DCTH": {
-     "qtd": 4.4423,
-     "preco": 20.1,
-     "data": "2026-11-11",
-     "sinal": "DCTH|2026-11-10",
-     "stop": 18.357074985809856,
-     "objetivo": null,
-     "entrada_sinal": 20.200000762939453,
-     "acompanhar": true
-    },
     "SEPN": {
      "qtd": 1.9629,
      "preco": 41.86,
@@ -2506,6 +2515,16 @@
      "stop": 16.85352480990364,
      "objetivo": null,
      "entrada_sinal": 21.229999542236328,
+     "acompanhar": true
+    },
+    "PHAT": {
+     "qtd": 16.788,
+     "preco": 5.14,
+     "data": "2026-11-18",
+     "sinal": "PHAT|2026-11-18",
+     "stop": 4.158932853895831,
+     "objetivo": null,
+     "entrada_sinal": 5.170000076293945,
      "acompanhar": true
     }
    },
@@ -3597,6 +3616,24 @@
      "preco": 21.06,
      "data": "2026-11-18",
      "sinal": "SEDG|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DCTH",
+     "qtd": 4.4423,
+     "preco": 19.89,
+     "data": "2026-11-18",
+     "preco_compra": 20.1,
+     "lucro": -0.9328830000000039,
+     "motivo": "troca"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "PHAT",
+     "qtd": 16.788,
+     "preco": 5.14,
+     "data": "2026-11-18",
+     "sinal": "PHAT|2026-11-18"
     }
    ],
    "decisoes": {
@@ -3664,7 +3701,8 @@
     "TLS|2026-11-17": "comprei",
     "KOD|2026-11-17": "comprei",
     "SGMT|2026-11-18": "comprei",
-    "SEDG|2026-11-18": "comprei"
+    "SEDG|2026-11-18": "comprei",
+    "PHAT|2026-11-18": "comprei"
    },
    "aguarda": null,
    "anterior": null
