@@ -15,7 +15,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 275.9965421787298,
+   "caixa": 545.6813981787298,
    "desde": "2026-10-30",
    "posicoes": {
     "TWST": {
@@ -26,16 +26,6 @@
      "stop": 73.31931623087596,
      "objetivo": null,
      "entrada_sinal": 107.0,
-     "acompanhar": true
-    },
-    "DRTS": {
-     "qtd": 22.2696,
-     "preco": 12.17,
-     "data": "2026-11-16",
-     "sinal": "DRTS|2026-11-16",
-     "stop": 10.958216845414752,
-     "objetivo": null,
-     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     }
    },
@@ -469,6 +459,16 @@
      "preco_compra": 8.3,
      "lucro": -11.405302251291346,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DRTS",
+     "qtd": 22.2696,
+     "preco": 12.11,
+     "data": "2026-11-18",
+     "preco_compra": 12.17,
+     "lucro": -1.3361760000000231,
+     "motivo": "resultados"
     }
    ],
    "decisoes": {
@@ -514,7 +514,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 161.1474579171382,
+   "caixa": 331.75677091713817,
    "desde": "2026-10-30",
    "posicoes": {
     "COOK": {
@@ -525,16 +525,6 @@
      "stop": 48.4602570212907,
      "objetivo": null,
      "entrada_sinal": 58.45000076293945,
-     "acompanhar": true
-    },
-    "DRTS": {
-     "qtd": 14.0883,
-     "preco": 12.17,
-     "data": "2026-11-16",
-     "sinal": "DRTS|2026-11-16",
-     "stop": 10.958216845414752,
-     "objetivo": null,
-     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     },
     "AYA": {
@@ -1148,6 +1138,16 @@
      "preco_compra": 8.3,
      "lucro": -6.372469051504169,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DRTS",
+     "qtd": 14.0883,
+     "preco": 12.11,
+     "data": "2026-11-18",
+     "preco_compra": 12.17,
+     "lucro": -0.8452980000000139,
+     "motivo": "resultados"
     }
    ],
    "decisoes": {
@@ -1203,7 +1203,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 111.59980116129155,
+   "caixa": 217.42909116129155,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -1234,16 +1234,6 @@
      "stop": 36.435456163021335,
      "objetivo": null,
      "entrada_sinal": 43.20000076293945,
-     "acompanhar": true
-    },
-    "DRTS": {
-     "qtd": 8.739,
-     "preco": 12.17,
-     "data": "2026-11-16",
-     "sinal": "DRTS|2026-11-16",
-     "stop": 10.958216845414752,
-     "objetivo": null,
-     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     },
     "MTW": {
@@ -2215,6 +2205,16 @@
      "preco_compra": 8.3,
      "lucro": -4.535423883543032,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DRTS",
+     "qtd": 8.739,
+     "preco": 12.11,
+     "data": "2026-11-18",
+     "preco_compra": 12.17,
+     "lucro": -0.5243400000000094,
+     "motivo": "resultados"
     }
    ],
    "decisoes": {
@@ -2291,7 +2291,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 85.90815090544503,
+   "caixa": 168.263416905445,
    "desde": "2026-10-30",
    "posicoes": {
     "DCTH": {
@@ -2332,16 +2332,6 @@
      "stop": 27.778996732747373,
      "objetivo": null,
      "entrada_sinal": 31.810100555419922,
-     "acompanhar": true
-    },
-    "DRTS": {
-     "qtd": 6.8006,
-     "preco": 12.17,
-     "data": "2026-11-16",
-     "sinal": "DRTS|2026-11-16",
-     "stop": 10.958216845414752,
-     "objetivo": null,
-     "entrada_sinal": 12.510000228881836,
      "acompanhar": true
     },
     "MTW": {
@@ -3447,6 +3437,16 @@
      "preco_compra": 8.3,
      "lucro": -3.5568742613983346,
      "motivo": "prazo"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "DRTS",
+     "qtd": 6.8006,
+     "preco": 12.11,
+     "data": "2026-11-18",
+     "preco_compra": 12.17,
+     "lucro": -0.4080359999999956,
+     "motivo": "resultados"
     }
    ],
    "decisoes": {
