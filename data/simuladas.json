@@ -552,19 +552,9 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 17.42829442959058,
+   "caixa": 0.02653364931174451,
    "desde": "2026-10-30",
    "posicoes": {
-    "AYA": {
-     "qtd": 7.8371,
-     "preco": 21.85,
-     "data": "2026-11-17",
-     "sinal": "AYA|2026-11-17",
-     "stop": 18.7363488050071,
-     "objetivo": null,
-     "entrada_sinal": 21.690000534057617,
-     "acompanhar": true
-    },
     "SGMT": {
      "qtd": 17.0613,
      "preco": 9.93,
@@ -603,6 +593,16 @@
      "stop": 14.230045989084465,
      "objetivo": null,
      "entrada_sinal": 20.0,
+     "acompanhar": true
+    },
+    "LITE": {
+     "qtd": 0.3298,
+     "preco": 498.0,
+     "data": "2026-11-20",
+     "sinal": "LITE|2026-11-20",
+     "stop": 362.4196547900902,
+     "objetivo": null,
+     "entrada_sinal": 494.80999755859375,
      "acompanhar": true
     }
    },
@@ -1258,6 +1258,24 @@
      "preco": 19.1816,
      "data": "2026-11-19",
      "sinal": "MF|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AYA",
+     "qtd": 7.8371,
+     "preco": 18.7363488050071,
+     "data": "2026-11-20",
+     "preco_compra": 21.85,
+     "lucro": -24.401995780278867,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "LITE",
+     "qtd": 0.3298,
+     "preco": 498.0,
+     "data": "2026-11-20",
+     "sinal": "LITE|2026-11-20"
     }
    ],
    "decisoes": {
@@ -1298,7 +1316,8 @@
     "SGMT|2026-11-18": "comprei",
     "SEDG|2026-11-18": "comprei",
     "MTW|2026-11-16": "comprei",
-    "MF|2026-11-18": "comprei"
+    "MF|2026-11-18": "comprei",
+    "LITE|2026-11-20": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1317,7 +1336,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 14.899646986655952,
+   "caixa": 0.8379247917767572,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -1338,16 +1357,6 @@
      "stop": 20.393555045279427,
      "objetivo": null,
      "entrada_sinal": 22.950000762939453,
-     "acompanhar": true
-    },
-    "AYA": {
-     "qtd": 5.1129,
-     "preco": 21.85,
-     "data": "2026-11-17",
-     "sinal": "AYA|2026-11-17",
-     "stop": 18.7363488050071,
-     "objetivo": null,
-     "entrada_sinal": 21.690000534057617,
      "acompanhar": true
     },
     "SGMT": {
@@ -1398,6 +1407,16 @@
      "stop": 14.230045989084465,
      "objetivo": null,
      "entrada_sinal": 20.0,
+     "acompanhar": true
+    },
+    "LITE": {
+     "qtd": 0.2206,
+     "preco": 498.0,
+     "data": "2026-11-20",
+     "sinal": "LITE|2026-11-20",
+     "stop": 362.4196547900902,
+     "objetivo": null,
+     "entrada_sinal": 494.80999755859375,
      "acompanhar": true
     }
    },
@@ -2419,6 +2438,24 @@
      "preco": 19.1816,
      "data": "2026-11-19",
      "sinal": "MF|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AYA",
+     "qtd": 5.1129,
+     "preco": 18.7363488050071,
+     "data": "2026-11-20",
+     "preco_compra": 21.85,
+     "lucro": -15.919787194879191,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "LITE",
+     "qtd": 0.2206,
+     "preco": 498.0,
+     "data": "2026-11-20",
+     "sinal": "LITE|2026-11-20"
     }
    ],
    "decisoes": {
@@ -2481,7 +2518,8 @@
     "SEDG|2026-11-18": "comprei",
     "PHAT|2026-11-18": "comprei",
     "EWTX|2026-11-17": "comprei",
-    "MF|2026-11-18": "comprei"
+    "MF|2026-11-18": "comprei",
+    "LITE|2026-11-20": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2500,7 +2538,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 9.619044765993735,
+   "caixa": 0.04032327829830251,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -2531,16 +2569,6 @@
      "stop": 20.393555045279427,
      "objetivo": null,
      "entrada_sinal": 22.950000762939453,
-     "acompanhar": true
-    },
-    "AYA": {
-     "qtd": 4.0232,
-     "preco": 21.85,
-     "data": "2026-11-17",
-     "sinal": "AYA|2026-11-17",
-     "stop": 18.7363488050071,
-     "objetivo": null,
-     "entrada_sinal": 21.690000534057617,
      "acompanhar": true
     },
     "KOD": {
@@ -2601,6 +2629,16 @@
      "stop": 14.230045989084465,
      "objetivo": null,
      "entrada_sinal": 20.0,
+     "acompanhar": true
+    },
+    "LITE": {
+     "qtd": 0.1706,
+     "preco": 498.0,
+     "data": "2026-11-20",
+     "sinal": "LITE|2026-11-20",
+     "stop": 362.4196547900902,
+     "objetivo": null,
+     "entrada_sinal": 494.80999755859375,
      "acompanhar": true
     }
    },
@@ -3746,6 +3784,24 @@
      "preco": 19.1816,
      "data": "2026-11-19",
      "sinal": "MF|2026-11-18"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "AYA",
+     "qtd": 4.0232,
+     "preco": 18.7363488050071,
+     "data": "2026-11-20",
+     "preco_compra": 21.85,
+     "lucro": -12.52684148769545,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "LITE",
+     "qtd": 0.1706,
+     "preco": 498.0,
+     "data": "2026-11-20",
+     "sinal": "LITE|2026-11-20"
     }
    ],
    "decisoes": {
@@ -3816,7 +3872,8 @@
     "SEDG|2026-11-18": "comprei",
     "PHAT|2026-11-18": "comprei",
     "EWTX|2026-11-17": "comprei",
-    "MF|2026-11-18": "comprei"
+    "MF|2026-11-18": "comprei",
+    "LITE|2026-11-20": "comprei"
    },
    "aguarda": null,
    "anterior": null
