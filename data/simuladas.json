@@ -552,7 +552,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.02653364931174451,
+   "caixa": 0.0014433741469588313,
    "desde": "2026-10-30",
    "posicoes": {
     "SGMT": {
@@ -575,16 +575,6 @@
      "entrada_sinal": 21.229999542236328,
      "acompanhar": true
     },
-    "MTW": {
-     "qtd": 7.6378,
-     "preco": 22.29,
-     "data": "2026-11-18",
-     "sinal": "MTW|2026-11-16",
-     "stop": 20.393555045279427,
-     "objetivo": null,
-     "entrada_sinal": 22.950000762939453,
-     "acompanhar": true
-    },
     "MF": {
      "qtd": 9.0017,
      "preco": 19.1816,
@@ -603,6 +593,16 @@
      "stop": 362.4196547900902,
      "objetivo": null,
      "entrada_sinal": 494.80999755859375,
+     "acompanhar": true
+    },
+    "ICHR": {
+     "qtd": 5.6547,
+     "preco": 27.55,
+     "data": "2026-11-20",
+     "sinal": "ICHR|2026-11-20",
+     "stop": 21.975212825231026,
+     "objetivo": null,
+     "entrada_sinal": 28.69499969482422,
      "acompanhar": true
     }
    },
@@ -1276,6 +1276,24 @@
      "preco": 498.0,
      "data": "2026-11-20",
      "sinal": "LITE|2026-11-20"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MTW",
+     "qtd": 7.6378,
+     "preco": 20.393555045279427,
+     "data": "2026-11-20",
+     "preco_compra": 22.29,
+     "lucro": -14.484667275164782,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ICHR",
+     "qtd": 5.6547,
+     "preco": 27.55,
+     "data": "2026-11-20",
+     "sinal": "ICHR|2026-11-20"
     }
    ],
    "decisoes": {
@@ -1317,7 +1335,8 @@
     "SEDG|2026-11-18": "comprei",
     "MTW|2026-11-16": "comprei",
     "MF|2026-11-18": "comprei",
-    "LITE|2026-11-20": "comprei"
+    "LITE|2026-11-20": "comprei",
+    "ICHR|2026-11-20": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -1336,7 +1355,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.8379247917767572,
+   "caixa": 0.0011602775976768953,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -1347,16 +1366,6 @@
      "stop": 36.435456163021335,
      "objetivo": null,
      "entrada_sinal": 43.20000076293945,
-     "acompanhar": true
-    },
-    "MTW": {
-     "qtd": 4.5787,
-     "preco": 22.86,
-     "data": "2026-11-17",
-     "sinal": "MTW|2026-11-16",
-     "stop": 20.393555045279427,
-     "objetivo": null,
-     "entrada_sinal": 22.950000762939453,
      "acompanhar": true
     },
     "SGMT": {
@@ -1417,6 +1426,16 @@
      "stop": 362.4196547900902,
      "objetivo": null,
      "entrada_sinal": 494.80999755859375,
+     "acompanhar": true
+    },
+    "ICHR": {
+     "qtd": 3.4197,
+     "preco": 27.55,
+     "data": "2026-11-20",
+     "sinal": "ICHR|2026-11-20",
+     "stop": 21.975212825231026,
+     "objetivo": null,
+     "entrada_sinal": 28.69499969482422,
      "acompanhar": true
     }
    },
@@ -2456,6 +2475,24 @@
      "preco": 498.0,
      "data": "2026-11-20",
      "sinal": "LITE|2026-11-20"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MTW",
+     "qtd": 4.5787,
+     "preco": 20.393555045279427,
+     "data": "2026-11-20",
+     "preco_compra": 22.86,
+     "lucro": -11.293111514179074,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ICHR",
+     "qtd": 3.4197,
+     "preco": 27.55,
+     "data": "2026-11-20",
+     "sinal": "ICHR|2026-11-20"
     }
    ],
    "decisoes": {
@@ -2519,7 +2556,8 @@
     "PHAT|2026-11-18": "comprei",
     "EWTX|2026-11-17": "comprei",
     "MF|2026-11-18": "comprei",
-    "LITE|2026-11-20": "comprei"
+    "LITE|2026-11-20": "comprei",
+    "ICHR|2026-11-20": "comprei"
    },
    "aguarda": null,
    "anterior": null
@@ -2538,7 +2576,7 @@
     "custo_pct": 0.0,
     "ordem_minima": 5.0
    },
-   "caixa": 0.04032327829830251,
+   "caixa": 0.0014093815244820007,
    "desde": "2026-10-30",
    "posicoes": {
     "SEPN": {
@@ -2559,16 +2597,6 @@
      "stop": 27.778996732747373,
      "objetivo": null,
      "entrada_sinal": 31.810100555419922,
-     "acompanhar": true
-    },
-    "MTW": {
-     "qtd": 3.8478,
-     "preco": 22.86,
-     "data": "2026-11-17",
-     "sinal": "MTW|2026-11-16",
-     "stop": 20.393555045279427,
-     "objetivo": null,
-     "entrada_sinal": 22.950000762939453,
      "acompanhar": true
     },
     "KOD": {
@@ -2639,6 +2667,16 @@
      "stop": 362.4196547900902,
      "objetivo": null,
      "entrada_sinal": 494.80999755859375,
+     "acompanhar": true
+    },
+    "ICHR": {
+     "qtd": 2.8497,
+     "preco": 27.55,
+     "data": "2026-11-20",
+     "sinal": "ICHR|2026-11-20",
+     "stop": 21.975212825231026,
+     "objetivo": null,
+     "entrada_sinal": 28.69499969482422,
      "acompanhar": true
     }
    },
@@ -3802,6 +3840,24 @@
      "preco": 498.0,
      "data": "2026-11-20",
      "sinal": "LITE|2026-11-20"
+    },
+    {
+     "tipo": "venda",
+     "ticker": "MTW",
+     "qtd": 3.8478,
+     "preco": 20.393555045279427,
+     "data": "2026-11-20",
+     "preco_compra": 22.86,
+     "lucro": -9.490386896773813,
+     "motivo": "stop"
+    },
+    {
+     "tipo": "compra",
+     "ticker": "ICHR",
+     "qtd": 2.8497,
+     "preco": 27.55,
+     "data": "2026-11-20",
+     "sinal": "ICHR|2026-11-20"
     }
    ],
    "decisoes": {
@@ -3873,7 +3929,8 @@
     "PHAT|2026-11-18": "comprei",
     "EWTX|2026-11-17": "comprei",
     "MF|2026-11-18": "comprei",
-    "LITE|2026-11-20": "comprei"
+    "LITE|2026-11-20": "comprei",
+    "ICHR|2026-11-20": "comprei"
    },
    "aguarda": null,
    "anterior": null
